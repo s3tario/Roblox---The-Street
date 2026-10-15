@@ -91,6 +91,11 @@ Handlers never trust client-sent prices, amounts, scores or times.
 - Global state: server `Registry.DataService:SetGlobal(key, value)` replicates to all players. Global
   keys: `events` (§10), `serverInfo`.
 - Private keys are never replicated: `receipts`, `audit`, `flags`, `altCareers`, `_session`.
+- Wire protocol (data-owned): `Data.Key(key, value, seq)` with a per-player sequence number, and
+  `Data.Global(key, value, gseq)`. `Data.Snapshot` returns `{player, global, seq, gseq}`. Always read through
+  `Store`; never listen to `Data.Key` directly.
+- `data._session` is a per-session scratch table: never saved, never replicated, reset to `{}` on each load.
+  Use it for transient server-side state that should die with the session.
 
 ### Time (`Shared/Util/Time`)
 - `Time.now()` returns synced server time in seconds (`workspace:GetServerTimeNow()`; `os.time()` in Lune).
@@ -111,7 +116,7 @@ missing fields from the template, so adding fields is always safe.
 
 | Key | Owner | Contents (minimum other features may read) |
 |---|---|---|
-| `meta` | data | `{ schema, createdAt, lastSeen, sessions, activeSec }` |
+| `meta` | data | `{ schema, createdAt, lastSeen, sessions, activeSec, backupDay, backupSlot }` |
 | `profile` | career | `{ built, background = {school, gpa, major, region, family, strengths}, stats = {quant, communication, discipline, risk, network}, statXp = {}, refreshTokens, freeRerollUsed, credits = {reroll, rebuild} }` |
 | `career` | career | `{ level, xp, roleId, track, status, reputation, rank, reviews = {}, signatures = {}, prestige, wipeouts, comebacks, history = {}, windowStartActive, lastReview }` |
 | `portfolio` | market | `{ seasonId, cash, positions = {[ticker] = {shares, avgCost}}, bookSize, realized, trades = {}, flows = {}, peakEquity, violations, credits = {capital}, paidCapital }` |
@@ -142,6 +147,10 @@ DataService:Save(player, reason) -> boolean
 DataService:Audit(player, kind: string, details: table)
 DataService:SetGlobal(key, value)
 DataService:GetGlobal(key)
+DataService:IsLoaded(player) -> boolean
+DataService:IsMock() -> boolean                        -- true in Studio without API access
+-- server-only support tools (no remote reaches them):
+DataService:AdminListBackups(userId) / DataService:AdminRestore(userId, slot)
 ```
 
 ## 4. Career, profile, reviews (owned by `career`)
