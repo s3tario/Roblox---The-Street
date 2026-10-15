@@ -11,6 +11,8 @@
 --   * write():   on every save. Only the lock holder whose writeId chain is intact may write. Each write
 --     refreshes `lockedAt` (the heartbeat) and bumps `writeId`; `release = true` clears the session.
 
+local TableUtil = require(script.Parent.Parent.Util.TableUtil)
+
 local SessionLock = {}
 
 SessionLock.STALE_AFTER = 600 -- seconds without a heartbeat before another server may steal the lock
@@ -50,25 +52,30 @@ function SessionLock.normalize(raw: any): Record?
 end
 
 -- Lock decision for a server that wants to load this record.
--- Returns the decision plus a reason: "free" | "own" | "stale" | "corrupt" | "held".
-function SessionLock.decide(record: any, now: number, myJobId: string): (Decision, string)
+-- Returns the decision plus a reason: "free" | "own" | "stale" | "corrupt" | "prefix" | "held".
+-- `stealPrefix` (Studio only): a live lock whose jobId starts with it is taken over at once, so a Studio
+-- session that was force-closed doesn't block the next Play for 10 minutes. Live job ids never match it.
+function SessionLock.decide(record: any, now: number, myJobId: string, stealPrefix: string?): (Decision, string)
 	local rec = SessionLock.normalize(record)
 	if rec == nil or rec.session == nil then
-		return "acquire", "free"
+		return "acquire" :: Decision, "free"
 	end
 	local s = rec.session :: Session
 	if s.jobId == myJobId then
-		return "acquire", "own"
+		return "acquire" :: Decision, "own"
 	end
 	local age = now - s.lockedAt
 	if age > SessionLock.STALE_AFTER then
-		return "steal", "stale"
+		return "steal" :: Decision, "stale"
 	end
 	-- A lockedAt far in the future can never go stale; treat it as corrupt rather than locking forever.
 	if age < -SessionLock.STALE_AFTER then
-		return "steal", "corrupt"
+		return "steal" :: Decision, "corrupt"
 	end
-	return "wait", "held"
+	if stealPrefix and stealPrefix ~= "" and string.sub(s.jobId, 1, #stealPrefix) == stealPrefix then
+		return "steal" :: Decision, "prefix"
+	end
+	return "wait" :: Decision, "held"
 end
 
 -- Seconds to wait before lock attempt `attempt + 1`, or nil when attempts are exhausted.
@@ -82,9 +89,10 @@ function SessionLock.acquire(
 	record: any,
 	now: number,
 	myJobId: string,
-	placeId: number
+	placeId: number,
+	stealPrefix: string?
 ): (Decision, string, Record?)
-	local decision, reason = SessionLock.decide(record, now, myJobId)
+	local decision: Decision, reason: string = SessionLock.decide(record, now, myJobId, stealPrefix)
 	if decision == "wait" then
 		return decision, reason, nil
 	end
@@ -100,25 +108,27 @@ end
 -- May the holder of `expectedWriteId` write this record?
 --   "missing"  the key was removed (e.g. a data-erasure request): never recreate it
 --   "stolen"   another server holds the lock, or it was released by someone else
---   "conflict" someone wrote without going through our session (writeId chain broken)
--- `expectedWriteId + 1` is accepted too: that is our own previous attempt that committed even though
--- its UpdateAsync call reported an error.
-function SessionLock.checkWrite(record: any, myJobId: string, expectedWriteId: number): WriteStatus
+--   "conflict" someone wrote without going through our session (writeId chain broken), e.g. a newer
+--              session of the same user on the same server
+-- With `uncertain` (one of our earlier write attempts errored, so it may have committed anyway)
+-- `expectedWriteId + 1` is accepted too: that is our own write.
+function SessionLock.checkWrite(record: any, myJobId: string, expectedWriteId: number, uncertain: boolean?): WriteStatus
 	local rec = SessionLock.normalize(record)
 	if rec == nil then
-		return "missing"
+		return "missing" :: WriteStatus
 	end
 	local s = rec.session
 	if s == nil or s.jobId ~= myJobId then
-		return "stolen"
+		return "stolen" :: WriteStatus
 	end
-	if rec.writeId ~= expectedWriteId and rec.writeId ~= expectedWriteId + 1 then
-		return "conflict"
+	if rec.writeId ~= expectedWriteId and not (uncertain and rec.writeId == expectedWriteId + 1) then
+		return "conflict" :: WriteStatus
 	end
-	return "ok"
+	return "ok" :: WriteStatus
 end
 
 -- UpdateAsync transform for saving. `payload` nil keeps the stored data (heartbeat or release only).
+-- `uncertain` as in checkWrite.
 -- Returns the status and the record to store (nil unless status is "ok").
 function SessionLock.write(
 	record: any,
@@ -127,9 +137,10 @@ function SessionLock.write(
 	placeId: number,
 	expectedWriteId: number,
 	payload: any?,
-	release: boolean?
+	release: boolean?,
+	uncertain: boolean?
 ): (WriteStatus, Record?)
-	local status = SessionLock.checkWrite(record, myJobId, expectedWriteId)
+	local status: WriteStatus = SessionLock.checkWrite(record, myJobId, expectedWriteId, uncertain)
 	if status ~= "ok" then
 		return status, nil
 	end
@@ -139,13 +150,47 @@ function SessionLock.write(
 		session = if release then nil else { jobId = myJobId, placeId = placeId, lockedAt = math.floor(now) },
 		writeId = expectedWriteId + 1,
 	}
-	return "ok", out
+	return "ok" :: WriteStatus, out
 end
 
 -- True when the record is locked by a live session of some other server.
-function SessionLock.heldElsewhere(record: any, now: number, myJobId: string): boolean
-	local decision = SessionLock.decide(record, now, myJobId)
+function SessionLock.heldElsewhere(record: any, now: number, myJobId: string, stealPrefix: string?): boolean
+	local decision = SessionLock.decide(record, now, myJobId, stealPrefix)
 	return decision == "wait"
+end
+
+-- UpdateAsync transform for a support restore. Refused ("held") while another server's live session holds
+-- the lock. The restored copy keeps the CURRENT save's backup rotation (meta.backupDay/backupSlot) so restoring
+-- an old copy never rewinds it, gets `note` appended to its audit ring, and is written with the lock released.
+function SessionLock.restore(
+	record: any,
+	now: number,
+	myJobId: string,
+	restored: { [string]: any },
+	note: any?,
+	ringMax: number?
+): ("ok" | "held", Record?)
+	if SessionLock.heldElsewhere(record, now, myJobId) then
+		return "held", nil
+	end
+	local rec = SessionLock.normalize(record)
+	local data = TableUtil.deepCopy(restored)
+	if type(data.meta) ~= "table" then
+		data.meta = {}
+	end
+	local current = if rec and type(rec.data) == "table" then rec.data.meta else nil
+	if type(current) == "table" then
+		data.meta.backupDay = current.backupDay
+		data.meta.backupSlot = current.backupSlot
+	end
+	if note ~= nil then
+		if type(data.audit) ~= "table" then
+			data.audit = {}
+		end
+		table.insert(data.audit, note)
+		TableUtil.trimFront(data.audit, ringMax or 100)
+	end
+	return "ok", { data = data, session = nil, writeId = (if rec then rec.writeId else 0) + 1 }
 end
 
 return SessionLock

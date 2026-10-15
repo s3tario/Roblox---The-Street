@@ -79,30 +79,30 @@ function Migrations.run(
 	local goal = target or Migrations.CURRENT_SCHEMA
 	local from = Migrations.schemaOf(data)
 	if from == goal then
-		return data, from, "ok", nil
+		return data, from, "ok" :: Status, nil
 	elseif from > goal then
-		return data, from, "future", nil
+		return data, from, "future" :: Status, nil
 	end
 	local work = TableUtil.deepCopy(data)
 	local schema = from
 	while schema < goal do
 		local step = list[schema]
 		if step == nil then
-			return data, from, "error", ("no migration from schema %d"):format(schema)
+			return data, from, "error" :: Status, ("no migration from schema %d"):format(schema)
 		end
-		local ok, err = pcall(step, work)
+		local ok, err = (pcall :: any)(step, work)
 		if not ok then
-			return data, from, "error", ("migration %d->%d failed: %s"):format(schema, schema + 1, tostring(err))
+			return data,
+				from,
+				"error" :: Status,
+				("migration %d->%d failed: %s"):format(schema, schema + 1, tostring(err))
 		end
 		schema += 1
-		local meta = asTable(work.meta)
-		if meta == nil then
-			meta = {}
-			work.meta = meta
-		end
+		local meta: { [any]: any } = asTable(work.meta) or {}
+		work.meta = meta
 		meta.schema = schema
 	end
-	return work, from, "ok", nil
+	return work, from, "ok" :: Status, nil
 end
 
 return Migrations
