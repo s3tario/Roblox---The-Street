@@ -1,0 +1,791 @@
+  -----------------------------------------------------------------------
+  FINANCE CAREER SIMULATOR | CREATOR BLUEPRINT | VERSION 1.0
+  -----------------------------------------------------------------------
+
+  -----------------------------------------------------------------------
+
+THE STREET
+
+From campus recruiting to a Wall Street career
+
+A career-first Roblox experience where players build a profile, win an
+internship, trade fictional markets, survive performance reviews, earn
+promotions and choose their finance exit path.
+
+  -----------------------------------------------------------------------
+  55-65 HRS        Target: a meaningful level-100 journey in about 55-65
+                   hours of active play. Players keep purchased cosmetics
+                   and achievements through career setbacks.
+  ---------------- ------------------------------------------------------
+
+  -----------------------------------------------------------------------
+
+DESIGN PILLARS
+
++-----------------------------------+-----------------------------------+
+| A real career fantasy             | Meaningful risk                   |
+|                                   |                                   |
+| College recruiting, investment    | Market performance can accelerate |
+| banking, promotions and           | a career or put a job in danger.  |
+| competitive exits.                |                                   |
++===================================+===================================+
+| Fashion and status                | Fair monetization                 |
+|                                   |                                   |
+| Earnable style, customizable      | Paid convenience and recovery,    |
+| offices and social prestige.      | never paid market alpha or        |
+|                                   | leaderboard score.                |
++-----------------------------------+-----------------------------------+
+
+Prepared 15 October 2026 | Product strategy, progression, monetization,
+leaderboards and launch plan
+
+01 / DESIGN SECTION
+
+Product vision and session loop
+
+The fantasy is not “click to earn.” It is building a career under
+pressure.
+
+One-sentence pitch
+
+Start as a college student with a randomly generated background, recruit
+into investment banking, make decisions in a fictional stock market,
+rise through promotions, and branch into a specialist finance career.
+Great performance opens doors faster; repeated poor decisions can lead
+to probation or being fired.
+
+Core play session
+
+  -------------------------------------------------------------------------
+  Step        What the player does            Reward / consequence
+  ----------- ------------------------------- -----------------------------
+  1. Read the Review fictional market news,   Forms a hypothesis before
+  tape        earnings and daily catalysts.   trading.
+
+  2. Do the   Complete a short valuation,     Career XP, work score, salary
+  job         pitchbook, research or deal     and reputation.
+              minigame.                       
+
+  3. Make     Buy, hold or sell fictional     Risk-adjusted trading score
+  decisions   shares; manage exposure and     and virtual gains/losses.
+              risk.                           
+
+  4. Build a  Shop outfits, customize desk /  Visible identity and social
+  life        apartment and network with      roleplay.
+              other players.                  
+
+  5. Get      Receive a weekly performance    Promotion, coaching,
+  reviewed    review and promotion            probation or termination.
+              eligibility.                    
+  -------------------------------------------------------------------------
+
+Four product pillars
+
+-   Career fantasy: each promotion changes the work, office access, deal
+    scale and social status.
+
+-   Investment gameplay: information, uncertainty and risk management
+    matter more than clicking speed.
+
+-   Personal identity: wardrobe, office design, profile card and career
+    history are persistent reasons to return.
+
+-   Comeback stories: firing is a recoverable setback that changes the
+    career narrative, not a deletion of the player’s whole account.
+
++-----------------------------------------------------------------------+
+| Design rule                                                           |
+|                                                                       |
+| Every 10-15 minutes, players should make a decision, earn a visible   |
+| reward, unlock a new task or receive useful feedback. Do not stretch  |
+| a 60-hour journey with repetitive timers.                             |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+02 / DESIGN SECTION
+
+The pre-career background roll
+
+Before choosing a firm, each player receives a profile card that
+influences their starting strengths and constraints.
+
+The opening sequence is a short “profile builder.” It generates three
+profile packages from a pool of backgrounds. Players choose one; this
+creates a personal origin story without locking anyone out of the top
+career path.
+
+  -----------------------------------------------------------------------
+  Background   Possible outcomes         What it changes
+  field                                  
+  ------------ ------------------------- --------------------------------
+  School tier  Regional public; strong   Recruiting events and initial
+               state school; finance     interview odds, not
+               target; elite private;    market-return multipliers.
+               international university. 
+
+  GPA          2.70-4.00, with a         Interview eligibility and one
+               probability curve         early academics assignment.
+               favoring plausible        
+               middle-high values.       
+
+  Major        Finance; economics;       Starting skill bonus and one
+               accounting; math /        tutorial style.
+               statistics; engineering;  
+               liberal arts.             
+
+  Hometown /   Major financial hub;      Networking opportunities, living
+  region       college town; regional    costs and region-specific
+               city; international hub.  contacts.
+
+  Family       Self-funded; stable       Starting safety net, networking
+  background   middle-income; affluent;  access and lifestyle costs.
+               industry-connected        
+               family.                   
+
+  Natural      Quantitative skill;       Small, visible starting
+  strengths    communication;            modifiers with trade-offs.
+               discipline; risk          
+               judgement; networking.    
+  -----------------------------------------------------------------------
+
+Profile examples
+
+  -----------------------------------------------------------------------
+  Example profile    Strengths                Trade-off
+  ------------------ ------------------------ ---------------------------
+  “Target-school     Strong modeling; early   Higher living cost; weaker
+  quant”             recruiting invites.      networking confidence.
+  3.82 GPA; math                              
+  major; regional                             
+  hub.                                        
+
+  “Connected         Warm introductions;      Less starting capital;
+  generalist”        better mentor access.    lower technical baseline.
+  3.45 GPA; business                          
+  major; finance                              
+  family.                                     
+
+  “Self-made         Discipline, low          Fewer initial contacts;
+  grinder”           expenses, strong         needs more networking
+  3.55 GPA;          analytical growth.       tasks.
+  engineering major;                          
+  small city.                                 
+  -----------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| Fairness constraint                                                   |
+|                                                                       |
+| Background should create different routes, not a dominant “best       |
+| roll.” Balance each profile to similar expected power over the first  |
+| 10 hours. A rich family may provide contacts but not a huge           |
+| portfolio; a target school may open interviews but cost more.         |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+03 / DESIGN SECTION
+
+Stats, rolls, rerolls and recovery
+
+Make the profile roll exciting, readable and monetizable without letting
+it determine the whole career.
+
+Recommended starting stat model
+
+  ----------------------------------------------------------------------------
+  Stat            Range   Gameplay use               Counterbalance
+  --------------- ------- -------------------------- -------------------------
+  Quant           1-10    Financial modeling and     Strong quant does not
+                          research tasks.            improve stock prices.
+
+  Communication   1-10    Networking, interviews and Can be trained through
+                          client pitch minigames.    repeated practice.
+
+  Discipline      1-10    Deadline reliability and   Low discipline can
+                          avoiding preventable       improve with routines /
+                          penalties.                 assignments.
+
+  Risk judgement  1-10    Starting risk limit        Does not predict future
+                          guidance and review score. returns or remove
+                                                     uncertainty.
+
+  Network         1-10    Mentor access, referrals   Earnable through social
+                          and informational          play and events.
+                          interviews.                
+  ----------------------------------------------------------------------------
+
+Reroll design
+
+-   At setup: generate three candidate backgrounds and include one free
+    reroll. Let the player compare the full profile before locking in.
+
+-   Earnable option: a Profile Refresh token from a campus challenge,
+    seasonal goal or career milestone. Never make a single bad roll a
+    permanent trap.
+
+-   Paid option A - Profile Reroll: 49 R$ as a test price. Since this is
+    a Robux-funded random outcome, disclose every possible outcome and
+    numerical odds, check Roblox PolicyService eligibility, and restrict
+    purchase where required [4].
+
+-   Paid option B - Background Rebuild: 99 R$ test price. A
+    deterministic editor lets the player select from eligible school /
+    region / major / family archetypes. This is easier to understand
+    than paid randomization.
+
+Anything intentionally lost can be recovered
+
+  -----------------------------------------------------------------------
+  Lost /          Free recovery route       Optional paid recovery
+  resettable                                
+  system                                    
+  --------------- ------------------------- -----------------------------
+  Rolled          Earn or use a free        Profile Reroll /
+  background      Profile Refresh token.    deterministic Background
+                                            Rebuild.
+
+  Career rank     Complete a re-entry       Career Reinstatement restores
+  after firing    interview and probation   previous rank eligibility.
+                  assignment.               
+
+  Virtual capital Complete a recovery       Capital Reconstruction
+  wiped by game   contract and rebuild from restores a capped fraction,
+  rules           a smaller bankroll.       not leaderboard score.
+
+  Lost unsaved    Support restores          Never charge for damage
+  data due to a   confirmed legitimate      caused by the game or a
+  bug             progress at no charge.    platform failure.
+  -----------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| Do not monetize accidental loss                                       |
+|                                                                       |
+| Robux recovery is for intentional game outcomes only. Purchased       |
+| cosmetics, permanent achievements and documented progress lost        |
+| because of a bug must not be held hostage to a purchase.              |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+04 / DESIGN SECTION
+
+Career path and 55-65 hour level curve
+
+Use level 100 as the cap. Early promotions arrive quickly; later
+promotions require skill and larger projects.
+
+  ------------------------------------------------------------------------
+  Level    Role / path      Target       Unlock / competency
+  range                     cumulative   
+                            active time  
+  -------- ---------------- ------------ ---------------------------------
+  1-8      College Student  0-3 hours    School background, finance club,
+                                         mock stock pitch, networking and
+                                         interviews.
+
+  9-15     IB Intern        3-7 hours    Pitchbook formatting, research
+                                         notes, data cleanup and initial
+                                         market portfolio.
+
+  16-30    IB Analyst       7-17 hours   Valuation models, comparable
+                                         companies, DCF, earnings
+                                         reactions and live deal teams.
+
+  31-40    IB Associate     17-25 hours  Review analyst output, supervise
+                                         transaction work and manage
+                                         deadlines.
+
+  41-50    VP / Director /  25-32 hours  Lead a deal, win client mandates
+           Managing                      and qualify for exit recruiting.
+           Director                      
+
+  51-74    Specialist       32-45 hours  Choose PE, Hedge Fund, VC, Real
+           career                        Estate or Corporate Development;
+                                         master a distinct mechanic.
+
+  75-100   Partner /        45-60 hours  Manage a portfolio of businesses
+           Portfolio Leader              or assets, complete signature
+           / Family Office               projects and build a firm.
+  ------------------------------------------------------------------------
+
+Promotion should be earned in multiple ways
+
+-   Standard route: complete core assignments, meet reputation
+    requirements and pass a skills evaluation.
+
+-   Fast-track route: sustained risk-adjusted market performance,
+    excellent work quality and completed signature deals reduce
+    assignment requirements by up to 20%.
+
+-   Alternative route: weaker market results can be offset by excellent
+    deal work and risk discipline; this prevents the game becoming a
+    pure stock-price lottery.
+
+-   Career exits: after IB leadership, pick a specialist track.
+    Alternate career records preserve previous achievements, while the
+    selected path determines the current progression journey.
+
++-----------------------------------------------------------------------+
+| Endgame content                                                       |
+|                                                                       |
+| Level 100 should unlock more difficult contracts, firm customization, |
+| legacy goals and seasonal challenges rather than ending the game. The |
+| 55-65 hours is the core career journey, not the lifespan of the       |
+| experience.                                                           |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+05 / DESIGN SECTION
+
+Performance reviews, firing and The Wipeout
+
+Bad investing can create consequences, but a single unlucky market swing
+should not erase a career.
+
+Suggested review score
+
+  ------------------------------------------------------------------------
+  Review component     Weight   Server-calculated evidence
+  -------------------- -------- ------------------------------------------
+  Risk-adjusted        35%      Excess returns vs. fictional benchmark,
+  investment                    drawdown and volatility over a review
+  performance                   window.
+
+  Risk management      25%      Position limits, leverage rules,
+                                concentration and response to warnings.
+
+  Work quality         25%      Model accuracy, deal assignment quality,
+                                research tasks and deadline reliability.
+
+  Team / client        15%      Deal participation, networking events,
+  reputation                    mentoring and client-pitch quality.
+  ------------------------------------------------------------------------
+
+  -------------------------------------------------------------------------
+  Score      Status            Outcome
+  ---------- ----------------- --------------------------------------------
+  85-100     Star performer    Eligible for fast-track promotion, premier
+                               deal assignments and larger earned bonuses.
+
+  70-84      On track          Standard advancement.
+
+  55-69      Underperforming   Coaching tasks and no immediate promotion.
+
+  40-54      Probation         Risk limits tighten; improvement plan; next
+                               review is high stakes.
+
+  Below 40   Critical / fired  Current role ends; employment recovery
+  twice                        options become available.
+  -------------------------------------------------------------------------
+
+The Wipeout rules
+
+-   Trigger dismissal after two critical reviews, or after a major
+    repeated risk-limit violation that the player ignored after
+    warnings.
+
+-   Consequences may remove current job status, active deal pipeline, a
+    portion of current career XP and virtual trading capital. Explain
+    the exact loss before the final confirmation.
+
+-   Never remove Robux-purchased outfits, permanent cosmetics, badges,
+    earned career history or account-level achievements.
+
+Recovery routes
+
+  ------------------------------------------------------------------------
+  Route            Cost            Effect
+  ---------------- --------------- ---------------------------------------
+  Re-entry         Free            15-25 minute recovery sequence, rejoin
+  interview                        one rank lower with modest capital.
+
+  Career           Suggested       Restore former title and rank
+  Reinstatement    99-149 R$       eligibility; still complete probation
+                                   and rebuild the portfolio.
+
+  Capital          Suggested 49-99 Restore a capped portion of lost career
+  Reconstruction   R$              cash. Exclude paid/restored capital
+                                   from competitive scores.
+
+  Fresh start      Free            Return to student / intern; preserve
+                                   permanent cosmetics and career history.
+  ------------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| Avoid pay-to-not-lose pressure                                        |
+|                                                                       |
+| Show all recovery options in a neutral career-services screen. No     |
+| automatic purchase pop-up on firing, no countdown pressure and no     |
+| purchase required to continue playing.                                |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+06 / DESIGN SECTION
+
+Fictional market, deals and specialist realms
+
+Every division needs a distinct loop, not just a new office backdrop.
+
+Fictional market model
+
+-   Use made-up companies and sectors: Apex AI, Meridian Bank, Volt
+    Automotive, Summit Properties and Titan Energy. No actual money or
+    real-stock integration.
+
+-   Prices move from disclosed fundamentals, scheduled earnings, broad
+    market events and limited uncertainty. Players analyze information
+    rather than guess an entirely opaque random chart.
+
+-   Track cash, invested value, realized P/L, unrealized P/L, drawdown,
+    benchmark return and risk-adjusted score separately.
+
+-   Risk controls: concentration limits, warnings, optional stop orders,
+    and review windows long enough that one random move does not decide
+    employment.
+
+Signature deal examples
+
+  ------------------------------------------------------------------------
+  Realm          Signature project     Distinct mechanic
+  -------------- --------------------- -----------------------------------
+  Investment     Take a fictional      Build valuation, prepare pitchbook,
+  Banking        company public.       respond to buyer questions.
+
+  Private Equity Acquire and improve a Purchase price, financing mix,
+                 struggling company.   operational improvement and exit
+                                       timing.
+
+  Hedge Fund     Outperform a          Portfolio allocation, research
+                 benchmark without     catalysts and drawdown control.
+                 breaching risk        
+                 limits.               
+
+  Venture        Select startups       Probability-weighted outcomes,
+  Capital        across funding        founder meetings and portfolio
+                 rounds.               construction.
+
+  Real Estate    Buy, renovate and     Budgeting, occupancy, rent and
+                 lease an office       cap-rate tradeoffs.
+                 building.             
+
+  Corporate      Recommend an          Strategic fit, valuation,
+  Development    acquisition to a      integration risk and deal approval.
+                 board.                
+  ------------------------------------------------------------------------
+
+Lifestyle progression
+
+Players earn ordinary clothing, watches, accessories, desk items and
+apartment upgrades with in-game salary cash. Robux cosmetics add new
+styles and customization options, not career score or stock-market
+intelligence.
+
+07 / DESIGN SECTION
+
+Monetization architecture
+
+Monetize personalization and convenience; do not sell guaranteed market
+alpha.
+
+  -----------------------------------------------------------------------------
+  Product          Suggested   What it provides       Guardrail
+                   test price                         
+  ---------------- ----------- ---------------------- -------------------------
+  Profile Reroll   49 R$       Randomized new         Must disclose outcomes /
+                               background profile.    odds and enforce
+                                                      paid-random restrictions
+                                                      [4].
+
+  Background       99 R$       Choose new eligible    Deterministic; no hidden
+  Rebuild                      school / major /       rarity tier.
+                               family / region        
+                               archetype.             
+
+  Career           99-149 R$   Restore previous title Probation remains;
+  Reinstatement                / rank eligibility     exclude paid recovery
+                               after an intentional   from rankings.
+                               wipeout.               
+
+  Capital          49-99 R$    Restore a capped       Never counts toward
+  Reconstruction               portion of lost        competitive performance
+                               in-game capital.       leaderboard.
+
+  Outfit bundle    149-249 R$  Complete suit,         Direct purchase, preview
+                               quarter-zip, watch,    before buying.
+                               shoes and accessories. 
+
+  Office theme /   149-249 R$  Additional desk,       Cosmetic-only.
+  decor pass                   office and room        
+                               styles.                
+
+  Season pass      199-249 R$  Free + premium reward  Clear rewards, no paid
+                               tracks for cosmetic    random crate.
+                               collections.           
+
+  Executive Club   399-599 R$  VIP lounge theme,      No trading multiplier or
+                               profile frame, outfit  salary multiplier.
+                               presets and cosmetics. 
+  -----------------------------------------------------------------------------
+
+Robux-to-value rules
+
+-   All products explain exact contents before purchase. Use Roblox
+    Developer Products for repeatable items and Passes for one-time
+    entitlements [5].
+
+-   No Robux purchase increases stock returns, gives an exclusive source
+    of market information, or directly improves risk-adjusted
+    leaderboard scores.
+
+-   Every intentional resettable/lost gameplay resource gets a free
+    earn-back route and a clearly defined optional recovery purchase,
+    where appropriate.
+
+-   Bug-related losses are restored through support at no charge. Paid
+    recovery should never replace good save reliability.
+
++-----------------------------------------------------------------------+
+| Launch shop size                                                      |
+|                                                                       |
+| Start with 6-8 clear products, not a crowded store. Add items only    |
+| when player testing shows that the underlying game loop is retaining  |
+| users.                                                                |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+08 / DESIGN SECTION
+
+Global leaderboards and social competition
+
+Rank players on skill and verified play, not on how much Robux they
+spend.
+
+  -----------------------------------------------------------------------
+  Leaderboard      Scoring method              Integrity rule
+  ---------------- --------------------------- --------------------------
+  Career Prestige  Server-verified promotions, Exclude purchased ranks /
+                   completed signatures and    recovery bonuses from
+                   permanent milestones.       score.
+
+  Market Skill -   Risk-adjusted return vs.    Equalized starting
+  Season           benchmark over a standard   portfolio; minimum
+                   season.                     activity threshold.
+
+  Deal Mastery     Quality points from         Server grants scores only
+                   verified deal projects.     after requirements
+                                               complete.
+
+  Fastest Career   Time to level 100 on a      Fixed seed / standard
+  Run              standardized challenge      starting capital; seasonal
+                   profile.                    reset.
+
+  Comeback Board   Successful returns after a  No points merely for
+                   wipeout, measured by earned buying reinstatement.
+                   recovery milestones.        
+  -----------------------------------------------------------------------
+
+Implementation plan
+
+-   Use server-side score calculation and OrderedDataStore / persistent
+    global ranking infrastructure. Roblox documents persistent Global
+    rankings and OrderedDataStores; availability and built-in
+    leaderboard constraints should be checked against the current
+    Creator Hub setup [1][2].
+
+-   Build custom in-world boards for multiple categories, since Roblox’s
+    built-in PlayerList global view has constraints and may support only
+    one registered active persistent leaderboard per experience at a
+    time [1].
+
+-   Refresh display boards on a controlled interval; cache reads; do not
+    call global data services every frame.
+
+-   Add seasonal, friends-only and regional filters in custom UI where
+    data volume and moderation permit.
+
+Abuse controls
+
+-   The server validates purchases, inventory changes, trade actions,
+    score updates and review outcomes. The client never tells the server
+    its own “final score.”
+
+-   Flag impossible returns, implausible trade volume, teleport / timer
+    exploits and repeated disconnect abuse. Keep a human review and
+    appeal path for leaderboard bans.
+
++-----------------------------------------------------------------------+
+| Leaderboard UI                                                        |
+|                                                                       |
+| Show rank, player name, stat, time window and season. Reset seasonal  |
+| competition without wiping permanent profile achievements.            |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+09 / DESIGN SECTION
+
+Technical architecture and persistence
+
+The economy is only as trustworthy as its save and transaction systems.
+
+  ------------------------------------------------------------------------
+  System         Server-owned data         Implementation notes
+  -------------- ------------------------- -------------------------------
+  Player profile Background roll, school   Store in standard DataStore;
+                 tier, GPA, skill          version schema and validate
+                 attributes, current role. every field [3].
+
+  Career state   Level, reputation,        Only server-authoritative code
+                 promotion history,        updates progression.
+                 probation status,         
+                 specialist path.          
+
+  Portfolio      Cash, positions,          Server controls prices and
+  ledger         transaction history, P/L, fills; use transaction IDs to
+                 benchmark series.         avoid duplicate trades.
+
+  Inventory /    Cosmetics, outfit         Grant after verified receipt;
+  entitlements   bundles, pass ownership   make purchase processing
+                 and recovery purchases.   idempotent [5].
+
+  Leaderboard    Career prestige,          Write numeric values to ordered
+  score          normalized returns, deal  data stores from server code
+                 score, season ID.         [1][2].
+
+  Audit /        Review history, wipeout   Keep enough history to resolve
+  support        reason, restore action    disputed purchases or lost
+                 and product receipt.      progress.
+  ------------------------------------------------------------------------
+
+Build safeguards
+
+-   Use server-authoritative market clocks and price updates. Do not let
+    local client time determine returns or review deadlines.
+
+-   Design an explicit state machine: Active -> Review Due -> Coaching /
+    Probation -> Fired -> Re-entry / Reinstated.
+
+-   Apply rate limits and input validation to remotes; never trust
+    client-supplied price, currency amount or leaderboard value.
+
+-   Autosave at sensible checkpoints, save on leave and use
+    recovery-safe data writes. Roblox DataStores persist data between
+    sessions and server-side calls protect the data boundary [3].
+
+-   Test duplicate purchase receipts, server shutdowns during saves,
+    invalid values, rejoining mid-trade and old schema migrations before
+    launch.
+
+10 / DESIGN SECTION
+
+Launch roadmap, metrics and balance tests
+
+Build a narrow, reliable version before expanding into every finance
+realm.
+
+  -------------------------------------------------------------------------
+  Phase         Deliverable                Exit gate
+  ------------- -------------------------- --------------------------------
+  Prototype     Campus profile roll, one   New players can explain the loop
+                office, fictional stock    and enjoy the first 20 minutes.
+                terminal, 3 work tasks.    
+
+  Vertical      IB internship, promotion,  No data loss in reconnect /
+  slice         review score, portfolio    shutdown tests; market cannot be
+                persistence and basic      client-exploited.
+                wardrobe.                  
+
+  Progression   Levels 1-30, early career, Median engaged testers see
+  test          one signature deal and     meaningful change every 10-15
+                first wipeout recovery.    minutes.
+
+  Economy test  Profile rerolls / editor,  Purchases grant correctly; paid
+                recovery products, outfit  values excluded from competitive
+                shop and leaderboards.     score.
+
+  Soft launch   Complete IB-to-exit arc,   Monitor retention, quits after
+                then add one specialist    firing, promotion completion and
+                branch.                    return rate.
+
+  Expansion     Add PE / HF / VC / RE      Each realm delivers a distinct
+                branches, seasons and      loop, not simply a visual
+                lifestyle content.         reskin.
+  -------------------------------------------------------------------------
+
+Core metrics
+
+-   D1 / D7 / D30 retention; average active session length; first
+    assignment and first promotion conversion.
+
+-   Time-to-first-fashion-purchase using earnable currency; outfits
+    saved; returning players who customize.
+
+-   Career promotion rate by cohort; share reaching a new realm; median
+    time to level 100, targeting 55-65 active hours for engaged players.
+
+-   Firing rage-quit rate; free vs. paid recovery rate; post-recovery
+    return rate. If firing produces a sudden exit spike, soften
+    penalties before raising recovery prices.
+
+-   Payer conversion, ARPPU, ARPDAU, refund / failed receipt rate and
+    cosmetic revenue by collection.
+
++-----------------------------------------------------------------------+
+| Decision priority                                                     |
+|                                                                       |
+| If retention falls, fix the job loop, feedback or progression before  |
+| adding more monetization. A larger shop cannot repair an unfun first  |
+| session.                                                              |
++=======================================================================+
++-----------------------------------------------------------------------+
+
+11 / DESIGN SECTION
+
+Platform references and working assumptions
+
+References checked 15 October 2026. Re-check official documentation
+before implementation.
+
+The prices and playtime estimates in this blueprint are prototype
+hypotheses, not guarantees of conversion or retention. Platform rules,
+service availability and supported pricing mechanics can change. The
+source links below are the implementation starting points.
+
+[1] Roblox Creator Hub - Leaderboards. Explains Here, Friends and Global
+ranking views and current persistent leaderboard constraints. Open
+source
+
+[2] Roblox Creator Hub - OrderedDataStore. Numeric ranked values and
+sorting for custom global boards. Open source
+
+[3] Roblox Creator Hub - Save player data. Persistent profile /
+inventory save patterns and server-side access. Open source
+
+[4] Roblox Creator Hub - Paid random items policy. Required numerical
+odds, outcomes and player-specific paid-random restrictions. Open source
+
+[5] Roblox Creator Hub - Developer Products. Repeatable purchases and
+receipt-granting implementation. Open source
+
+Open design questions to validate in playtests
+
+-   Should family background meaningfully affect starting cash, or
+    should it only affect contacts and expenses? Prefer a low-impact
+    cash effect.
+
+-   Is a 55-65 hour target still fun for players who only want market /
+    fashion gameplay? Provide alternate goals that do not require level
+    100.
+
+-   Does paid reinstatement feel like a convenience or a penalty toll?
+    If testers describe it as a toll, lower the wipeout punishment
+    instead of pushing purchase conversion.
+
+-   Which specialized finance path gets the highest organic selection
+    and repeat play? Use that to choose the first expansion.
+
++-----------------------------------------------------------------------+
+| North star                                                            |
+|                                                                       |
+| Players should tell friends about the career they built, the deal     |
+| that saved them, or the comeback after getting fired - not about a    |
+| purchase they felt forced to make.                                    |
++=======================================================================+
++-----------------------------------------------------------------------+
