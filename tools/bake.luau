@@ -105,9 +105,11 @@ for _, entry in World.builders do
 	print(("%s  %-16s %6d parts  %5.2fs%s"):format(status, entry.module, parts, os.clock() - t0, note))
 end
 
+-- A filtered bake never overwrites the full World.rbxm (concurrent agents bake their own modules).
+local outPath = if filtered then "build/bake-" .. table.concat(process.args, "-") .. ".rbxm" else "build/World.rbxm"
 fs.writeDir("build")
-fs.writeFile("build/World.rbxm", roblox.serializeModel({ worldFolder }))
-print(("\nWrote build/World.rbxm with %d parts"):format(total))
+fs.writeFile(outPath, roblox.serializeModel({ worldFolder }))
+print(("\nWrote %s with %d parts"):format(outPath, total))
 if problems > 0 then
 	print(("%d problem(s)"):format(problems))
 	process.exit(1)

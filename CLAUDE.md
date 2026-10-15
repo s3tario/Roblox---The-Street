@@ -13,10 +13,15 @@ Read before changing anything:
 |---|---|
 | `tools/check.sh` | Everything: unit tests, world bake, strict type-check, format check, `.rbxl` build. Must pass before you finish. |
 | `tools/check.sh --quick` | Tests + type-check + format only. |
+| `tools/typecheck.sh [paths...]` | Strict type-check, errors reported only for the given files/dirs. Concurrency-safe. |
 | `lune run tools/test [filter...]` | Lune unit tests (`tests/**/*.spec.luau`), optionally filtered by path substring. |
 | `lune run tools/bake [Module...]` | Bake world builders into `build/World.rbxm`; reports part counts, budgets and out-of-zone parts. |
 | `stylua src tools tests` | Format (tabs, 120 cols). Run before finishing. |
 | `rojo build default.project.json -o build/TheStreet.rbxl` | Build the place file. |
+
+When several agents work at once, **don't run `tools/check.sh`** (it rewrites shared build files). Use
+`tools/typecheck.sh <your paths>`, `lune run tools/test <your test dir>` and `lune run tools/bake <YourModule>`
+(a filtered bake writes `build/bake-<Module>.rbxm`, never the shared `World.rbxm`).
 
 There is **no Roblox engine** here. Automated checks are all we have, so lean on them:
 - Every file in `src/` starts with `--!strict`. Strict mode is what catches wrong property types, misspelled

@@ -22,17 +22,7 @@ else
 fi
 
 step "Type check (luau-lsp + Roblox definitions)"
-rojo sourcemap default.project.json --output sourcemap.json >/dev/null 2>&1 || { echo "rojo sourcemap failed"; FAIL=1; }
-ANALYZE_OUT=$(luau-lsp analyze \
-  --sourcemap=sourcemap.json \
-  --definitions=@roblox=tools/types/globalTypes.d.luau \
-  --base-luaurc=.luaurc \
-  --no-strict-dm-types \
-  src 2>&1)
-echo "$ANALYZE_OUT" | grep -E "TypeError|SyntaxError" | sed "s#$(pwd)/##" | head -300
-ERRS=$(echo "$ANALYZE_OUT" | grep -cE "(TypeError|SyntaxError)" || true)
-echo "type errors: $ERRS"
-[[ "$ERRS" -gt 0 ]] && FAIL=1
+tools/typecheck.sh src || FAIL=1
 
 step "Format check (StyLua)"
 stylua --check src tools tests >/dev/null 2>&1 && echo "formatted" || { echo "run: stylua src tools tests"; FAIL=1; }
