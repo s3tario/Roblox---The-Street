@@ -230,6 +230,32 @@ action add a tracker entry.
 Currencies: **Cash** (salary; lifestyle purchases), **Book capital** (trading; never purchasable
 except the capped, flagged Capital Reconstruction), **Season XP**, **Profile Refresh tokens**.
 
+**Salary scale (typical Cash earned per active hour, all sources):**
+
+| Role | Cash / hr | Role | Cash / hr |
+|---|---|---|---|
+| Student | $300 | Director | $32,000 |
+| Intern | $3,000 | MD | $45,000 |
+| Analyst | $8,000 | Realm band 1 / 2 / 3 | $55k / $70k / $90k |
+| Associate | $15,000 | Partner / Senior Partner / Founder | $120k / $160k / $220k |
+| VP | $25,000 | | |
+
+About 70% comes from task/project pay and 30% from the per-review base salary plus bonus (bonus
+scales with review score: Star 1.5×, On track 1×, below that 0.5×, fired 0).
+
+**Price anchors:**
+- Campus wear $40–$250
+- Business casual $150–$600
+- Suits $900–$6,000
+- Shoes $120–$2,500
+- Watches $300–$80,000 (the status ladder)
+- Desk items $50–$3,000
+- Furniture $400–$25,000
+- Art $2,000–$150,000
+
+Weekly living cost (deducted per review window, by region/family): $50–$400 for students, scaling to about
+2% of review-window income later. It never pushes cash below $0.
+
 Launch products (8): Profile Reroll 49 (developer product, paid random, odds disclosed, policy
 gated), Background Rebuild 99 (developer product), Career Reinstatement 129 (developer product),
 Capital Reconstruction 79 (developer product), Season Pass Premium 229 (developer product, one

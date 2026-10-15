@@ -527,6 +527,7 @@ function Kit.windowGrid(parent: Instance, o: WindowGridOpts): Model
 						Enum.Material.Neon
 					)
 					pane.Transparency = 0.35
+					pane:AddTag("LitWindow")
 				end
 			end
 		end

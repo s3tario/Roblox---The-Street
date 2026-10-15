@@ -186,7 +186,20 @@ ProfileService:AddRefreshToken(player, n, source)
 ProfileService:GetStats(player) -> {quant, communication, discipline, risk, network}
 ActivityService:GetActiveSeconds(player) -> number       -- lifetime active seconds (AFK excluded)
 ActivityService.ActiveTick : Signal(player, deltaSec)    -- every 10 s while active
+CareerService:GetBoardValues(player) -> {prestige, deal, comeback, fastestRunSec?}  -- read by LeaderboardService
 ```
+
+Derived fields that CareerService keeps in `data.career` for the HUD (replicated): `roleTitle`, `rank`,
+`xpToNext`, `windowRemaining` (active seconds left in the review window), `reviewPreview` (estimated
+score so far), `promotion = {ready, missing = {string}}`.
+
+**Promotion evaluations.** Leaving role R needs task `eval_<R>` to be passed (quality >= 70). These exist for
+`intern analyst associate vp director` (work), the realm bands `eval_pe_associate eval_pe_vp eval_pe_principal`,
+and the hf/vc/re/cd equivalents (realmsA: pe hf vc; realmsB: re cd), plus `eval_partner eval_senior_partner`
+(realmsB). Students are hired through the campus Superday (`superday_interview`, tutorial calls
+`CareerService:HireIntern`). MD leaves the IB track through Career Services (realm choice) once the
+`ipo` signature is done. Band 3 to partner needs the realm signature project. Senior partner to founder
+needs the `partner_firm` signature.
 
 ## 5. Market and portfolio (owned by `market`)
 
@@ -224,7 +237,9 @@ EconomyService:GetCash(player) -> number
 EconomyService:AddCash(player, amount, source, kind?)    -- kind "salary"|"bonus"|"reward"|"refund"; salary/bonus apply EventService salaryMult
 EconomyService:SpendCash(player, amount, reason) -> boolean
 EconomyService.CashChanged : Signal(player, newCash, delta)
-HousingService:GetAssignment(player) -> {unit = n?, desk = n?, office = n?}
+HousingService:GetAssignment(player) -> {unit = n?, desk = n?, office = n?, firm = n?, context = "dorm"|"apartment"}
+ShopService:GrantItem(player, itemId, source) -> boolean -- wearable (via WardrobeService:Grant) or decor id; used by monetization/season/events
+EconomyService:ChargeLiving(player, amount) -> number    -- deducts up to the balance (never below 0); returns charged
 ```
 
 Catalog items (wardrobe and decor) are bought through `Shop.Buy` (`ShopService`), which checks price,
@@ -246,7 +261,14 @@ return {
 }
 ```
 
-Both functions are pure (no services). The secret never leaves the server. Reward:
+Both functions are pure (no services). The secret never leaves the server.
+
+```lua
+WorkService:OfferTask(player, taskId, opts?) -> boolean   -- puts a specific task on the player's board (tutorial, events, career services)
+WorkService:StartTask(player, taskId) -> (instanceId?, err?)  -- server-initiated start (opens the runner on the client)
+WorkService.TaskCompleted : Signal(player, taskId, result)    -- result = {quality, onTime, xp, pay, category}
+WorkService:GetLastTaskTime(player) -> number?            -- unix time of the last completed task (CEO walkthrough)
+``` Reward:
 `xp = baseXp * qualityFactor * roleScale`, and `pay` likewise, times `EventService:GetModifier("taskPayMult")`.
 Every completion calls `CareerService:RecordWork`, `CareerService:TrainStat`, `EconomyService:AddCash(..., "salary")`
 and `SeasonService:AddSeasonXP`.
@@ -355,6 +377,10 @@ tag `EventSpot`; `Kit.spawn(parent, "Spawn_campus" | "Spawn_street", cf)` → Sp
 carry `DeskSlot`/`OfficeSlot`/`UnitSlot`/`FirmSlot` attributes and a tag of the same name; decor slots carry
 `DecorSlot` + `SlotKind` and tag `DecorSlot`. Exact counts are in `World.housing`. NPC ids per zone are in
 `World.npcSpots`, event spots per zone in `World.eventSpots`.
+
+Lighting tags used by events (Blackout Evening, Thunderstorm): world builders tag every street/park lamp light
+source **part** with `StreetLight` (its Light children get switched off). `Kit.windowGrid` lit panes are already
+tagged `LitWindow`. Interior ceiling light parts get `InteriorLight` (dimmed and flickered during a fire drill).
 
 ## 12. Feature ownership
 
