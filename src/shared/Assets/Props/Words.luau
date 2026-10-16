@@ -40,14 +40,22 @@ Words.headlines = {
 }
 
 Words.emails = {
-	{ "M. Vance", "RE: Pitchbook v14 - turn comments" },
-	{ "Staffing", "You're staffed on Project Atlas" },
-	{ "J. Okafor", "Comps need refresh by 7am" },
-	{ "HR", "Reminder: review window closes Fri" },
-	{ "Deal Team", "Model check - circularity off?" },
-	{ "Facilities", "Pizza in the 12th floor kitchen" },
-	{ "R. Lindqvist", "Can you hop on a call?" },
+	{ from = "M. Vance", subject = "RE: Pitchbook v14 - turn comments" },
+	{ from = "Staffing", subject = "You're staffed on Project Atlas" },
+	{ from = "J. Okafor", subject = "Comps need refresh by 7am" },
+	{ from = "HR", subject = "Reminder: review window closes Fri" },
+	{ from = "Deal Team", subject = "Model check - circularity off?" },
+	{ from = "Facilities", subject = "Pizza in the 12th floor kitchen" },
+	{ from = "R. Lindqvist", subject = "Can you hop on a call?" },
 }
+
+Words.sheetRows = { "Revenue", "EBITDA", "Margin", "Capex", "FCF", "EV/EBITDA", "IRR" }
+Words.deckTitles = { "Situation Overview", "Valuation Summary", "Buyer Universe", "Transaction Timeline" }
+Words.deckBullets = "- Market leader\n- 22% EBITDA margin\n- Clear path to IPO"
+Words.confidential = "STRICTLY CONFIDENTIAL"
+Words.breaking = "BREAKING"
+Words.paperName = "THE STREET LEDGER"
+Words.adFooter = "NOW ON THE STREET"
 
 Words.whiteboard = {
 	"Q3 PIPELINE",

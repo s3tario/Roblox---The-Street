@@ -24,7 +24,7 @@ export type Ctx = {
 	cf: CFrame,
 	o: Opts,
 	rng: Rng.Rng,
-	usePart: BasePart?,
+	usePos: Vector3?,
 	at: (lcf: CFrame) -> CFrame,
 	part: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> Part,
 	detail: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> Part,
@@ -38,12 +38,13 @@ export type Ctx = {
 	dball: (lcf: CFrame, d: number, color: Color3, mat: Enum.Material?) -> Part,
 	wedge: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> WedgePart,
 	dwedge: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> WedgePart,
-	cwedge: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> CornerWedgePart,
 	glow: (lcf: CFrame, size: Vector3, color: Color3, transparency: number?) -> Part,
 	glass: (lcf: CFrame, size: Vector3, color: Color3, transparency: number?, collide: boolean?) -> Part,
 	seat: (lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?) -> BasePart,
 	light: (part: BasePart, kind: string, props: { [string]: any }?) -> Light,
-	use: (part: BasePart) -> (),
+	sign: (part: BasePart, text: string, opts: Kit.SignOpts?) -> TextLabel,
+	tag: (inst: Instance, tagName: string) -> (),
+	use: (pos: Vector3) -> (),
 	sub: (id: string, lcf: CFrame, opts: Opts?) -> Model,
 	color: (key: string, default: Color3) -> Color3,
 	num: (key: string, default: number, lo: number, hi: number) -> number,
@@ -54,14 +55,20 @@ export type Ctx = {
 	colors: (key: string, default: { Color3 }) -> { Color3 },
 }
 
+-- mount: where cf sits relative to the prop.
+--   "floor"   (default) cf = centre of the floor contact; the prop extends up and is centred in X/Z.
+--   "desk"    same as floor, but meant for a desk or table top (place cf on the surface).
+--   "wall"    cf = bottom-centre of the prop's BACK face; the prop extends up (+Y) and forward (-Z).
+--   "ceiling" cf = the LOWEST point of the fixture; it extends up by footprint.Y to the ceiling.
 export type Def = {
 	id: string,
 	category: string,
 	footprint: Vector3,
 	maxParts: number,
 	tags: { string },
-	mount: string?, -- "floor" (default) | "wall" | "desk" | "ceiling"
-	scaling: string?, -- option name that scales the prop's size and part count
+	mount: string?,
+	surface: number?, -- height of the usable top surface (desks, tables, counters, shelves)
+	scales: { string }?, -- option names that change size and part count (maxParts covers their full range)
 	build: (c: Ctx) -> (),
 }
 
@@ -86,7 +93,18 @@ function Common.PR(x: number, y: number, z: number, rx: number, ry: number, rz: 
 	return CFrame.new(x, y, z) * CFrame.Angles(rad(rx), rad(ry), rad(rz))
 end
 
-Common.V = Vector3.new
+-- CFrame centred between two local points with its Z axis running from a to b (for struts and tubes).
+function Common.between(a: Vector3, b: Vector3): (CFrame, number)
+	local mid = (a + b) / 2
+	local len = (b - a).Magnitude
+	if len < 1e-4 then
+		return CFrame.new(mid), 0
+	end
+	local dir = (b - a).Unit
+	-- CFrame.lookAt degenerates when the direction is vertical, so pick a safe up vector.
+	local up = if math.abs(dir.Y) > 0.99 then Vector3.new(0, 0, 1) else Vector3.new(0, 1, 0)
+	return CFrame.lookAt(mid, b, up), len
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Colours and finishes
@@ -106,6 +124,7 @@ Common.col = {
 	fabricGrey = hex("#5C6168"),
 	fabricCharcoal = hex("#3A3D42"),
 	fabricNavy = hex("#22345A"),
+	fabricOat = hex("#B9AD98"),
 	leatherBlack = hex("#1E1B19"),
 	leatherBrown = hex("#4A2F22"),
 	leatherCognac = hex("#8A4F2A"),
@@ -127,6 +146,9 @@ Common.col = {
 	trunk = hex("#5A4030"),
 	rubber = hex("#1B1B1C"),
 	warmBulb = hex("#FFD9A0"),
+	vinylRed = hex("#A3242C"),
+	diner = hex("#D9D3C4"),
+	lucite = hex("#DDEBF2"),
 }
 
 export type Finish = {
@@ -217,7 +239,7 @@ end
 
 function Common.optNum(o: Opts, key: string, default: number, lo: number, hi: number): number
 	local v = o[key]
-	if type(v) ~= "number" or v ~= v then
+	if type(v) ~= "number" or v ~= v or v == math.huge or v == -math.huge then
 		return default
 	end
 	return math.clamp(v, lo, hi)
@@ -250,10 +272,10 @@ function Common.optStr(o: Opts, key: string, default: string, maxLen: number?): 
 	return v
 end
 
--- opts[key] may be one of `choices` (string) or a 1-based index into it.
+-- opts[key] may be one of `choices` (string, case-insensitive) or a 1-based index into it.
 function Common.optPick(o: Opts, key: string, choices: { string }, default: string): string
 	local v = o[key]
-	if type(v) == "number" then
+	if type(v) == "number" and v == v then
 		local i = math.floor(v)
 		if i >= 1 and i <= #choices then
 			return choices[i]
@@ -301,6 +323,7 @@ local function noCollide(p: BasePart)
 	p.CanQuery = false
 	p.CanTouch = false
 end
+Common.noCollide = noCollide
 
 local function makeCyl(parent: Instance, wcf: CFrame, len: number, d: number, color: Color3, mat: Enum.Material?): Part
 	-- Roblox cylinders run along the part's X axis.
@@ -319,7 +342,7 @@ function Common.ctx(m: Instance, cf: CFrame, o: Opts, rng: Rng.Rng, id: string, 
 	c.cf = cf
 	c.o = o
 	c.rng = rng
-	c.usePart = nil
+	c.usePos = nil
 
 	function c.at(lcf: CFrame): CFrame
 		return cf * lcf
@@ -377,11 +400,6 @@ function Common.ctx(m: Instance, cf: CFrame, o: Opts, rng: Rng.Rng, id: string, 
 		p.CastShadow = size.Magnitude > 4
 		return p
 	end
-	function c.cwedge(lcf: CFrame, size: Vector3, color: Color3, mat: Enum.Material?): CornerWedgePart
-		local p = Kit.cornerWedge(m, cf * lcf, size, color, mat, NO_COLLIDE)
-		p.CastShadow = size.Magnitude > 4
-		return p
-	end
 	function c.glow(lcf: CFrame, size: Vector3, color: Color3, transparency: number?): Part
 		local p = Kit.detail(m, cf * lcf, size, color, Enum.Material.Neon)
 		p.Transparency = transparency or 0
@@ -416,10 +434,14 @@ function Common.ctx(m: Instance, cf: CFrame, o: Opts, rng: Rng.Rng, id: string, 
 	function c.light(part: BasePart, kind: string, props: { [string]: any }?): Light
 		return Kit.light(part, kind, props)
 	end
-	function c.use(part: BasePart)
-		if c.usePart == nil then
-			c.usePart = part
-		end
+	function c.sign(part: BasePart, text: string, signOpts: Kit.SignOpts?): TextLabel
+		return Kit.sign(part, text, signOpts)
+	end
+	function c.tag(inst: Instance, tagName: string)
+		inst:AddTag(tagName)
+	end
+	function c.use(pos: Vector3)
+		c.usePos = pos
 	end
 	function c.sub(subId: string, lcf: CFrame, subOpts: Opts?): Model
 		assert(subBuilder, "Props: sub-builds are not available in this context")
@@ -471,6 +493,15 @@ function Common.shell(name: string, cf: CFrame): (Model, Part)
 	return model, root
 end
 
+-- Adds the "Use" attachment (where runtime code should parent a ProximityPrompt) under `root`.
+function Common.useAttachment(root: BasePart, localPos: Vector3): Attachment
+	local a = Instance.new("Attachment")
+	a.Name = "Use"
+	a.Position = localPos
+	a.Parent = root
+	return a
+end
+
 -- Axis-aligned bounds of every BasePart under `root`, measured in `cf`'s local space.
 -- Returns (min, max); both zero when there are no parts. `skip` excludes one part (the Root).
 function Common.localBounds(root: Instance, cf: CFrame, skip: BasePart?): (Vector3, Vector3)
@@ -502,133 +533,6 @@ function Common.localBounds(root: Instance, cf: CFrame, skip: BasePart?): (Vecto
 		return Vector3.zero, Vector3.zero
 	end
 	return Vector3.new(minX, minY, minZ), Vector3.new(maxX, maxY, maxZ)
-end
-
----------------------------------------------------------------------------------------------------
--- Reusable composite shapes
----------------------------------------------------------------------------------------------------
--- Four legs under a rectangle of width w (X) and depth d (Z), legs of height h, inset from the edges.
-function Common.legs4(c: Ctx, w: number, d: number, h: number, t: number, color: Color3, mat: Enum.Material?, inset: number?)
-	local i = inset or t
-	local x = w / 2 - i - t / 2
-	local z = d / 2 - i - t / 2
-	for _, sx in { -1, 1 } do
-		for _, sz in { -1, 1 } do
-			c.detail(Common.P(sx * x, h / 2, sz * z), Vector3.new(t, h, t), color, mat)
-		end
-	end
-end
-
--- Four round legs.
-function Common.roundLegs4(
-	c: Ctx,
-	w: number,
-	d: number,
-	h: number,
-	dia: number,
-	color: Color3,
-	mat: Enum.Material?,
-	inset: number?
-)
-	local i = inset or dia
-	local x = w / 2 - i
-	local z = d / 2 - i
-	for _, sx in { -1, 1 } do
-		for _, sz in { -1, 1 } do
-			c.dcyl(Common.P(sx * x, h / 2, sz * z), h, dia, color, mat)
-		end
-	end
-end
-
--- Rectangular frame of four strips around a w x h opening centred at `lcf` (in its XY plane).
--- `t` = strip width, `depth` = strip depth along Z.
-function Common.frameRect(
-	c: Ctx,
-	lcf: CFrame,
-	w: number,
-	h: number,
-	t: number,
-	depth: number,
-	color: Color3,
-	mat: Enum.Material?
-)
-	c.detail(lcf * CFrame.new(0, h / 2 + t / 2, 0), Vector3.new(w + t * 2, t, depth), color, mat)
-	c.detail(lcf * CFrame.new(0, -h / 2 - t / 2, 0), Vector3.new(w + t * 2, t, depth), color, mat)
-	c.detail(lcf * CFrame.new(-w / 2 - t / 2, 0, 0), Vector3.new(t, h, depth), color, mat)
-	c.detail(lcf * CFrame.new(w / 2 + t / 2, 0, 0), Vector3.new(t, h, depth), color, mat)
-end
-
--- Five-star office chair base with casters; returns the hub height.
-function Common.starBase(c: Ctx, radius: number, color: Color3, mat: Enum.Material?, casterColor: Color3?): number
-	local hubY = 0.42
-	local spoke = radius - 0.12
-	for i = 0, 4 do
-		local a = i * 72
-		local rot = Common.R(0, a, 0)
-		c.detail(rot * CFrame.new(0, hubY - 0.04, -spoke / 2) * Common.R(-6, 0, 0), Vector3.new(0.2, 0.12, spoke), color, mat)
-		c.dball(rot * CFrame.new(0, 0.14, -spoke), 0.28, casterColor or Common.col.plasticBlack, Enum.Material.SmoothPlastic)
-	end
-	c.dcyl(Common.P(0, hubY, 0), 0.22, 0.42, color, mat)
-	return hubY
-end
-
--- Bicycle standing upright, wheels along local Z, centred at lcf (floor contact). ~11 parts.
-function Common.bike(c: Ctx, lcf: CFrame, frameColor: Color3, opts: { basket: boolean? }?)
-	local P = Common.P
-	local R = Common.R
-	local wheelD = 2.3
-	local r = wheelD / 2
-	local tire = Common.col.rubber
-	local metal = Common.col.chrome
-	local front, back = -1.75, 1.75
-	-- wheels (discs along X so the flat faces point sideways)
-	c.dcylX(lcf * P(0, r, front), 0.14, wheelD, tire, Enum.Material.Rubber)
-	c.dcylX(lcf * P(0, r, back), 0.14, wheelD, tire, Enum.Material.Rubber)
-	c.dcylX(lcf * P(0, r, front), 0.18, 0.5, metal, Enum.Material.Metal)
-	c.dcylX(lcf * P(0, r, back), 0.18, 0.5, metal, Enum.Material.Metal)
-	-- frame: down tube, top tube, seat tube, chain stay
-	local bb = Vector3.new(0, r - 0.1, 0.25) -- bottom bracket
-	local head = Vector3.new(0, r + 1.25, front + 0.55)
-	local seatTop = Vector3.new(0, r + 1.35, back - 0.95)
-	local function tube(a: Vector3, b: Vector3, t: number)
-		local mid = (a + b) / 2
-		local len = (b - a).Magnitude
-		c.detail(lcf * CFrame.lookAt(mid, b), Vector3.new(t, t, len), frameColor, Enum.Material.Metal)
-	end
-	tube(bb, head, 0.16)
-	tube(head - Vector3.new(0, 0.15, 0), seatTop, 0.14)
-	tube(bb, seatTop, 0.14)
-	tube(bb, Vector3.new(0, r, back), 0.1)
-	-- fork + handlebar + saddle
-	tube(head, Vector3.new(0, r, front), 0.12)
-	c.dcylX(lcf * P(0, head.Y + 0.35, head.Z + 0.1), 1.3, 0.1, Common.col.frameDark, Enum.Material.Metal)
-	c.detail(lcf * P(0, seatTop.Y + 0.12, seatTop.Z) * R(0, 0, 0), Vector3.new(0.35, 0.12, 0.7), Common.col.plasticBlack)
-	if opts and opts.basket then
-		c.detail(lcf * P(0, head.Y + 0.05, front - 0.25), Vector3.new(0.9, 0.55, 0.65), frameColor, Enum.Material.Metal)
-	end
-end
-
--- Wine/liquor bottle (2 parts): body + neck, base at lcf.
-function Common.bottle(c: Ctx, lcf: CFrame, h: number, d: number, color: Color3, glassy: boolean?)
-	local mat = if glassy then Enum.Material.Glass else Enum.Material.SmoothPlastic
-	local body = c.dcyl(lcf * Common.P(0, h * 0.34, 0), h * 0.68, d, color, mat)
-	local neck = c.dcyl(lcf * Common.P(0, h * 0.82, 0), h * 0.36, d * 0.36, color, mat)
-	if glassy then
-		body.Transparency = 0.15
-		neck.Transparency = 0.15
-	end
-end
-
--- Leafy foliage cluster of `n` balls around lcf, radius `spread`, sizes in [lo, hi].
-function Common.foliage(c: Ctx, lcf: CFrame, n: number, spread: number, lo: number, hi: number, palette: { Color3 }?)
-	local pal = palette or { Common.col.leaf, Common.col.leafLight, Common.col.leafDark }
-	for i = 1, n do
-		local a = (i / n) * math.pi * 2 + c.rng:range(-0.4, 0.4)
-		local rr = if i == 1 then 0 else spread * c.rng:range(0.45, 1)
-		local y = if i == 1 then 0 else c.rng:range(-spread * 0.45, spread * 0.5)
-		local d = c.rng:range(lo, hi)
-		c.dball(lcf * Common.P(math.cos(a) * rr, y, math.sin(a) * rr), d, pal[(i - 1) % #pal + 1], Enum.Material.Grass)
-	end
 end
 
 return Common
