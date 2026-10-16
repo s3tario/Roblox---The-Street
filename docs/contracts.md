@@ -117,8 +117,8 @@ missing fields from the template, so adding fields is always safe.
 | Key | Owner | Contents (minimum other features may read) |
 |---|---|---|
 | `meta` | data | `{ schema, createdAt, lastSeen, sessions, activeSec, backupDay, backupSlot }` |
-| `profile` | career | `{ built, background = {school, gpa, major, region, family, strengths}, stats = {quant, communication, discipline, risk, network}, statXp = {}, refreshTokens, freeRerollUsed, credits = {reroll, rebuild} }` |
-| `career` | career | `{ level, xp, roleId, track, status, reputation, rank, reviews = {}, signatures = {}, prestige, wipeouts, comebacks, history = {}, windowStartActive, lastReview }` |
+| `profile` | career | `{ built, firstName (filtered), familyName, school = {id, rarity}, family = {id, rarity}, gpa, clubs = {clubId}, stats = {knowledge, skill, speed, charisma, network, discipline, risk, luck}, statXp = {}, outfitRoll = {brand, rarity, itemIds}, rerollsLeft, refreshTokens, credits = {reroll, rebuild}, pending = <unlocked roll> }` |
+| `career` | career | `{ level, xp, roleId, track, status, reputation, rank, firmId, week, weekday, reviews = {}, signatures = {}, prestige, wipeouts, comebacks, history = {}, windowStartActive, lastReview, offers = {}, rival = {...}, streak = {day, count} }` |
 | `portfolio` | market | `{ seasonId, cash, positions = {[ticker] = {shares, avgCost}}, bookSize, realized, trades = {}, flows = {}, peakEquity, violations, credits = {capital}, paidCapital }` |
 | `work` | work | `{ completed = {[taskId] = n}, quality = {}, coreDone, lastTaskAt, cooldowns = {}, deal = nil }` |
 | `realms` | realms | `{ [projectOrRealmId] = state }` |
@@ -166,6 +166,25 @@ display titles.
 
 Realm ids: `ib pe hf vc re cd`. Status values: `active review_due coaching probation fired`.
 
+**Life Roll and firms (owner v2, spec §4 and §4b).** Rarity ids are `common uncommon rare legendary mythic`.
+`Shared/Config/Rarity.luau` (career-owned) gives `{id, name, odds, color, order}` and is shared by every rarity UI.
+`Shared/Config/LifeRoll.luau` (career) holds schools, families, clubs and stat rules. `Shared/Config/Firms.luau`
+(career) holds `Firms.list[firmId] = {id, name, short, tier, realm, colors = {primary, accent}, payMult, bookMult,
+prestigeMult, dressCode, eligibility, culture, tagline}`. Pure logic lives in `Logic/LifeRoll` (rolls, single-field
+rerolls, odds tables) and `Logic/Recruiting` (eligibility, offer odds).
+
+```lua
+CareerService:GetFirm(player) -> firmDef?              -- nil for students
+CareerService:GetStat(player, statId) -> number         -- knowledge skill speed charisma network discipline risk luck
+CareerService:GrantOffer(player, firmId, source)       -- recruiting/headhunter (tutorial and career)
+CareerService:AcceptOffer(player, firmId) -> ok, err   -- students: HireIntern at that firm; employed: lateral move
+CareerService:GetWeek(player) -> (week, weekday)       -- "Week 12 · Wed"
+```
+
+Wardrobe Catalog items have `brand` and `rarity` fields. `Catalog.rollPools[rarity] = { {brand, itemIds = {...}}, ... }`
+(the starting outfit roll; Mythic has exactly one entry). The Life Roll grants the rolled items through
+`WardrobeService:Grant`.
+
 `Shared/Config/Careers.luau` exports:
 - `Careers.roles[roleId] = {id, title, rank, minLevel, maxLevel, realm, bookSize, salary, perks}`
 - `Careers.rankOf(roleId)`
@@ -192,7 +211,7 @@ CareerService:HireIntern(player)                         -- called by tutorial w
 CareerService:GrantReinstatementCredit(player)           -- monetization (receipt-safe, idempotent per call)
 ProfileService:GrantCredit(player, "reroll" | "rebuild") -- monetization
 ProfileService:AddRefreshToken(player, n, source)
-ProfileService:GetStats(player) -> {quant, communication, discipline, risk, network}
+ProfileService:GetStats(player) -> {knowledge, skill, speed, charisma, network, discipline, risk, luck}
 ActivityService:GetActiveSeconds(player) -> number       -- lifetime active seconds (AFK excluded)
 ActivityService.ActiveTick : Signal(player, deltaSec)    -- every 10 s while active
 CareerService:GetBoardValues(player) -> {prestige, deal, comeback, fastestRunSec?}  -- read by LeaderboardService
@@ -323,8 +342,8 @@ State persists in `data.realms[projectId]`. Completion of a `signature` project 
 
 ## 9. Wardrobe, characters, NPC rigs (owned by `wardrobe`)
 
-`Shared/Config/Catalog.luau` exports `Catalog.items[itemId] = {id, name, slot, category, price, currency = "cash"|"pass",
-pass?, minRank?, colors, builder, tier, desc}`. Slots: `top outer bottom shoes neck wrist eyes head bag`.
+`Shared/Config/Catalog` exports `Catalog.items[itemId] = {id, name, slot, category, price, currency = "cash"|"pass"|"roll"|"heirloom",
+pass?, minRank?, colors, builder, tier, brand, rarity, desc}`, `Catalog.brands`, `Catalog.rollPools` (see §4). Slots: `top outer bottom shoes neck wrist eyes head bag`.
 
 ```lua
 Wardrobe.apply(character: Model, equipped: {[slot] = itemId}, opts) -- Shared/Assets/Wardrobe/init.luau; bake-safe; builds fitted layers into folder "CareerLook"
@@ -387,6 +406,10 @@ carry `DeskSlot`/`OfficeSlot`/`UnitSlot`/`FirmSlot` attributes and a tag of the 
 `DecorSlot` + `SlotKind` and tag `DecorSlot`. Exact counts are in `World.housing`. NPC ids per zone are in
 `World.npcSpots`, event spots per zone in `World.eventSpots`.
 
+Firm branding: signage parts inside shared firm interiors (HQ lobby, floors, realm offices) carry tag `FirmBrand`
+with a SurfaceGui TextLabel named `BrandText` and optionally a coloured part tagged `FirmColor`. Each client
+re-skins them locally with its own player's firm (WorldController).
+
 Lighting tags used by events (Blackout Evening, Thunderstorm): world builders tag every street/park lamp light
 source **part** with `StreetLight` (its Light children get switched off). `Kit.windowGrid` lit panes are already
 tagged `LitWindow`. Interior ceiling light parts get `InteriorLight` (dimmed and flickered during a fire drill).
@@ -401,7 +424,7 @@ tagged `LitWindow`. Interior ceiling light parts get `InteriorLight` (dimmed and
 | props | `Shared/Assets/Props/*`, `Shared/Assets/Signs/*` (desks, chairs, monitors, lamps, plants, sofas, shelves, cabinets, street furniture, vehicles, signage) |
 | wardrobe | `Config/Catalog` (wearables), `Assets/Wardrobe/*`, `Assets/Npc/*`, `WardrobeService`, `WardrobeController`, `UI/Screens/Wardrobe`, `tools/clothing/*`, `Config/ClothingIds`, `DataTemplate/Inventory` |
 | market | `Config/Companies`, `Logic/Market*`, `Logic/Portfolio*`, `MarketService`, `PortfolioService`, `TerminalController`, `UI/Screens/Terminal`, `DataTemplate/Portfolio` |
-| career | `Config/Careers`, `Config/Backgrounds`, `Logic/ProfileGen`, `Logic/Leveling`, `Logic/Review`, `Logic/CareerState`, `ProfileService`, `CareerService`, `ReviewService`, `ActivityService`, `UI/Screens/ProfileBuilder`, `UI/Screens/Career`, `UI/Screens/CareerServices`, `Logic/Projects/reentry`, `DataTemplate/Profile`, `DataTemplate/Career` |
+| career | `Config/Careers`, `Config/Rarity`, `Config/LifeRoll`, `Config/Firms`, `Logic/LifeRoll`, `Logic/Recruiting`, `Logic/Leveling`, `Logic/Review`, `Logic/CareerState`, `Logic/FitScore`, `Logic/Rival`, `ProfileService`, `CareerService`, `ReviewService`, `ActivityService`, `CareerController`, `UI/Screens/LifeRoll`, `UI/Screens/Career`, `UI/Screens/CareerServices`, `UI/Screens/Offers`, `UI/Screens/MorningBrief`, `Logic/Projects/reentry`, `DataTemplate/Profile`, `DataTemplate/Career`, `DataTemplate/AltCareers` |
 | work | `Config/Tasks`, `Logic/Tasks/*` (student, intern, analyst, associate, VP/MD, evaluation), `WorkService`, `WorkController`, `UI/WorkKinds/*`, `UI/Screens/Work`, `Logic/Projects/ipo`, `DataTemplate/Work` |
 | realmsA | `ProjectService`, `ProjectController`, `UI/Screens/Project`, `Logic/Projects/pe_* hf_* vc_*`, `Config/Realms`, `DataTemplate/Realms` |
 | realmsB | `Logic/Projects/re_* cd_* partner_* contract_*`, `UI/Screens/Firm` |
@@ -413,7 +436,7 @@ tagged `LitWindow`. Interior ceiling light parts get `InteriorLight` (dimmed and
 | shop | `Config/Decor`, `Config/Shop`, `EconomyService`, `ShopService`, `HousingService`, `UI/Screens/Shop`, `UI/Screens/Housing`, `DataTemplate/Wallet`, `DataTemplate/Housing` |
 | monetization | `Config/Products`, `MonetizationService`, `SeasonService`, `Config/Season`, `UI/Screens/Store`, `UI/Screens/SeasonPass`, `DataTemplate/Season`, `DataTemplate/Entitlements`, `DataTemplate/Receipts` |
 | leaderboards | `Config/Leaderboards`, `LeaderboardService`, `AntiCheatService`, `UI/Screens/Leaderboards`, `DataTemplate/Boards`, `DataTemplate/Flags` |
-| tutorial | `TutorialService`, `QuestService`, `NpcService`, `DialogueService`, `SocialService`, `AchievementService`, `Config/Npcs`, `Config/Dialogue`, `Config/Quests`, `Config/Achievements`, `UI/Screens/Dialogue`, `UI/Screens/Quests`, `UI/Screens/ProfileCard`, `DataTemplate/Campus`, `DataTemplate/Achievements` |
+| tutorial | `TutorialService`, `QuestService`, `NpcService`, `DialogueService`, `SocialService`, `AchievementService`, `Config/Npcs`, `Config/Dialogue`, `Config/Quests`, `Config/Achievements`, `UI/Screens/Dialogue`, `UI/Screens/Quests`, `UI/Screens/ProfileCard`, `UI/Screens/Recruiting`, `DataTemplate/Campus`, `DataTemplate/Achievements` |
 
 Cross-feature calls not listed in §3–§11, documented by their owners:
 

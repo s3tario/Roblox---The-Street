@@ -17,15 +17,19 @@ is the authority for code interfaces.
 | Assets | Everything designed in-house: geometry from Parts/Wedges/Cylinders + built-in materials, signage/screens from SurfaceGui, clothing as fitted 3D layers + generated 2D Shirt/Pants templates (upload optional). No external asset IDs are required for the game to look complete. |
 | Visual arc | **Campus + tutorial = gritty** (college town, off the Street: brick, rust, cracked asphalt, overcast). **Getting into IB = polished city** (marble, glass, brass, warm crisp light). |
 | Random events | Four families, all included: weather/atmosphere, market shake-ups, bonus/social, chaos/fun. |
+| Life Roll (v2) | Spin school, family (rarity tiers Common to Mythic), stats and starting outfit; type a first name; 3 rerolls, each rerolling one field (§4). |
+| Firms (v2) | Recruiting yields job offers from fictional parody firms (MG Freeman, Anaeio, ...) based on school, GPA and stats (§4b). |
+| Extras (v2) | Fit Score and dress codes, Rival, Morning Brief streak, deal-toy shelf, mentorship, headhunters, Mythic moments (§16). |
 
 ## 2. Player journey (first hour, then the long arc)
 
 1. **Arrive** at Eastbridge Bus Depot on the edge of campus (gritty). Overcast, flickering lamps.
-2. **Profile Builder** (Career Center): three background packages are rolled; one free reroll;
-   compare full cards; lock in. Odds of every outcome are visible on the card screen.
+2. **Life Roll** (Career Center): type your first name, then spin school, family, stats and starting outfit, each
+   with a rarity tier (Common to Mythic, odds always shown). Spend 3 single-field rerolls, then lock in (§4).
 3. **Student life (L1–8, ~0–3 h):** Academics assignment (GPA-gated), Finance Club mock stock
-   pitch, networking events (NPCs + players), coffee chats, mock interviews, then a Superday
-   at Sterling & Vance. Offer → **Subway ride to Wall Street** (visual arc switch).
+   pitch, networking events (NPCs + players), coffee chats, mock interviews, then **recruiting**: apply to
+   firms, first rounds and Superdays, collect offers and accept one (§4b). Offer → **Subway ride to Wall Street**
+   (visual arc switch).
 4. **IB Intern (L9–15):** pitchbook formatting, research notes, data cleanup; firm opens a
    practice book in the fictional market.
 5. **Analyst → Associate → VP/Director/MD (L16–50):** comps, DCF, earnings reactions, deal
@@ -64,26 +68,134 @@ like with like. Market shake-up events come from the same seed, so a "Crazy Day"
 everywhere at once. At season rollover all positions are closed at the final close, cash is kept,
 and the new season's market starts.
 
-## 4. Profile roll (blueprint §02–03)
+## 4. The Life Roll (owner v2 design; replaces the blueprint's three-package roll)
 
-- Fields and outcome pools exactly as the blueprint lists: School tier (5), GPA 2.70–4.00
-  (triangular distribution peaking near 3.45), Major (6), Hometown/Region (4), Family background (4),
-  Natural strengths (pick 1–2 of 5).
-- Stats Quant, Communication, Discipline, Risk Judgement, Network: 1–10. Each background package
-  is built so the **sum of stat points is 25 ± 1** and the "expected power over the first 10 hours"
-  score (a weighted sum the tests compute) stays within ±5% across all packages: the fairness
-  constraint.
-- What each field changes (and never changes):
-  - School tier → interview invite count and Superday odds. Never market returns.
-  - GPA → interview eligibility threshold and the Academics assignment difficulty.
-  - Major → one starting stat bonus and the tutorial explanation style (quant/verbal/visual tips).
-  - Region → networking contacts, living cost (weekly cash expense), region contacts.
-  - Family → starting cash safety net (low impact: $500–$2,000) and mentor access, plus lifestyle cost.
-- Rerolls: 3 candidates at setup + 1 free reroll. **Profile Refresh** tokens are earned from
-  campus challenge completion, seasonal goals, and milestones at L10/L30/L50. Paid **Profile
-  Reroll** (49 R$) shows all outcomes and odds and is gated by `PolicyService`
-  (`ArePaidRandomItemsRestricted`); restricted players see only the deterministic option.
-  **Background Rebuild** (99 R$) is a deterministic editor.
+Character creation is a spin-the-reels moment: exciting, readable and honest about its odds.
+
+**Flow (Life Roll screen at the Eastbridge Career Center, first join):**
+1. **Name.** The player types a first name, 2–16 letters. It's filtered with `TextService:FilterStringAsync` and
+   shown filtered to others (Roblox requires this). Their family name comes from the family roll, so the card
+   reads "Maya Kennerly".
+2. **Spin School.** A slot-reel animation lands on a school with a rarity.
+3. **Spin Family.** Same, for the family background.
+4. **Spin Stats.** GPA, clubs and the eight skill stats roll together in one reel burst.
+5. **Spin Starting Outfit.** A clothing brand and item with a rarity.
+6. **Rerolls.** The player has **3 free rerolls; each one rerolls exactly ONE field** they pick (school, family,
+   GPA, clubs, one stat, or the outfit). Then they lock in. Extra rerolls come from earned Profile Refresh tokens
+   or the paid Profile Reroll product (one field per purchase, with odds disclosed and PolicyService gating).
+   Background Rebuild (deterministic editor) stays available.
+
+**Rarity tiers and odds** (the same table for every rolled field that has rarity, always visible on screen):
+
+| Tier | Odds | Colour |
+|---|---|---|
+| Common | 55% | grey |
+| Uncommon | 25% | green |
+| Rare | 13% | blue |
+| Legendary | 6% | gold |
+| Mythic | 1% | prismatic magenta/cyan gradient |
+
+Common pools hold many options; each higher tier holds fewer; **Mythic holds exactly one option**. A Mythic roll
+triggers a server-wide announcement banner. All names are fictional parodies (no real people, brands or schools).
+
+**Schools** (affect recruiting: which firms will interview you, base offer odds, Academics difficulty):
+
+| Tier | Schools |
+|---|---|
+| Common | Eastbridge State, Coastal Community College, Midvale University, Riverbend College, Pinecrest State, Union Valley Tech |
+| Uncommon | Lakeshore University, Granite Institute of Technology, Harborview College |
+| Rare | Northfield University, Ridgemont University |
+| Legendary | Whartonia School of Business, Stanfjord University |
+| Mythic | Harvale University |
+
+**Families** (named as parodies of famous dynasties). Family affects lifestyle and connections, never
+performance: starting cash, an extra Network bonus, recruiting "connections" (offer odds), weekly living cost,
+and a family heirloom cosmetic at Rare and above. It never touches market returns, review scoring or
+task grading.
+
+| Tier | Family names | Starting cash | Network bonus | Offer odds bonus | Heirloom |
+|---|---|---|---|---|---|
+| Common | Williams, Johnson, Smith, Garcia, Nguyen, Brown, Miller, Davis, Martinez, Lee, Patel, Okafor | $500 | +0 | +0% | — |
+| Uncommon | Carnaby, Hiltop, Hurst, Gettis | $2,000 | +1 | +3% | — |
+| Rare | Vandermont, DuMont, Mellonby | $6,000 | +1 | +6% | signet ring |
+| Legendary | Kennerly, Rockwell, Morganthal | $15,000 | +2 | +10% | vintage family watch |
+| Mythic | Vanderfeller | $40,000 | +3 | +15% | the Vanderfeller crest blazer |
+
+(The owner suggested "Rothsburger" for Mythic. We swapped it for "Vanderfeller" because Rothschild parodies are
+tied to antisemitic conspiracy tropes and would likely get the experience moderated.)
+
+**Stats.** Each is 1–10 and trainable through play:
+- **Knowledge**: finance concepts. Graded tasks show more hints.
+- **Skill**: Excel/modeling craft. Fill/spot tasks get tolerance help.
+- **Speed**: work speed. Task timers get +3% per point above 5.
+- **Charisma**: interviews, networking, pitches, dialogue success.
+- **Network**: contacts, offer odds, mentor access.
+- **Discipline**: deadlines, risk-limit warnings and living-cost resilience.
+- **Risk Sense**: starting risk-limit headroom and review risk-component guidance.
+- **Luck**: small cosmetic and event perks (golden briefcase hints, bonus spin on rare drops). Never returns or grades.
+
+The eight stats roll as a package summing to **40 ± 2**, so stats can't be maxed by luck. Rarity lives in school,
+family and outfit; stats are about shape, not size.
+
+**Other rolled fields:**
+- **GPA**: 2.70–4.00, triangular, peaking at 3.45. Gates firm interview cut-offs.
+- **Clubs**: 1–3 from Finance Club, Investment Society, Debate Team, Varsity Rowing, Startup Club, Student
+  Government, Quant Society, Model UN, each with a small stat or recruiting perk. For example, Investment
+  Society gives +1 Knowledge and unlocks a Superday tip; Varsity Rowing gives +1 Discipline and a +2% offer
+  bonus at some firms.
+
+**Starting outfit roll** (a full starter look branded by the rolled clothing brand; wardrobe Catalog
+`brand`/`rarity` fields):
+
+| Tier | Brands | Items in the pool |
+|---|---|---|
+| Common | Kevin Kroos, Old Harbor, Gapline, Hanesworth | many, about 12 |
+| Uncommon | J. Crewson, Plantain Republic, Tommy Hillford | about 7 |
+| Rare | Ralph Lorenzo, Brooks Brethren, Vineyard Wines, Patagonio | about 5 |
+| Legendary | Tom Fordham, Zegnatti, Bruno Cucina | 3 |
+| Mythic | William Kingsley | exactly 1: the William Kingsley Signature look |
+
+Rolled outfits are owned forever and are tradeable only as showpieces (no trading in this build).
+
+**Fairness, restated:** a great roll is a head start in money, looks and recruiting doors, not a better
+career engine. Grades, market results and reviews are skill-driven for everyone.
+
+## 4b. Weeks, recruiting and firms (owner v2)
+
+**Week-to-week rhythm.** Each review window is presented as a **work week**: Week N, Monday–Friday, with
+each workday = 8 active minutes. Work tasks refresh daily. **Friday** brings the paycheck (base salary +
+bonus), rent/living cost, and the weekly review. After the Friday review the "weekend" (the 60 s after-hours
+plus social events) runs. The HUD shows "Week 12 · Wed".
+
+**Recruiting (end of the campus tutorial).** The player applies to up to 5 firms on the campus Recruiting Board.
+Each firm sets eligibility (school tier, GPA cut-off, optional club or stat requirements). Eligible applications
+lead to a first-round interview task, then a Superday. Each firm makes an offer or not, based on interview
+quality, school, GPA, stats, family connections and the Recruiting Fair event bonus. The odds are shown
+honestly. The player may hold several offers and accepts one. With no offers, a "walk-on" path is always open:
+Sterling & Vance's regional desk hires anyone who passes its Superday at the base bar, so nobody soft-locks.
+
+**Firms** (fictional parodies). The firm decides branding, a pay multiplier, a book-size multiplier, prestige per
+week, culture (task volume) and dress code.
+
+| Tier | Firms | Pay x | Book x | Prestige x | Interviews from |
+|---|---|---|---|---|---|
+| Bulge Bracket | MG Freeman, Goldfield Saxe, Morrow Stanton, Merriweather Lynch | 1.00 | 1.2 | 1.3 | Rare+ school or GPA ≥ 3.6 |
+| Elite Boutique | Evermoor Partners, Lazaro Frères, Centerline Partners | 1.15 | 1.0 | 1.4 | Legendary+ school, or Rare + GPA ≥ 3.7 |
+| Middle Market | Harrow Williams, Blairmont & Co., Houlton Lockey | 0.90 | 0.9 | 1.0 | Uncommon+ or GPA ≥ 3.3 |
+| Regional | Sterling & Vance Regional, Eastbridge Capital Advisors | 0.80 | 0.8 | 0.8 | anyone |
+
+Specialist-realm exits (L50) offer firm choices too. PE: Bluestone Group, KRK Partners, Ironclad Capital.
+HF/Asset Management: Anaeio, Bridgecrest Associates, Citrine Capital, Quantum Ridge. VC: Sequel Capital,
+a17z, Seedline Ventures. Real Estate: Brookfold Properties, Keystone Realty. Corporate Development: Northwind
+Holdings, Applewood Industries.
+
+**Headhunters.** After two Star reviews in a row, headhunters call with lateral offers from a higher-tier firm
+at the same rank. Accepting switches firm branding and multipliers and keeps the career.
+
+**One shared tower, many brands.** The Street has a "Bank Row" of branded firm towers. Every IB firm's door
+leads into the shared HQ interior, and each player's client re-skins the interior signage (parts tagged
+`FirmBrand`) with their own firm's name and colours. Everyone works in "their" firm while still seeing each
+other. Realm offices do the same per realm.
 
 ## 5. Career and level curve (blueprint §04)
 
@@ -320,3 +432,24 @@ The Roblox engine can't run in the build container, so:
 - Real stock data
 - Mobile-specific haptics
 - Localization beyond English (all text goes through `Shared/Strings` so it can be added later)
+
+## 16. Additional features (owner asked for more ideas, v2)
+
+1. **Mythic moments.** Any Mythic roll (life roll, outfit, rare event drop) fires a server-wide banner and a
+   brief prismatic effect around the player.
+2. **Dress code and Fit Score.** Each firm has a dress code (Bulge Bracket: suit; Elite Boutique: suit with
+   tie; Middle Market: business casual; Regional: smart casual; VC: smart casual; PE/HF: business formal). The
+   outfit's Fit Score (tier and rarity of the equipped pieces plus dress-code match) shows on the profile card. A
+   matching outfit adds a small reputation bonus on client-facing tasks (pitch, mandate, roadshow), never on
+   graded quality. Fashion matters socially without buying success.
+3. **The Rival.** Every player gets a recurring NPC rival from their intake class (e.g. "Chad Whitmore III" or
+   "Priya Sharma-Lowe", rolled). The rival's weekly review score and promotions are simulated alongside yours,
+   with banter in the Friday review screen and a "beat your rival" weekly side goal.
+4. **Morning Brief login streak.** The first login of each real day shows a Morning Brief: market headlines,
+   your week, today's events. A streak gives small cash, Season XP and a Profile Refresh token on day 7. A missed
+   day resets the streak with no penalty.
+5. **Deal-toy shelf.** Every completed signature project awards a lucite deal toy (named after the deal),
+   displayed on a shelf decor slot in your office or apartment and counted on the profile card.
+6. **Mentorship.** Players at Associate+ can mentor a junior once per real day ("Coffee chat"). The junior
+   gets a 10% XP boost on their next 3 tasks; the mentor gets reputation and a Mentor achievement track.
+7. **Headhunter calls.** See §4b.

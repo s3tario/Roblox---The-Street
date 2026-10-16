@@ -112,7 +112,7 @@ World.builders = {
 		budget = 3500,
 		owner = "campus",
 	},
-	{ module = "Street", zones = { "street" }, budget = 14000, owner = "street" },
+	{ module = "Street", zones = { "street" }, budget = 17000, owner = "street" },
 	{
 		module = "HQ",
 		zones = { "hq_lobby", "hq_office", "hq_trading", "hq_exec" },
@@ -202,6 +202,9 @@ World.anchors = {
 --   pass = "ExecutiveClub" MonetizationService:OwnsPass
 --   elevator = true        blocked while event "elevator_outage" is active
 --   stairs = true          only usable while "elevator_outage" is active (10 s climb)
+--   firm = "mg_freeman"    data.career.firmId must match (badge access to your own firm's tower)
+-- Door flag `returnToEntry = true`: send the player back to the exterior anchor of the door they came in through
+-- (WorldService remembers it per player); `target` is the fallback.
 ---------------------------------------------------------------------------------------------------
 World.doors = {
 	-- campus exterior
@@ -225,7 +228,13 @@ World.doors = {
 		label = "Subway: Eastbridge",
 		ride = { via = "subway_car_to_campus", seconds = 8, to = "campus_station_platform" },
 	},
-	door_street_hq = { zone = "street", target = "hq_lobby_entry", label = "Sterling & Vance" },
+	door_street_hq = {
+		zone = "street",
+		target = "hq_lobby_entry",
+		label = "Sterling & Vance",
+		requires = { firm = "sterling_vance" },
+		lockedText = "Badge access only: Sterling & Vance employees.",
+	},
 	door_street_galleria = { zone = "street", target = "galleria_entry", label = "The Galleria" },
 	door_street_apartments = {
 		zone = "street",
@@ -238,31 +247,31 @@ World.doors = {
 	door_street_realm_pe = {
 		zone = "street",
 		target = "realm_pe_entry",
-		label = "Ironclad Capital",
+		label = "Private Equity Tower",
 		requires = { realm = "pe", realmVisitRank = 6 },
 	},
 	door_street_realm_hf = {
 		zone = "street",
 		target = "realm_hf_entry",
-		label = "Quantum Ridge",
+		label = "Asset Management Tower",
 		requires = { realm = "hf", realmVisitRank = 6 },
 	},
 	door_street_realm_vc = {
 		zone = "street",
 		target = "realm_vc_entry",
-		label = "Seedline Ventures",
+		label = "Venture Row",
 		requires = { realm = "vc", realmVisitRank = 6 },
 	},
 	door_street_realm_re = {
 		zone = "street",
 		target = "realm_re_entry",
-		label = "Keystone Realty",
+		label = "Real Estate Exchange",
 		requires = { realm = "re", realmVisitRank = 6 },
 	},
 	door_street_realm_cd = {
 		zone = "street",
 		target = "realm_cd_entry",
-		label = "Northwind Holdings",
+		label = "Corporate Plaza",
 		requires = { realm = "cd", realmVisitRank = 6 },
 	},
 	door_street_partner = {
@@ -273,7 +282,12 @@ World.doors = {
 		lockedText = "Make Partner to open your own firm.",
 	},
 	-- HQ lobby
-	door_hq_lobby_exit = { zone = "hq_lobby", target = "street_hq_front", label = "Exit to Street" },
+	door_hq_lobby_exit = {
+		zone = "hq_lobby",
+		target = "street_hq_front",
+		label = "Exit to Street",
+		returnToEntry = true,
+	},
 	elev_office = {
 		zone = "hq_lobby",
 		target = "hq_office_entry",
@@ -328,6 +342,48 @@ World.doors = {
 	door_apartments_exit = { zone = "apartments", target = "street_apartments_front", label = "Exit" },
 	door_galleria_exit = { zone = "galleria", target = "street_galleria_front", label = "Exit" },
 }
+
+---------------------------------------------------------------------------------------------------
+-- Bank Row: one branded tower per investment-banking firm (spec §4b). Each tower's door leads into the
+-- shared HQ interior, where the client re-skins FirmBrand signage. Sterling & Vance uses door_street_hq.
+-- Firm ids must exist in Config/Firms (career feature).
+---------------------------------------------------------------------------------------------------
+World.firmTowers = {
+	{ id = "mg_freeman", label = "MG Freeman", tier = "bulge" },
+	{ id = "goldfield_saxe", label = "Goldfield Saxe", tier = "bulge" },
+	{ id = "morrow_stanton", label = "Morrow Stanton", tier = "bulge" },
+	{ id = "merriweather_lynch", label = "Merriweather Lynch", tier = "bulge" },
+	{ id = "evermoor", label = "Evermoor Partners", tier = "elite" },
+	{ id = "lazaro_freres", label = "Lazaro Frères", tier = "elite" },
+	{ id = "centerline", label = "Centerline Partners", tier = "elite" },
+	{ id = "harrow_williams", label = "Harrow Williams", tier = "middle" },
+	{ id = "blairmont", label = "Blairmont & Co.", tier = "middle" },
+	{ id = "houlton_lockey", label = "Houlton Lockey", tier = "middle" },
+	{ id = "eastbridge_capital", label = "Eastbridge Capital Advisors", tier = "regional" },
+	{
+		id = "sterling_vance",
+		label = "Sterling & Vance",
+		tier = "regional",
+		door = "door_street_hq",
+		anchor = "street_hq_front",
+	},
+}
+for _, t in World.firmTowers do
+	if not t.door then
+		local doorId = "door_street_firm_" .. t.id
+		local anchorId = "street_firm_" .. t.id .. "_front"
+		World.doors[doorId] = {
+			zone = "street",
+			target = "hq_lobby_entry",
+			label = t.label,
+			requires = { firm = t.id },
+			lockedText = "Badge access only: " .. t.label .. " employees.",
+		}
+		World.anchors[anchorId] = { zone = "street" }
+		t.door = doorId
+		t.anchor = anchorId
+	end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Interaction ids (Kit.interact). The owner feature wires ProximityPrompts at runtime via the
