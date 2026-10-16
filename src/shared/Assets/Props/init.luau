@@ -30,6 +30,7 @@ export type Info = {
 	mount: string,
 	surface: number?,
 	scales: { string }?,
+	maxOpts: { [string]: any }?,
 }
 
 local Props = {}
@@ -131,6 +132,15 @@ function Props.tryBuild(id: string, parent: Instance?, cf: CFrame, opts: Opts?):
 end
 
 local function info(d: Common.Def): Info
+	local scaleNames: { string }? = nil
+	if d.scales then
+		local names = {}
+		for k in d.scales do
+			table.insert(names, k)
+		end
+		table.sort(names)
+		scaleNames = names
+	end
 	return {
 		id = d.id,
 		category = d.category,
@@ -139,7 +149,8 @@ local function info(d: Common.Def): Info
 		tags = table.clone(d.tags),
 		mount = d.mount or "floor",
 		surface = d.surface,
-		scales = if d.scales then table.clone(d.scales) else nil,
+		scales = scaleNames,
+		maxOpts = if d.scales then table.clone(d.scales) else nil,
 	}
 end
 

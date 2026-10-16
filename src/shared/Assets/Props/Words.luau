@@ -98,6 +98,13 @@ Words.ads = {
 
 Words.vending = { "COOL DRINKS", "SNAX", "FIZZ" }
 
+Words.graffiti = { "J+K", "EB '24", "NO SLEEP", "WAKE UP", "STAY BROKE", "RENT IS DUE", "SELL HIGH", "MOON?" }
+Words.busSchedule = "EVERY 20 MIN\n6AM - MIDNIGHT"
+Words.outOfOrder = "OUT OF ORDER"
+Words.lostSign = "SORRY - NO CHANGE"
+Words.streets = { "EXCHANGE ST", "LEDGER AVE", "MERIDIAN WAY", "STERLING PL", "BROAD ST", "CAPITAL AVE" }
+Words.campusStreets = { "COLLEGE AVE", "MILL ST", "EASTBRIDGE RD", "UNION ST" }
+
 Words.diner = "EASTBRIDGE DINER"
 Words.subway = "SUBWAY"
 Words.taxi = "TAXI"

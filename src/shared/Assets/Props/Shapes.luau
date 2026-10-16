@@ -4,6 +4,7 @@
 
 local Common = require(script.Parent.Common)
 local Gui = require(script.Parent.Gui)
+local Kit = require(script.Parent.Parent.Parent.Build.Kit)
 local Rng = require(script.Parent.Parent.Parent.Util.Rng)
 
 local Shapes = {}
@@ -194,23 +195,32 @@ local BOOK_COLORS = {
 }
 Shapes.BOOK_COLORS = BOOK_COLORS
 
--- A row of book groups filling `width` on a shelf. lcf = centre of the shelf surface. Each group is one part.
-function Shapes.books(c: Ctx, lcf: CFrame, width: number, maxH: number, depth: number, fill: number?)
-	local x = -width / 2 + 0.05
-	local limit = width / 2 - 0.05
-	local f = fill or 0.85
-	while x < limit do
-		local gw = c.rng:range(0.25, 0.75)
-		if x + gw > limit then
-			gw = limit - x
-			if gw < 0.12 then
-				break
-			end
-		end
-		if c.rng:chance(f) then
+-- A row of 1..maxGroups book groups filling `width` on a shelf (one part per group, so the part count is
+-- bounded by maxGroups). lcf = centre of the shelf surface. Some groups lean, some slots stay empty.
+function Shapes.books(c: Ctx, lcf: CFrame, width: number, maxH: number, depth: number, maxGroups: number)
+	local n = c.rng:int(math.max(1, maxGroups - 2), maxGroups)
+	local weights = {}
+	local total = 0
+	for i = 1, n do
+		weights[i] = c.rng:range(0.6, 1.4)
+		total += weights[i]
+	end
+	local x = -width / 2
+	for i = 1, n do
+		local gw = width * weights[i] / total
+		local empty = n > 2 and c.rng:chance(0.12)
+		if not empty then
 			local h = maxH * c.rng:range(0.72, 1)
 			local d = depth * c.rng:range(0.8, 1)
-			c.detail(lcf * P(x + gw / 2, h / 2, 0), V(gw - 0.02, h, d), c.rng:pick(BOOK_COLORS), Enum.Material.SmoothPlastic)
+			local w = math.max(gw - 0.04, 0.1)
+			local lean = if gw < width * 0.25 and c.rng:chance(0.2) then c.rng:range(-14, 14) else 0
+			local bottom = if lean ~= 0 then math.abs(math.sin(math.rad(lean))) * w / 2 else 0
+			c.detail(
+				lcf * P(x + gw / 2, h / 2 + bottom, 0) * R(0, 0, lean),
+				V(w, h, d),
+				c.rng:pick(BOOK_COLORS),
+				Enum.Material.SmoothPlastic
+			)
 		end
 		x += gw
 	end
@@ -239,7 +249,7 @@ end
 -- Bicycle standing upright, wheels along local Z, centred at lcf (floor contact).
 -- Full bike is 11 parts (+1 with a basket); `simple` gives a 7-part version for docks and racks.
 function Shapes.bike(c: Ctx, lcf: CFrame, frameColor: Color3, opts: { basket: boolean?, simple: boolean? }?)
-	local o = opts or {}
+	local o: { basket: boolean?, simple: boolean? } = opts or {}
 	local wheelD = 2.3
 	local r = wheelD / 2
 	local tire = col.rubber
@@ -313,16 +323,70 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Seating helpers
 ---------------------------------------------------------------------------------------------------
--- Compact swivel meeting chair facing -Z (7 parts). lcf = floor contact.
+-- Compact swivel meeting chair facing -Z (5 parts). lcf = floor contact.
 function Shapes.meetingChair(c: Ctx, lcf: CFrame, fabric: Color3, frame: Color3)
-	c.dcyl(lcf * P(0, 0.05, 0), 0.1, 1.5, frame, Enum.Material.Metal)
-	c.dcyl(lcf * P(0, 0.8, 0), 1.4, 0.2, col.chrome, Enum.Material.Metal)
-	c.seat(lcf * P(0, 1.65, 0), V(1.8, 0.35, 1.7), fabric, Enum.Material.Leather)
-	c.detail(lcf * P(0, 2.75, 0.82) * R(-8, 0, 0), V(1.7, 1.9, 0.25), fabric, Enum.Material.Leather)
-	c.detail(lcf * P(0, 1.95, 0.8), V(1.0, 0.5, 0.12), frame, Enum.Material.Metal)
-	for _, sx in { -1, 1 } do
-		c.detail(lcf * P(sx * 0.95, 2.15, 0.05), V(0.14, 0.12, 1.3), frame, Enum.Material.Metal)
+	c.dcyl(lcf * P(0, 0.06, 0), 0.12, 1.6, frame, Enum.Material.Metal)
+	c.dcyl(lcf * P(0, 0.85, 0), 1.5, 0.22, col.chrome, Enum.Material.Metal)
+	c.seat(lcf * P(0, 1.72, 0), V(1.8, 0.36, 1.7), fabric, Enum.Material.Leather)
+	c.detail(lcf * P(0, 2.85, 0.82) * R(8, 0, 0), V(1.7, 1.9, 0.25), fabric, Enum.Material.Leather)
+	c.detail(lcf * P(0, 2.0, 0.78), V(0.9, 0.5, 0.12), frame, Enum.Material.Metal)
+end
+
+---------------------------------------------------------------------------------------------------
+-- Deal toys (lucite tombstones)
+---------------------------------------------------------------------------------------------------
+Shapes.TOMBSTONES = {
+	tombstone = V(0.8, 1.1, 0.3),
+	obelisk = V(0.55, 1.5, 0.4),
+	cube = V(0.75, 0.75, 0.75),
+}
+
+-- Lucite deal toy on a small base (3 parts): base block, clear block with the deal text engraved on its
+-- front face, and an embedded gold coin. lcf = bottom centre. Returns the overall height.
+function Shapes.tombstone(c: Ctx, lcf: CFrame, style: string, text: string, baseColor: Color3): number
+	local size = Shapes.TOMBSTONES[style] or Shapes.TOMBSTONES.tombstone
+	local bh = 0.1
+	c.detail(lcf * P(0, bh / 2, 0), V(size.X + 0.1, bh, size.Z + 0.1), baseColor, Enum.Material.SmoothPlastic)
+	local block = c.detail(lcf * P(0, bh + size.Y / 2, 0), size, col.lucite, Enum.Material.Glass)
+	block.Name = "Lucite"
+	block.Transparency = 0.3
+	block.Reflectance = 0.12
+	local gui = Gui.Core.surface(block, Enum.NormalId.Front, { pps = 160, maxDistance = 40, name = "Engraving" })
+	Gui.Core.label(gui, text, 0.08, 0.34, 0.84, 0.58, Color3.fromRGB(27, 42, 68), {
+		font = Enum.Font.GothamBold,
+		align = Enum.TextXAlignment.Center,
+	})
+	c.dcylZ(lcf * P(0, bh + size.Y * 0.8, 0), 0.04, math.min(size.X, size.Y) * 0.32, Kit.Palette.street.gold, Enum.Material.Metal)
+	return bh + size.Y
+end
+
+---------------------------------------------------------------------------------------------------
+-- Rails, lights
+---------------------------------------------------------------------------------------------------
+-- Handrail from a to b (local floor points) at `height`: a top tube plus `posts` evenly spaced posts
+-- (posts >= 2 includes both ends). 1 + posts parts.
+function Shapes.rail(c: Ctx, a: Vector3, b: Vector3, height: number, posts: number, d: number, color: Color3, mat: Enum.Material?)
+	local up = V(0, height, 0)
+	Shapes.tube(c, a + up, b + up, d, color, mat)
+	for i = 0, posts - 1 do
+		local t = if posts <= 1 then 0.5 else i / (posts - 1)
+		local p = a:Lerp(b, t)
+		c.dcyl(P(p.X, p.Y + height / 2, p.Z), height, d * 0.8, color, mat)
 	end
+end
+
+-- Warm point light on `part` (only when lit).
+function Shapes.lamp(part: BasePart, lit: boolean, color: Color3, range: number, brightness: number): PointLight?
+	if not lit then
+		return nil
+	end
+	local l = Instance.new("PointLight")
+	l.Color = color
+	l.Range = range
+	l.Brightness = brightness
+	l.Shadows = false
+	l.Parent = part
+	return l
 end
 
 return Shapes

@@ -200,7 +200,7 @@ function Screens.screen(part: BasePart, kind: string, rng: Rng.Rng): SurfaceGui
 	local gui, W, H = Core.surface(part, Enum.NormalId.Front, {
 		glow = true,
 		brightness = 1.2,
-		pps = 60,
+		pps = 100,
 		maxDistance = 90,
 		name = "Screen",
 	})

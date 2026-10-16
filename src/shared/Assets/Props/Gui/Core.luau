@@ -97,21 +97,27 @@ function Core.frame(
 	return f
 end
 
+-- Pixel UDim2. Offsets are int32 in Roblox (and Lune rejects fractions), so round here.
+local function off(x: number, y: number): UDim2
+	return UDim2.fromOffset(math.floor(x + 0.5), math.floor(y + 0.5))
+end
+Core.off = off
+
 -- Frame in pixel coordinates (top-left origin).
 function Core.px(parent: Instance, x: number, y: number, w: number, h: number, color: Color3, transparency: number?): Frame
 	local f = Instance.new("Frame")
 	f.BorderSizePixel = 0
 	f.BackgroundColor3 = color
 	f.BackgroundTransparency = transparency or 0
-	f.Position = UDim2.fromOffset(x, y)
-	f.Size = UDim2.fromOffset(w, h)
+	f.Position = off(x, y)
+	f.Size = off(math.max(w, 1), math.max(h, 1))
 	f.Parent = parent
 	return f
 end
 
 function Core.round(obj: GuiObject, scale: number?, offset: number?): UICorner
 	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(scale or 0, offset or 0)
+	c.CornerRadius = UDim.new(scale or 0, math.floor((offset or 0) + 0.5))
 	c.Parent = obj
 	return c
 end
@@ -242,8 +248,8 @@ function Core.line(
 	f.BackgroundColor3 = color
 	f.BackgroundTransparency = transparency or 0
 	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2)
-	f.Size = UDim2.fromOffset(len + thick * 0.6, thick)
+	f.Position = off((x1 + x2) / 2, (y1 + y2) / 2)
+	f.Size = off(math.max(len + thick * 0.6, 1), math.max(thick, 1))
 	f.Rotation = math.deg(math.atan2(dy, dx))
 	f.Parent = parent
 	return f

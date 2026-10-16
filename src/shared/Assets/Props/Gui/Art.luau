@@ -222,7 +222,7 @@ function Art.clockFace(gui: Instance, W: number, H: number, hour: number, minute
 		local rr = r * 0.82 - len / 2
 		local f = px(gui, 0, 0, if long then r * 0.06 else r * 0.035, len, ink)
 		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Position = UDim2.fromOffset(cx + math.sin(a) * rr, cy - math.cos(a) * rr)
+		f.Position = Core.off(cx + math.sin(a) * rr, cy - math.cos(a) * rr)
 		f.Rotation = i * 30
 	end
 	local function hand(name: string, angleDeg: number, len: number, thick: number, color: Color3)
@@ -230,7 +230,7 @@ function Art.clockFace(gui: Instance, W: number, H: number, hour: number, minute
 		local f = px(gui, 0, 0, thick, len, color)
 		f.Name = name
 		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Position = UDim2.fromOffset(cx + math.sin(a) * len / 2, cy - math.cos(a) * len / 2)
+		f.Position = Core.off(cx + math.sin(a) * len / 2, cy - math.cos(a) * len / 2)
 		f.Rotation = angleDeg
 		Core.round(f, 0.5)
 	end
@@ -339,51 +339,60 @@ function Art.flag(gui: Instance, W: number, H: number, variant: number, _rng: Rn
 	end
 end
 
--- Rug top patterns. style: "persian" | "modern" | "round" | "office".
+-- Rug top patterns. style: "persian" | "modern" | "round" | "office". The background stays clear so the
+-- rug part's own colour and Carpet/Fabric texture show through; pattern frames are slightly translucent.
 function Art.rug(gui: Instance, W: number, H: number, style: string, rng: Rng.Rng, base: Color3, accent: Color3)
-	Core.bg(gui, base)
+	local A = 0.12
+	Core.bg(gui, base, 1)
+	local m = math.min(W, H)
 	if style == "persian" then
 		local cream = hex("#E8D8B8")
 		local navy = hex("#1B2A44")
-		frame(gui, 0.03, 0.05, 0.94, 0.9, navy).BackgroundTransparency = 0
-		frame(gui, 0.06, 0.1, 0.88, 0.8, base)
-		frame(gui, 0.09, 0.16, 0.82, 0.68, accent:Lerp(base, 0.4))
+		frame(gui, 0.03, 0.05, 0.94, 0.9, navy, A)
+		frame(gui, 0.06, 0.1, 0.88, 0.8, base, A)
+		frame(gui, 0.09, 0.16, 0.82, 0.68, accent:Lerp(base, 0.4), A)
 		-- central medallion and corner spandrels from rotated squares
-		local m = math.min(W, H)
-		for i, s in { 0.5, 0.36, 0.22 } do
-			local col = if i == 2 then cream else if i == 1 then navy else accent
-			local d = m * s
-			local f = px(gui, W / 2 - d / 2, H / 2 - d / 2, d, d, col)
+		for i, sz in { 0.5, 0.36, 0.22 } do
+			local c = if i == 2 then cream elseif i == 1 then navy else accent
+			local d = m * sz
+			local f = px(gui, W / 2 - d / 2, H / 2 - d / 2, d, d, c, A)
 			f.Rotation = 45
 		end
 		for _, cx in { 0.16, 0.84 } do
 			for _, cy in { 0.24, 0.76 } do
 				local d = m * 0.14
-				local f = px(gui, W * cx - d / 2, H * cy - d / 2, d, d, cream)
+				local f = px(gui, W * cx - d / 2, H * cy - d / 2, d, d, cream, A)
 				f.Rotation = 45
 			end
 		end
 		-- border motif dots
 		for i = 0, 11 do
-			dot(gui, W * (0.08 + i * 0.076), H * 0.075, m * 0.03, cream)
-			dot(gui, W * (0.08 + i * 0.076), H * 0.925, m * 0.03, cream)
+			dot(gui, W * (0.08 + i * 0.076), H * 0.075, m * 0.03, cream, A)
+			dot(gui, W * (0.08 + i * 0.076), H * 0.925, m * 0.03, cream, A)
 		end
 	elseif style == "modern" then
 		local cols = { accent, base:Lerp(Color3.new(1, 1, 1), 0.5), hex("#1A1A1A"), accent:Lerp(base, 0.5) }
 		for i = 1, 5 do
-			local f = frame(gui, rng:range(-0.1, 0.7), rng:range(-0.1, 0.7), rng:range(0.25, 0.55), rng:range(0.2, 0.5), cols[(i - 1) % 4 + 1])
-			f.BackgroundTransparency = rng:range(0, 0.25)
+			frame(
+				gui,
+				rng:range(-0.1, 0.7),
+				rng:range(-0.1, 0.7),
+				rng:range(0.25, 0.55),
+				rng:range(0.2, 0.5),
+				cols[(i - 1) % 4 + 1],
+				rng:range(A, 0.3)
+			)
 		end
-		local line = frame(gui, 0, rng:range(0.3, 0.7), 1, 0.02, hex("#F4F1EA"))
+		local line = frame(gui, -0.2, rng:range(0.3, 0.7), 1.4, 0.02, hex("#F4F1EA"), A)
 		line.Rotation = rng:range(-25, 25)
 	elseif style == "round" then
-		local m = math.min(W, H)
-		for i, s in { 0.86, 0.66, 0.42, 0.18 } do
-			dot(gui, W / 2, H / 2, m * s, if i % 2 == 1 then accent else base:Lerp(Color3.new(1, 1, 1), 0.25))
+		for i, sz in { 0.86, 0.66, 0.42, 0.18 } do
+			dot(gui, W / 2, H / 2, m * sz, if i % 2 == 1 then accent else base:Lerp(Color3.new(1, 1, 1), 0.25), A)
 		end
 	else
-		frame(gui, 0.04, 0.06, 0.92, 0.88, accent)
-		frame(gui, 0.06, 0.1, 0.88, 0.8, base)
+		frame(gui, 0.04, 0.06, 0.92, 0.88, accent, A)
+		frame(gui, 0.06, 0.1, 0.88, 0.8, base, A)
+		frame(gui, 0.1, 0.18, 0.8, 0.64, base:Lerp(accent, 0.18), A)
 	end
 end
 
@@ -453,6 +462,27 @@ function Art.vending(gui: Instance, brand: string, rng: Rng.Rng)
 			local can = frame(gui, 0.07 + i * 0.18, y + 0.02, 0.12, 0.11, if rng:chance(0.12) then hex("#0E1116") else c)
 			Core.round(can, 0.2)
 		end
+	end
+end
+
+-- Chain-link mesh: two sets of diagonal wires `spacing` pixels apart (the canvas clips the overflow).
+function Art.chainlink(gui: Instance, W: number, H: number, spacing: number, color: Color3)
+	local n = math.floor((W + H) / spacing) + 1
+	for i = 0, n do
+		local o = i * spacing
+		Core.line(gui, o, 0, o - H, H, 1, color)
+		Core.line(gui, o - H, 0, o, H, 1, color)
+	end
+end
+
+-- Painted stairwell receding into the dark (used where a prop cannot cut a real hole in the ground).
+function Art.stairwell(gui: Instance, steps: number, lit: Color3, dark: Color3)
+	Core.bg(gui, dark)
+	for i = 0, steps - 1 do
+		local t = i / steps
+		local tread = frame(gui, 0.04, t, 0.92, 1 / steps * 0.62, lit:Lerp(dark, t * 0.92))
+		tread.Name = "Tread"
+		frame(gui, 0.04, t + 1 / steps * 0.62, 0.92, 1 / steps * 0.06, hex("#C9B458"):Lerp(dark, t), 0.2)
 	end
 end
 

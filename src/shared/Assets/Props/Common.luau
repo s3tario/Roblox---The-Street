@@ -68,7 +68,9 @@ export type Def = {
 	tags: { string },
 	mount: string?,
 	surface: number?, -- height of the usable top surface (desks, tables, counters, shelves)
-	scales: { string }?, -- option names that change size and part count (maxParts covers their full range)
+	-- Options that change size and part count, mapped to the value that produces the LARGEST build.
+	-- maxParts covers that case (tests build it). footprint describes the default build.
+	scales: { [string]: any }?,
 	build: (c: Ctx) -> (),
 }
 
