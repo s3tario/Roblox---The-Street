@@ -92,7 +92,12 @@ add({
 			local pitch = math.rad(c.rng:range(-50, 50))
 			local dir = V(math.cos(pitch) * math.cos(yaw), math.sin(pitch), math.cos(pitch) * math.sin(yaw))
 			local p = V(0, cy, 0) + dir * 0.28
-			c.dball(P(p.X, p.Y, p.Z), c.rng:range(0.26, 0.36), c.rng:pick({ hex("#C9B27A"), hex("#6E8B4A") }), M.SmoothPlastic)
+			c.dball(
+				P(p.X, p.Y, p.Z),
+				c.rng:range(0.26, 0.36),
+				c.rng:pick({ hex("#C9B27A"), hex("#6E8B4A") }),
+				M.SmoothPlastic
+			)
 		end
 		-- brass half meridian from the stem round the left side to the top pivot
 		local pts = {}
@@ -125,7 +130,12 @@ add({
 		Shapes.strut(c, b, d, 0.09, trunk, M.Wood)
 		Shapes.strut(c, d, e, 0.07, trunk, M.Wood)
 		local greens = { hex("#3F6B3A"), hex("#4E7D3F"), hex("#355E30") }
-		local pads = { { 0.3, 0.72, 0.05, 0.5 }, { -0.32, 0.95, -0.04, 0.55 }, { 0.08, 1.14, 0, 0.62 }, { 0.36, 1.0, 0.08, 0.38 } }
+		local pads = {
+			{ 0.3, 0.72, 0.05, 0.5 },
+			{ -0.32, 0.95, -0.04, 0.55 },
+			{ 0.08, 1.14, 0, 0.62 },
+			{ 0.36, 1.0, 0.08, 0.38 },
+		}
 		for i, pd in pads do
 			c.dcyl(P(pd[1], pd[2], pd[3]), 0.16, pd[4] * c.rng:range(0.9, 1.1), greens[(i - 1) % 3 + 1], M.Grass)
 		end
@@ -142,7 +152,12 @@ add({
 	mount = "desk",
 	build = function(c: Ctx)
 		c.dcyl(P(0, 0.02, 0), 0.04, 0.3, col.plasticBlack, M.SmoothPlastic)
-		c.dball(P(0, 0.22, 0), 0.4, c.color("color", c.rng:pick({ hex("#E2532F"), S.gold, S.navyLight, hex("#2BA36B") })), M.SmoothPlastic)
+		c.dball(
+			P(0, 0.22, 0),
+			0.4,
+			c.color("color", c.rng:pick({ hex("#E2532F"), S.gold, S.navyLight, hex("#2BA36B") })),
+			M.SmoothPlastic
+		)
 	end,
 })
 
@@ -175,7 +190,13 @@ add({
 		c.dcyl(P(-0.45, 0.25, 0), 0.5, 0.32, black, M.DiamondPlate)
 		for i, pc in { hex("#1F4FB5"), hex("#C62828"), S.gold } do
 			local tilt = (i - 2) * 9
-			c.dcyl(P(-0.45 + (i - 2) * 0.07, 0.55, (i - 2) * 0.04) * R(tilt * 0.4, 0, tilt), 0.55, 0.04, pc, M.SmoothPlastic)
+			c.dcyl(
+				P(-0.45 + (i - 2) * 0.07, 0.55, (i - 2) * 0.04) * R(tilt * 0.4, 0, tilt),
+				0.55,
+				0.04,
+				pc,
+				M.SmoothPlastic
+			)
 		end
 		c.detail(P(0.25, 0.06, 0), V(0.8, 0.12, 1.0), black, M.SmoothPlastic)
 		c.detail(P(0.25, 0.13, 0.02), V(0.7, 0.02, 0.9), col.paper, M.SmoothPlastic)
@@ -311,7 +332,16 @@ add({
 		canvas.Name = "Canvas"
 		local gui, gw, gh = Gui.Core.surface(canvas, Enum.NormalId.Front, { pps = 24, maxDistance = 160 })
 		Gui.Art.painting(gui, gw, gh, c.int("variant", c.rng:int(1, 8), 1, 8), c.rng)
-		Shapes.frameRect(c, P(0, cy, -0.175), W + 0.2, Hh + 0.2, t, 0.35, c.color("color", col.plasticBlack), M.SmoothPlastic)
+		Shapes.frameRect(
+			c,
+			P(0, cy, -0.175),
+			W + 0.2,
+			Hh + 0.2,
+			t,
+			0.35,
+			c.color("color", col.plasticBlack),
+			M.SmoothPlastic
+		)
 	end,
 })
 
@@ -422,7 +452,11 @@ add({
 			then c.glow(P(tip.X, tip.Y - 1.07, 0), V(1.0, 0.04, 1.0), col.warmBulb, 0.1)
 			else c.detail(P(tip.X, tip.Y - 1.07, 0), V(1.0, 0.04, 1.0), shade(col.warmBulb, -0.2), M.SmoothPlastic)
 		if lit then
-			c.light(bulb, "spot", { Face = Enum.NormalId.Bottom, Angle = 120, Range = 16, Brightness = 1.6, Color = col.warmBulb })
+			c.light(
+				bulb,
+				"spot",
+				{ Face = Enum.NormalId.Bottom, Angle = 120, Range = 16, Brightness = 1.6, Color = col.warmBulb }
+			)
 		end
 	end,
 })
@@ -541,7 +575,14 @@ add({
 		c.detail(P(1.22, 3.0, -0.55), V(0.28, 0.06, 0.06), brass, M.Metal)
 		local bottles = { hex("#3B5E2B"), hex("#6B3A1E"), hex("#D8E6EA"), hex("#5A1E2A") }
 		for i, bc in bottles do
-			Shapes.bottle(c, P(-0.8 + (i - 1) * 0.5, 2.43, c.rng:range(-0.25, 0.25)), c.rng:range(0.7, 0.95), 0.24, bc, true)
+			Shapes.bottle(
+				c,
+				P(-0.8 + (i - 1) * 0.5, 2.43, c.rng:range(-0.25, 0.25)),
+				c.rng:range(0.7, 0.95),
+				0.24,
+				bc,
+				true
+			)
 		end
 		for i = 1, 2 do
 			local g = c.dcyl(P(-0.5 + i * 0.4, 0.83 + 0.13, -0.3), 0.26, 0.18, hex("#E6F2F5"), M.Glass)

@@ -198,17 +198,7 @@ add({
 			c.part(P(x, plinthH / 2, 0), V(2.05, plinthH, pedD - 0.1), shade(wood, -0.3), f.woodMat)
 			c.detail(P(x, 0.07, 0), V(2.08, 0.06, pedD - 0.04), gold, M.Metal)
 			c.part(P(x, pedY, 0), V(2.2, pedH, pedD), wood, f.woodMat)
-			Shapes.drawerFronts(
-				c,
-				P(x, pedY, -pedD / 2),
-				2.2,
-				pedH,
-				3,
-				shade(wood, -0.06),
-				f.woodMat,
-				gold,
-				true
-			)
+			Shapes.drawerFronts(c, P(x, pedY, -pedD / 2), 2.2, pedH, 3, shade(wood, -0.06), f.woodMat, gold, true)
 			-- visitor side: a panelled cupboard door
 			c.detail(P(x, pedY, pedD / 2 + 0.03), V(2.0, pedH - 0.2, 0.06), shade(wood, -0.06), f.woodMat)
 			c.detail(P(x + sx * -0.75, pedY + 0.2, pedD / 2 + 0.09), V(0.06, 0.45, 0.06), gold, M.Metal)

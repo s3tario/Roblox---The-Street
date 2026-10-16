@@ -408,7 +408,14 @@ function Art.photo(gui: Instance, W: number, H: number, rng: Rng.Rng)
 		local x = W * (0.38 + i * 0.2)
 		local skin = rng:pick({ hex("#F1D2B6"), hex("#B07A4F"), hex("#6B4128") })
 		dot(gui, x, H * 0.48, H * 0.12, skin)
-		local body = px(gui, x - H * 0.08, H * 0.55, H * 0.16, H * 0.3, rng:pick({ hex("#173459"), hex("#7A1F24"), hex("#2F5A3A") }))
+		local body = px(
+			gui,
+			x - H * 0.08,
+			H * 0.55,
+			H * 0.16,
+			H * 0.3,
+			rng:pick({ hex("#173459"), hex("#7A1F24"), hex("#2F5A3A") })
+		)
 		Core.round(body, 0.3)
 	end
 end
@@ -459,7 +466,8 @@ function Art.vending(gui: Instance, brand: string, rng: Rng.Rng)
 		frame(gui, 0.04, y + 0.13, 0.92, 0.012, hex("#9AA3AD"))
 		local c = rng:pick(cans)
 		for i = 0, 4 do
-			local can = frame(gui, 0.07 + i * 0.18, y + 0.02, 0.12, 0.11, if rng:chance(0.12) then hex("#0E1116") else c)
+			local can =
+				frame(gui, 0.07 + i * 0.18, y + 0.02, 0.12, 0.11, if rng:chance(0.12) then hex("#0E1116") else c)
 			Core.round(can, 0.2)
 		end
 	end

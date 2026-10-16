@@ -55,7 +55,12 @@ add({
 		for i = 1, panels do
 			local x = -L / 2 + (i - 0.5) * pw
 			c.dcylX(P(x, Hh, 0), pw, 0.14, metal, M.Metal)
-			local mesh = c.part(P(x, Hh / 2 + 0.15, 0) * R(0, 0, c.rng:range(-0.5, 0.5)), V(pw - 0.1, Hh - 0.3, 0.06), metal, M.Metal)
+			local mesh = c.part(
+				P(x, Hh / 2 + 0.15, 0) * R(0, 0, c.rng:range(-0.5, 0.5)),
+				V(pw - 0.1, Hh - 0.3, 0.06),
+				metal,
+				M.Metal
+			)
 			mesh.Name = "Mesh"
 			mesh.Transparency = 0.88
 			mesh.CastShadow = false
@@ -65,7 +70,14 @@ add({
 			end
 			if barbed then
 				for _, k in { 1, 2 } do
-					Shapes.tube(c, V(x - pw / 2, Hh + 0.6 + k * 0.25, 0.1 + k * 0.18), V(x + pw / 2, Hh + 0.6 + k * 0.25, 0.1 + k * 0.18), 0.05, shade(metal, -0.35), M.Metal)
+					Shapes.tube(
+						c,
+						V(x - pw / 2, Hh + 0.6 + k * 0.25, 0.1 + k * 0.18),
+						V(x + pw / 2, Hh + 0.6 + k * 0.25, 0.1 + k * 0.18),
+						0.05,
+						shade(metal, -0.35),
+						M.Metal
+					)
 				end
 			end
 		end
@@ -126,7 +138,12 @@ add({
 			return P(x, y, -0.3 - (2.7 - y) / 1.9 * 0.4 - 0.012) * R(11.9, 0, 0)
 		end
 		for _ = 1, 2 do
-			c.detail(onSlope(c.rng:range(-L / 2 + 1, L / 2 - 1), c.rng:range(1.2, 2.2)), V(c.rng:range(0.3, 0.8), c.rng:range(0.6, 1.2), 0.02), C.concreteStain, M.Concrete)
+			c.detail(
+				onSlope(c.rng:range(-L / 2 + 1, L / 2 - 1), c.rng:range(1.2, 2.2)),
+				V(c.rng:range(0.3, 0.8), c.rng:range(0.6, 1.2), 0.02),
+				C.concreteStain,
+				M.Concrete
+			)
 		end
 		for _, sx in { -1, 1 } do
 			c.detail(P(sx * L / 4, 0.15, -1.005), V(0.8, 0.2, 0.02), C.concreteDark, M.Concrete)
@@ -168,10 +185,33 @@ add({
 		for k = 1, floors do
 			local y = storey * k
 			c.part(P(0, y, -D / 2 - 0.05), V(W, 0.2, D), tone(), M.DiamondPlate)
-			Shapes.rail(c, V(-W / 2, y + 0.1, -D - 0.05), V(W / 2, y + 0.1, -D - 0.05), 3.4, 4, 0.14, tone(), M.CorrodedMetal)
+			Shapes.rail(
+				c,
+				V(-W / 2, y + 0.1, -D - 0.05),
+				V(W / 2, y + 0.1, -D - 0.05),
+				3.4,
+				4,
+				0.14,
+				tone(),
+				M.CorrodedMetal
+			)
 			for _, sx in { -1, 1 } do
-				Shapes.tube(c, V(sx * W / 2, y + 3.5, -D - 0.05), V(sx * W / 2, y + 3.5 + c.rng:range(-0.15, 0.03), -0.1), 0.14, tone(), M.CorrodedMetal)
-				Shapes.strut(c, V(sx * (W / 2 - 0.8), y - 0.1, -D + 0.2), V(sx * (W / 2 - 0.8), y - 2.6, -0.06), 0.18, tone(), M.CorrodedMetal)
+				Shapes.tube(
+					c,
+					V(sx * W / 2, y + 3.5, -D - 0.05),
+					V(sx * W / 2, y + 3.5 + c.rng:range(-0.15, 0.03), -0.1),
+					0.14,
+					tone(),
+					M.CorrodedMetal
+				)
+				Shapes.strut(
+					c,
+					V(sx * (W / 2 - 0.8), y - 0.1, -D + 0.2),
+					V(sx * (W / 2 - 0.8), y - 2.6, -0.06),
+					0.18,
+					tone(),
+					M.CorrodedMetal
+				)
 			end
 			if k > 1 then
 				local y0 = storey * (k - 1) + 0.1
@@ -192,7 +232,12 @@ add({
 		end
 		local rungs = math.max(2, math.floor((top - bottom) / 1.6))
 		for i = 1, rungs do
-			c.detail(P(4.6, bottom + (top - bottom) * (i - 0.5) / rungs, -3.6), V(1.2, 0.1, 0.1), tone(), M.CorrodedMetal)
+			c.detail(
+				P(4.6, bottom + (top - bottom) * (i - 0.5) / rungs, -3.6),
+				V(1.2, 0.1, 0.1),
+				tone(),
+				M.CorrodedMetal
+			)
 		end
 		c.use(V(4.6, storey + 2, -3))
 	end,
@@ -224,7 +269,12 @@ add({
 			c.dcyl(P(1.76, 0.9, z), 1.4, 0.15, hex("#B87333"), M.Metal)
 		end
 		for _ = 1, 2 do
-			c.detail(P(c.rng:range(-1.2, 1.2), c.rng:range(1.2, 2.6), -1.73), V(0.18, c.rng:range(0.6, 1.4), 0.01), C.rust, M.CorrodedMetal)
+			c.detail(
+				P(c.rng:range(-1.2, 1.2), c.rng:range(1.2, 2.6), -1.73),
+				V(0.18, c.rng:range(0.6, 1.4), 0.01),
+				C.rust,
+				M.CorrodedMetal
+			)
 		end
 	end,
 })

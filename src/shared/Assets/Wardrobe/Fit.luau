@@ -150,6 +150,23 @@ function Fit.shirtColor(ctx: Ctx): Color3
 	return Color3.fromRGB(244, 244, 240)
 end
 
+-- Depth (UpperTorso local Z) of the front-most worn surface on the chest: the lapels or overshirt when an
+-- outer layer is worn, else the top. Pieces worn over everything (lanyards, bag straps, scarf tails) sit
+-- just in front of it.
+function Fit.chestFront(ctx: Ctx): number
+	local s = Fit.size(ctx, "UpperTorso")
+	local base = if s then -s.Z / 2 else -0.5
+	local z = ctx.state.chestFront or ctx.state.torsoFront or base
+	return math.min(z, base)
+end
+
+-- Back surface of the torso layers (backpacks sit behind it).
+function Fit.backZ(ctx: Ctx): number
+	local s = Fit.size(ctx, "UpperTorso")
+	local base = if s then s.Z / 2 else 0.5
+	return math.max(ctx.state.torsoBack or base, base)
+end
+
 -- Colour of whatever covers the legs (bottom primary, dark grey by default).
 function Fit.legColor(ctx: Ctx): Color3
 	local bottom = ctx.items.bottom
@@ -199,7 +216,7 @@ end
 -- Layer parts
 ---------------------------------------------------------------------------------------------------
 local function finish(ctx: Ctx, body: BasePart, partName: string, p: BasePart, name: string?)
-	p.Name = name or ctx.slot
+	p.Name = name or (ctx.slot .. "_Detail")
 	p.Anchored = ctx.anchored
 	p.CanCollide = false
 	p.CanQuery = false

@@ -248,7 +248,15 @@ local function blouse(ctx: Ctx)
 		end
 		local pearl = Color3.fromRGB(246, 242, 232)
 		for i = 0, 3 do
-			Fit.ball(ctx, "UpperTorso", CFrame.new(0, top - 0.42 - i * 0.28, front - 0.02), 0.07, pearl, SMOOTH, "top_Pearl")
+			Fit.ball(
+				ctx,
+				"UpperTorso",
+				CFrame.new(0, top - 0.42 - i * 0.28, front - 0.02),
+				0.07,
+				pearl,
+				SMOOTH,
+				"top_Pearl"
+			)
 		end
 	end
 	cuffs(ctx, col.secondary, 0.16, 0.04)

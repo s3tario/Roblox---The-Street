@@ -34,7 +34,16 @@ end
 -- Legs and frames
 ---------------------------------------------------------------------------------------------------
 -- Four square legs under a w x d rectangle, legs of height h, inset from the edges.
-function Shapes.legs4(c: Ctx, w: number, d: number, h: number, t: number, color: Color3, mat: Enum.Material?, inset: number?)
+function Shapes.legs4(
+	c: Ctx,
+	w: number,
+	d: number,
+	h: number,
+	t: number,
+	color: Color3,
+	mat: Enum.Material?,
+	inset: number?
+)
 	local i = inset or t
 	local x = w / 2 - i - t / 2
 	local z = d / 2 - i - t / 2
@@ -147,7 +156,15 @@ end
 -- Plants
 ---------------------------------------------------------------------------------------------------
 -- Round pot with a rim and soil; returns the soil height (local Y above lcf). 3 parts.
-function Shapes.pot(c: Ctx, lcf: CFrame, d: number, h: number, color: Color3, mat: Enum.Material?, solid: boolean?): number
+function Shapes.pot(
+	c: Ctx,
+	lcf: CFrame,
+	d: number,
+	h: number,
+	color: Color3,
+	mat: Enum.Material?,
+	solid: boolean?
+): number
 	if solid then
 		c.cyl(lcf * P(0, h / 2, 0), h, d, color, mat)
 	else
@@ -356,7 +373,13 @@ function Shapes.tombstone(c: Ctx, lcf: CFrame, style: string, text: string, base
 		font = Enum.Font.GothamBold,
 		align = Enum.TextXAlignment.Center,
 	})
-	c.dcylZ(lcf * P(0, bh + size.Y * 0.8, 0), 0.04, math.min(size.X, size.Y) * 0.32, Kit.Palette.street.gold, Enum.Material.Metal)
+	c.dcylZ(
+		lcf * P(0, bh + size.Y * 0.8, 0),
+		0.04,
+		math.min(size.X, size.Y) * 0.32,
+		Kit.Palette.street.gold,
+		Enum.Material.Metal
+	)
 	return bh + size.Y
 end
 
@@ -365,13 +388,55 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Handrail from a to b (local floor points) at `height`: a top tube plus `posts` evenly spaced posts
 -- (posts >= 2 includes both ends). 1 + posts parts.
-function Shapes.rail(c: Ctx, a: Vector3, b: Vector3, height: number, posts: number, d: number, color: Color3, mat: Enum.Material?)
+function Shapes.rail(
+	c: Ctx,
+	a: Vector3,
+	b: Vector3,
+	height: number,
+	posts: number,
+	d: number,
+	color: Color3,
+	mat: Enum.Material?
+)
 	local up = V(0, height, 0)
 	Shapes.tube(c, a + up, b + up, d, color, mat)
 	for i = 0, posts - 1 do
 		local t = if posts <= 1 then 0.5 else i / (posts - 1)
 		local p = a:Lerp(b, t)
 		c.dcyl(P(p.X, p.Y + height / 2, p.Z), height, d * 0.8, color, mat)
+	end
+end
+
+-- Lamp bulb or globe: a Neon ball when lit, a frosted SmoothPlastic ball when off. Returns the part.
+function Shapes.bulb(c: Ctx, lcf: CFrame, d: number, color: Color3, lit: boolean, transparency: number?): Part
+	local p = c.dball(
+		lcf,
+		d,
+		if lit then color else Kit.shade(color, -0.25),
+		if lit then Enum.Material.Neon else Enum.Material.SmoothPlastic
+	)
+	p.Transparency = if lit then (transparency or 0) else 0.1
+	p.CastShadow = false
+	return p
+end
+
+-- Sagging rope (catenary-ish parabola) from a to b with `segs` tube segments, lowest point `sag` below the line.
+function Shapes.rope(
+	c: Ctx,
+	a: Vector3,
+	b: Vector3,
+	sag: number,
+	segs: number,
+	d: number,
+	color: Color3,
+	mat: Enum.Material?
+)
+	local prev = a
+	for i = 1, segs do
+		local t = i / segs
+		local p = a:Lerp(b, t) - Vector3.new(0, sag * 4 * t * (1 - t), 0)
+		Shapes.tube(c, prev, p, d, color, mat)
+		prev = p
 	end
 end
 

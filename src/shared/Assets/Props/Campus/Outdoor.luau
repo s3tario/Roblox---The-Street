@@ -60,7 +60,12 @@ add({
 		local ajar = c.rng:int(0, 2)
 		for i, sx in { -1, 1 } do
 			local open = if i == ajar then c.rng:range(6, 10) else c.rng:range(0, 1.5)
-			c.detail(P(sx * 1.57, 4.11, 1.9) * R(open, 0, 0) * P(0, 0.06, -1.9), V(3.1, 0.12, 3.8), col.plasticBlack, M.Plastic)
+			c.detail(
+				P(sx * 1.57, 4.11, 1.9) * R(open, 0, 0) * P(0, 0.06, -1.9),
+				V(3.1, 0.12, 3.8),
+				col.plasticBlack,
+				M.Plastic
+			)
 		end
 		for _, sx in { -1, 1 } do
 			c.detail(P(sx * 3.2, 2.6, 0), V(0.3, 0.5, 3.0), shade(body, -0.3), M.Metal)
@@ -69,7 +74,12 @@ add({
 			end
 		end
 		for _ = 1, 3 do
-			patch(c, P(c.rng:range(-2.6, 2.6), c.rng:range(0.9, 3.4), -1.81), c.rng:range(0.5, 1.4), c.rng:range(0.3, 0.9))
+			patch(
+				c,
+				P(c.rng:range(-2.6, 2.6), c.rng:range(0.9, 3.4), -1.81),
+				c.rng:range(0.5, 1.4),
+				c.rng:range(0.3, 0.9)
+			)
 		end
 		stencil(c, P(0, 2.9, -1.82), 4, 0.6, Words.waste, hex("#E9E2CF"), Enum.Font.SpecialElite)
 	end,
@@ -129,12 +139,22 @@ add({
 		for i, z in { -0.6, -0.2, 0.2, 0.6 } do
 			if i ~= missing then
 				local tone = shade(wood, c.rng:range(-0.15, 0.08))
-				c.seat(P(c.rng:range(-0.08, 0.08), 1.79, z) * R(0, c.rng:range(-1.5, 1.5), c.rng:range(-0.6, 0.6)), V(L, 0.12, 0.32), tone, M.WoodPlanks)
+				c.seat(
+					P(c.rng:range(-0.08, 0.08), 1.79, z) * R(0, c.rng:range(-1.5, 1.5), c.rng:range(-0.6, 0.6)),
+					V(L, 0.12, 0.32),
+					tone,
+					M.WoodPlanks
+				)
 			end
 		end
 		for i, y in { 2.3, 2.75, 3.2 } do
 			local z = 0.8 + (y - 1.58) * math.tan(math.rad(10))
-			local slat = c.detail(P(0, y, z) * R(10, 0, c.rng:range(-0.8, 0.8)), V(L, 0.3, 0.1), shade(wood, c.rng:range(-0.15, 0.05)), M.WoodPlanks)
+			local slat = c.detail(
+				P(0, y, z) * R(10, 0, c.rng:range(-0.8, 0.8)),
+				V(L, 0.3, 0.1),
+				shade(wood, c.rng:range(-0.15, 0.05)),
+				M.WoodPlanks
+			)
 			if i == 2 and c.rng:chance(0.45) then
 				c.sign(slat, c.rng:pick(Words.graffiti), {
 					font = Enum.Font.PermanentMarker,
@@ -187,7 +207,11 @@ add({
 		local sign = c.detail(P(4.8, 6.6, -2.4), V(1.3, 1.1, 0.06), hex("#1F4E8C"), M.Metal)
 		c.sign(sign, Words.campusBus, { font = Enum.Font.GothamBold, pixelsPerStud = 50, padding = 0.1 })
 		local sched = c.detail(P(2.4, 4.2, 1.93), V(1.2, 1.6, 0.02), C.paper, M.SmoothPlastic)
-		c.sign(sched, Words.busSchedule, { font = Enum.Font.SpecialElite, color = C.ink, pixelsPerStud = 50, padding = 0.1 })
+		c.sign(
+			sched,
+			Words.busSchedule,
+			{ font = Enum.Font.SpecialElite, color = C.ink, pixelsPerStud = 50, padding = 0.1 }
+		)
 		if c.rng:chance(0.6) then
 			c.dball(P(c.rng:range(-3, 3), 0.32, c.rng:range(-1.5, 0)), 0.24, C.paper, M.SmoothPlastic)
 		end
@@ -204,6 +228,7 @@ add({
 	id = "street_lamp_sodium",
 	category = "campus",
 	footprint = V(1.4, 17.0, 5.6),
+	offset = V(0, 0, -2.1),
 	maxParts = 10,
 	tags = { "street", "gritty", "light", "lamp" },
 	build = function(c: Ctx)
@@ -308,7 +333,11 @@ add({
 		local gui = Gui.Core.surface(window, Enum.NormalId.Front, { glow = lit, pps = 30, maxDistance = 120 })
 		Gui.Art.vending(gui, brand, c.rng)
 		if lit then
-			c.light(window, "surface", { Face = Enum.NormalId.Front, Range = 10, Brightness = 1.2, Color = hex("#DCEBFF") })
+			c.light(
+				window,
+				"surface",
+				{ Face = Enum.NormalId.Front, Range = 10, Brightness = 1.2, Color = hex("#DCEBFF") }
+			)
 		end
 		c.glass(P(-0.4, 3.9, -1.14), V(2.2, 4.5, 0.03), hex("#DDEFF5"), 0.75)
 		c.detail(P(1.1, 3.9, -1.11), V(0.8, 4.4, 0.04), shade(body, -0.35), M.Metal)
@@ -318,10 +347,19 @@ add({
 		local header = c.detail(P(0, 6.2, -1.11), V(3.0, 0.5, 0.04), hex("#F4F1EA"), M.SmoothPlastic)
 		c.sign(header, brand, { font = Enum.Font.LuckiestGuy, color = body, pixelsPerStud = 40, glow = lit })
 		c.detail(P(0, 0.1, 0.1), V(3.0, 0.2, 2.3), col.plasticBlack, M.SmoothPlastic)
-		c.detail(P(c.rng:range(-1.2, 1.2), c.rng:range(1.6, 2.4), -1.12) * R(0, 0, c.rng:range(-15, 15)), V(0.5, 0.35, 0.01), c.rng:pick({ C.mustard, C.graffitiTeal, C.paper }), M.SmoothPlastic)
+		c.detail(
+			P(c.rng:range(-1.2, 1.2), c.rng:range(1.6, 2.4), -1.12) * R(0, 0, c.rng:range(-15, 15)),
+			V(0.5, 0.35, 0.01),
+			c.rng:pick({ C.mustard, C.graffitiTeal, C.paper }),
+			M.SmoothPlastic
+		)
 		if c.rng:chance(0.15) then
 			local sign = c.detail(P(-0.4, 4.6, -1.17) * R(0, 0, -4), V(1.4, 0.6, 0.01), C.paper, M.SmoothPlastic)
-			c.sign(sign, Words.outOfOrder, { font = Enum.Font.PermanentMarker, color = hex("#B22222"), pixelsPerStud = 50 })
+			c.sign(
+				sign,
+				Words.outOfOrder,
+				{ font = Enum.Font.PermanentMarker, color = hex("#B22222"), pixelsPerStud = 50 }
+			)
 		end
 		c.use(V(0, 3.5, -1.8))
 	end,
@@ -341,7 +379,12 @@ add({
 		local gap = if c.rng:chance(0.25) then c.rng:int(1, 4) else 0
 		for i, z in { -0.9, -0.3, 0.3, 0.9 } do
 			if i ~= gap then
-				c.part(P(0, 2.5, z) * R(0, c.rng:range(-1, 1), 0), V(6, 0.15, 0.55), shade(wood, c.rng:range(-0.15, 0.06)), M.WoodPlanks)
+				c.part(
+					P(0, 2.5, z) * R(0, c.rng:range(-1, 1), 0),
+					V(6, 0.15, 0.55),
+					shade(wood, c.rng:range(-0.15, 0.06)),
+					M.WoodPlanks
+				)
 			end
 		end
 		for _, sz in { -1, 1 } do
@@ -382,7 +425,12 @@ add({
 		local label = c.detail(P(0, 2.2, -0.81), V(1.4, 0.6, 0.02), shade(C.paper, -0.05), M.SmoothPlastic)
 		c.sign(label, Words.mail, { font = Enum.Font.GothamBold, color = body, pixelsPerStud = 50, padding = 0.08 })
 		patch(c, P(c.rng:range(-0.5, 0.5), c.rng:range(1.1, 1.6), -0.81), 0.5, 0.4)
-		c.detail(P(c.rng:range(-0.5, 0.5), c.rng:range(2.6, 2.9), -0.815) * R(0, 0, c.rng:range(-20, 20)), V(0.35, 0.25, 0.01), c.rng:pick({ C.mustard, C.graffitiMagenta }), M.SmoothPlastic)
+		c.detail(
+			P(c.rng:range(-0.5, 0.5), c.rng:range(2.6, 2.9), -0.815) * R(0, 0, c.rng:range(-20, 20)),
+			V(0.35, 0.25, 0.01),
+			c.rng:pick({ C.mustard, C.graffitiMagenta }),
+			M.SmoothPlastic
+		)
 	end,
 })
 

@@ -196,7 +196,12 @@ add({
 		c.detail(P(0, Ht - 0.19, 0), V(W - 0.1, 0.06, D - 0.1), brass, M.Metal)
 		for _, sx in { -1, 1 } do
 			for _, sz in { -1, 1 } do
-				c.detail(P(sx * (W / 2 - 0.2), (Ht - 0.22) / 2, sz * (D / 2 - 0.2)), V(0.12, Ht - 0.22, 0.12), brass, M.Metal)
+				c.detail(
+					P(sx * (W / 2 - 0.2), (Ht - 0.22) / 2, sz * (D / 2 - 0.2)),
+					V(0.12, Ht - 0.22, 0.12),
+					brass,
+					M.Metal
+				)
 			end
 		end
 		c.detail(P(0, 0.35, 0), V(W - 0.3, 0.08, D - 0.3), f.wood, f.woodMat)
@@ -263,7 +268,15 @@ add({
 		if variant == "fern" then
 			Shapes.blades(c, P(0, soil, 0), 6, 0.45, 0.12, col.leafLight, 35)
 		else
-			Shapes.foliage(c, P(0, soil + 0.14, 0), 6, 0.15, 0.18, 0.26, { hex("#6E9A5C"), hex("#8DB37A"), hex("#5B7F4E") })
+			Shapes.foliage(
+				c,
+				P(0, soil + 0.14, 0),
+				6,
+				0.15,
+				0.18,
+				0.26,
+				{ hex("#6E9A5C"), hex("#8DB37A"), hex("#5B7F4E") }
+			)
 		end
 	end,
 })
@@ -284,7 +297,12 @@ add({
 		for i = 1, n do
 			local x = -W / 2 + W * (i - 0.5) / n
 			local d = c.rng:range(1.3, 1.75)
-			c.dball(P(x, 2.12 + d * 0.35, c.rng:range(-0.1, 0.1)), d, c.rng:pick({ col.leaf, col.leafDark, col.leafLight }), M.Grass)
+			c.dball(
+				P(x, 2.12 + d * 0.35, c.rng:range(-0.1, 0.1)),
+				d,
+				c.rng:pick({ col.leaf, col.leafDark, col.leafLight }),
+				M.Grass
+			)
 		end
 		Shapes.blades(c, P(-W / 4, 2.12, 0), 4, 1.5, 0.12, col.leafLight, 18)
 		Shapes.blades(c, P(W / 4, 2.12, 0), 4, 1.5, 0.12, col.leafLight, 18)
@@ -322,7 +340,8 @@ add({
 				k += 1
 				Shapes.tombstone(
 					c,
-					P(j * 1.25 + c.rng:range(-0.1, 0.1), levels[i], c.rng:range(-0.15, 0.1)) * R(0, c.rng:range(-10, 10), 0),
+					P(j * 1.25 + c.rng:range(-0.1, 0.1), levels[i], c.rng:range(-0.15, 0.1))
+						* R(0, c.rng:range(-10, 10), 0),
 					c.rng:pick(styles),
 					deals[(k - 1) % #deals + 1],
 					f.wood

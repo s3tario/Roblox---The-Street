@@ -16,7 +16,6 @@ local V = Vector3.new
 local M = Enum.Material
 local col = Common.col
 local C = Kit.Palette.campus
-local S = Kit.Palette.street
 local shade = Kit.shade
 local hex = Kit.hex
 
@@ -99,7 +98,12 @@ add({
 			c.detail(P(x, 2.6, 1.15) * R(10, 0, 0), V(2.2, 1.5, 0.12), shade(seatC, -0.1), M.Fabric)
 		end
 		if c.rng:chance(0.5) then
-			c.detail(P(c.rng:range(-L / 2 + 1, L / 2 - 1), 3.1, -1.0) * R(8, c.rng:range(-30, 30), 0), V(0.7, 0.01, 0.9), col.paper, M.SmoothPlastic)
+			c.detail(
+				P(c.rng:range(-L / 2 + 1, L / 2 - 1), 3.1, -1.0) * R(8, c.rng:range(-30, 30), 0),
+				V(0.7, 0.01, 0.9),
+				col.paper,
+				M.SmoothPlastic
+			)
 		end
 	end,
 })
@@ -153,14 +157,21 @@ add({
 		local ajar = if c.rng:chance(0.35) then c.rng:int(1, n) else 0
 		for i = 1, n do
 			local x = -W / 2 + (i - 0.5) * pitch
-			local tone = if c.rng:chance(0.15) then c.rng:pick({ hex("#7A3B2E"), hex("#C9A13B") }) else shade(body, c.rng:range(-0.08, 0.08))
+			local tone = if c.rng:chance(0.15)
+				then c.rng:pick({ hex("#7A3B2E"), hex("#C9A13B") })
+				else shade(body, c.rng:range(-0.08, 0.08))
 			local hinge = P(x - 0.7, 3.4, -D / 2 - 0.01)
 			local door = hinge * R(0, if i == ajar then 16 else c.rng:range(-0.6, 0.6), 0) * P(0.7, 0, -0.01)
 			c.detail(door, V(1.4, 6.0, 0.04), tone, M.Metal)
 			c.detail(door * P(0, 2.2, -0.025), V(0.9, 0.5, 0.01), shade(tone, -0.45), M.DiamondPlate)
 			c.detail(door * P(0.5, -0.1, -0.05), V(0.08, 0.5, 0.06), col.chrome, M.Metal)
 			if c.rng:chance(0.45) then
-				c.detail(door * P(0.5, -0.45, -0.08), V(0.18, 0.22, 0.08), c.rng:pick({ hex("#B8933F"), col.plasticBlack }), M.Metal)
+				c.detail(
+					door * P(0.5, -0.45, -0.08),
+					V(0.18, 0.22, 0.08),
+					c.rng:pick({ hex("#B8933F"), col.plasticBlack }),
+					M.Metal
+				)
 			end
 		end
 	end,
@@ -225,7 +236,18 @@ add({
 		for _, sx in { -1, 1 } do
 			c.part(P(sx * 2.43, 1.32, 0), V(0.15, 2.64, 2.3), shade(lam, -0.08), M.SmoothPlastic)
 		end
-		Shapes.drawers(c, P(1.6, 2.32, -0.05), V(1.4, 0.6, 2.2), 1, shade(lam, -0.08), M.SmoothPlastic, lam, M.SmoothPlastic, col.plasticGrey, true)
+		Shapes.drawers(
+			c,
+			P(1.6, 2.32, -0.05),
+			V(1.4, 0.6, 2.2),
+			1,
+			shade(lam, -0.08),
+			M.SmoothPlastic,
+			lam,
+			M.SmoothPlastic,
+			col.plasticGrey,
+			true
+		)
 		for _, sx in { -1, 1 } do
 			c.detail(P(sx * 2.43, 3.91, 0.85), V(0.15, 2.3, 0.7), shade(lam, -0.08), M.SmoothPlastic)
 		end
@@ -234,18 +256,35 @@ add({
 		c.detail(P(0, 3.91, 1.18), V(4.8, 2.3, 0.04), shade(lam, -0.2), M.SmoothPlastic)
 		Shapes.books(c, P(-0.6, 4.05, 0.85), 3.0, 0.85, 0.5, 4)
 		c.detail(P(-0.6, 2.79, -0.3), V(1.3, 0.06, 0.9), col.plasticGrey, M.SmoothPlastic)
-		local screen = c.detail(P(-0.6, 3.21, 0.14) * R(12, 0, 0), V(1.3, 0.85, 0.04), col.plasticBlack, M.SmoothPlastic)
+		local screen =
+			c.detail(P(-0.6, 3.21, 0.14) * R(12, 0, 0), V(1.3, 0.85, 0.04), col.plasticBlack, M.SmoothPlastic)
 		if c.bool("lit", true) then
-			local face = c.detail(P(-0.6, 3.21, 0.14) * R(12, 0, 0) * P(0, 0, -0.025), V(1.2, 0.75, 0.01), hex("#0E1622"), M.SmoothPlastic)
+			local face = c.detail(
+				P(-0.6, 3.21, 0.14) * R(12, 0, 0) * P(0, 0, -0.025),
+				V(1.2, 0.75, 0.01),
+				hex("#0E1622"),
+				M.SmoothPlastic
+			)
 			face.Name = "Screen"
 			Gui.Screens.screen(face, c.rng:pick({ "sheet", "email", "chart" }), c.rng)
 		end
 		screen.Name = "Laptop"
 		for i = 1, 2 do
-			c.dcyl(P(1.1 + i * 0.35, 2.76 + 0.2, -0.5 + i * 0.1), 0.4, 0.2, c.rng:pick({ hex("#2BD67B"), hex("#C0392B"), hex("#1F4E8C") }), M.Metal)
+			c.dcyl(
+				P(1.1 + i * 0.35, 2.76 + 0.2, -0.5 + i * 0.1),
+				0.4,
+				0.2,
+				c.rng:pick({ hex("#2BD67B"), hex("#C0392B"), hex("#1F4E8C") }),
+				M.Metal
+			)
 		end
 		for _ = 1, 2 do
-			c.detail(P(c.rng:range(-2, 2), c.rng:range(3.2, 3.8), 1.155) * R(0, 0, c.rng:range(-10, 10)), V(0.3, 0.3, 0.01), hex("#F4E04D"), M.SmoothPlastic)
+			c.detail(
+				P(c.rng:range(-2, 2), c.rng:range(3.2, 3.8), 1.155) * R(0, 0, c.rng:range(-10, 10)),
+				V(0.3, 0.3, 0.01),
+				hex("#F4E04D"),
+				M.SmoothPlastic
+			)
 		end
 	end,
 })
@@ -317,7 +356,12 @@ add({
 					local f = flyers[(k - 1) % #flyers + 1]
 					local gui = Gui.Core.surface(flyer, Enum.NormalId.Front, { pps = 50, maxDistance = 60 })
 					Gui.Art.poster(gui, f[1], f[2], c.rng:pick(palettes), c.rng, Enum.Font.SpecialElite)
-					c.detail(P(x, y, -0.142) * rot * P(0, fh / 2 - 0.04, 0), V(0.5, 0.16, 0.005), hex("#EDE7D0"), M.SmoothPlastic)
+					c.detail(
+						P(x, y, -0.142) * rot * P(0, fh / 2 - 0.04, 0),
+						V(0.5, 0.16, 0.005),
+						hex("#EDE7D0"),
+						M.SmoothPlastic
+					)
 				end
 			end
 		end
@@ -331,7 +375,7 @@ add({
 	id = "pizza_box",
 	category = "campus",
 	footprint = V(2.1, 2.6, 2.45),
-	maxParts = 12,
+	maxParts = 14,
 	tags = { "clutter", "food", "desk_item" },
 	scales = { count = 4 },
 	build = function(c: Ctx)
@@ -339,13 +383,30 @@ add({
 		local card = c.color("color", hex("#D9C3A0"))
 		local bh = 0.3
 		for i = 1, n - 1 do
-			local box = c.detail(P(c.rng:range(-0.05, 0.05), (i - 0.5) * bh, c.rng:range(-0.05, 0.05)) * R(0, c.rng:range(-6, 6), 0), V(2, bh - 0.01, 2), shade(card, c.rng:range(-0.08, 0.02)), M.Cardboard)
-			c.sign(box, Words.pizza, { face = Enum.NormalId.Top, font = Enum.Font.LuckiestGuy, color = hex("#B5202B"), pixelsPerStud = 30, padding = 0.18 })
+			local box = c.detail(
+				P(c.rng:range(-0.05, 0.05), (i - 0.5) * bh, c.rng:range(-0.05, 0.05)) * R(0, c.rng:range(-6, 6), 0),
+				V(2, bh - 0.01, 2),
+				shade(card, c.rng:range(-0.08, 0.02)),
+				M.Cardboard
+			)
+			c.sign(box, Words.pizza, {
+				face = Enum.NormalId.Top,
+				font = Enum.Font.LuckiestGuy,
+				color = hex("#B5202B"),
+				pixelsPerStud = 30,
+				padding = 0.18,
+			})
 		end
 		local y0 = (n - 1) * bh
 		c.detail(P(0, y0 + 0.06, 0), V(2, 0.12, 2), card, M.Cardboard)
 		local lid = c.detail(P(0, y0 + 0.12, 1.0) * R(100, 0, 0) * P(0, 0.02, -1.0), V(2, 0.04, 2), card, M.Cardboard)
-		c.sign(lid, Words.pizza, { face = Enum.NormalId.Top, font = Enum.Font.LuckiestGuy, color = hex("#B5202B"), pixelsPerStud = 30, padding = 0.18 })
+		c.sign(lid, Words.pizza, {
+			face = Enum.NormalId.Top,
+			font = Enum.Font.LuckiestGuy,
+			color = hex("#B5202B"),
+			pixelsPerStud = 30,
+			padding = 0.18,
+		})
 		c.dcyl(P(0, y0 + 0.14, 0), 0.04, 1.8, hex("#E3A857"), M.SmoothPlastic)
 		c.dcyl(P(0, y0 + 0.165, 0), 0.02, 1.6, hex("#D9572B"), M.SmoothPlastic)
 		for _ = 1, 4 do
@@ -380,8 +441,13 @@ add({
 		c.detail(P(-0.8, 3.55, -1.345), V(0.6, 0.3, 0.04), shade(body, -0.1), M.SmoothPlastic)
 		c.detail(P(0, 0.12, -1.31), V(2.5, 0.24, 0.04), shade(body, -0.2), M.SmoothPlastic)
 		if c.rng:chance(0.2) then
-			local sign = c.detail(P(0, 2.95, -1.335) * R(0, 0, c.rng:range(-5, 5)), V(1.2, 0.5, 0.01), C.paper, M.SmoothPlastic)
-			c.sign(sign, Words.laundry[1], { font = Enum.Font.PermanentMarker, color = hex("#B22222"), pixelsPerStud = 50 })
+			local sign =
+				c.detail(P(0, 2.95, -1.335) * R(0, 0, c.rng:range(-5, 5)), V(1.2, 0.5, 0.01), C.paper, M.SmoothPlastic)
+			c.sign(
+				sign,
+				Words.laundry[1],
+				{ font = Enum.Font.PermanentMarker, color = hex("#B22222"), pixelsPerStud = 50 }
+			)
 		end
 		c.use(V(0, 2, -1.8))
 	end,
@@ -416,7 +482,12 @@ add({
 		c.dcyl(P(-0.35, 2.99, 1.62), 0.46, 0.16, hex("#E3B505"), M.SmoothPlastic)
 		if c.rng:chance(0.4) then
 			local sx = if c.rng:chance(0.5) then -1 else 1
-			c.detail(P(sx * 2.2, 1.805, c.rng:range(-1.5, 1.5)) * R(0, c.rng:range(-30, 30), 0), V(0.6, 0.01, 0.3), hex("#9A9DA1"), M.Fabric)
+			c.detail(
+				P(sx * 2.2, 1.805, c.rng:range(-1.5, 1.5)) * R(0, c.rng:range(-30, 30), 0),
+				V(0.6, 0.01, 0.3),
+				hex("#9A9DA1"),
+				M.Fabric
+			)
 		end
 	end,
 })

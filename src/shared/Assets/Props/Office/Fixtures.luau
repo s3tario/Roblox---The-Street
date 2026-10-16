@@ -150,7 +150,14 @@ add({
 		dial.Name = "Dial"
 		dial.Transparency = 1
 		local gui, gw, gh = Gui.Core.surface(dial, Enum.NormalId.Front, { pps = 70, maxDistance = 70 })
-		Gui.Art.clockFace(gui, gw, gh, c.int("hour", c.rng:int(1, 12), 0, 23), c.int("minute", c.rng:int(0, 59), 0, 59), rim)
+		Gui.Art.clockFace(
+			gui,
+			gw,
+			gh,
+			c.int("hour", c.rng:int(1, 12), 0, 23),
+			c.int("minute", c.rng:int(0, 59), 0, 59),
+			rim
+		)
 		c.tag(dial, "WallClock")
 	end,
 })

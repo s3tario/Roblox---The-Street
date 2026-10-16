@@ -119,18 +119,17 @@ local function trousers(ctx: Ctx)
 			if seg == "UpperLeg" and Fit.covered(ctx, "thighs") then
 				continue
 			end
-			each(ctx, seg, function(name, s)
-				for _, x in { -0.27, 0.27 } do
-					Fit.box(
-						ctx,
-						name,
-						CFrame.new(x * s.X, 0, -s.Z / 2 - 0.004),
-						Vector3.new(0.02, s.Y, 0.008),
-						stripe,
-						FABRIC,
-						"bottom_Stripe"
-					)
-				end
+			-- one chalk stripe on the outer half of each leg (the crease runs down the middle)
+			each(ctx, seg, function(name, s, sx)
+				Fit.box(
+					ctx,
+					name,
+					CFrame.new(sx * 0.27 * s.X, 0, -s.Z / 2 - 0.004),
+					Vector3.new(0.02, s.Y, 0.008),
+					stripe,
+					FABRIC,
+					"bottom_Stripe"
+				)
 			end)
 		end
 	end
@@ -306,13 +305,29 @@ local function aline_skirt(ctx: Ctx)
 	local h = l.Y + drop
 	local w, d = l.X + 0.1, l.Z + 0.1
 	local bottomY = l.Y / 2 - h
-	Fit.box(ctx, "LowerTorso", CFrame.new(0, l.Y / 2 - h / 2, 0), Vector3.new(w, h, d), col.primary, FABRIC, "bottom_Skirt")
+	Fit.box(
+		ctx,
+		"LowerTorso",
+		CFrame.new(0, l.Y / 2 - h / 2, 0),
+		Vector3.new(w, h, d),
+		col.primary,
+		FABRIC,
+		"bottom_Skirt"
+	)
 	waistband(ctx, l)
 	-- flare: four wedges whose sloped faces open outward toward the hem
 	local fh = drop * 0.8
 	local flare = 0.18
 	local y = bottomY + fh / 2
-	Fit.wedge(ctx, "LowerTorso", CFrame.new(0, y, -d / 2 - flare / 2), Vector3.new(w, fh, flare), col.primary, FABRIC, "bottom_Flare")
+	Fit.wedge(
+		ctx,
+		"LowerTorso",
+		CFrame.new(0, y, -d / 2 - flare / 2),
+		Vector3.new(w, fh, flare),
+		col.primary,
+		FABRIC,
+		"bottom_Flare"
+	)
 	Fit.wedge(
 		ctx,
 		"LowerTorso",

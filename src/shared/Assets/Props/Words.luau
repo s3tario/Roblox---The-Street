@@ -128,4 +128,51 @@ Words.noTrespass = "NO TRESPASSING"
 Words.elevator = "LOBBY"
 Words.reception = "STERLING & VANCE"
 
+Words.benchPlaque = "Gift of the Ledger Society"
+Words.cab = "METRO CAB"
+Words.platePrefix = { "ST", "EX", "LD", "MW", "BR" }
+Words.walk = "WALK"
+Words.dontWalk = "DON'T WALK"
+Words.pushButton = "PUSH"
+Words.cartMenus = {
+	hotdog = { "HOT DOG  $3", "CHILI DOG  $4", "PRETZEL  $3", "SODA  $2" },
+	coffee = { "DRIP  $2", "LATTE  $4", "ESPRESSO  $3", "BAGEL  $3" },
+	pretzel = { "PRETZEL  $3", "SALTED  $3", "CINNAMON  $4", "LEMONADE  $2" },
+}
+Words.newsTagline = "PAPERS - MAGAZINES - SNACKS"
+Words.newsstandPrice = "DAILY  $2"
+Words.bikeKiosk = { "STREETCYCLE", "TAP TO RIDE", "$3 / 30 MIN" }
+Words.statueTitle = "THE CONTEST"
+Words.scaffoldNotice = "HARD HAT AREA"
+Words.retailBrands = { "HARTWELL TAILORS", "VANTA WATCHES", "STRIDER SHOES", "GALLERIA" }
+Words.newSeason = "NEW SEASON"
+Words.posTotal = "TOTAL"
+Words.artTitles = {
+	"Untitled No. 7",
+	"Bull Market, Dusk",
+	"Liquidity",
+	"Study in Navy",
+	"The Long Position",
+	"Arbitrage II",
+}
+Words.humidor = "70% RH"
+Words.vip = "VIP"
+Words.wayfinding = {
+	title = "DIRECTORY",
+	entries = {
+		"< METROPOLITAN EXCHANGE",
+		"> STERLING & VANCE HQ",
+		"> GALLERIA SHOPS",
+		"< SUBWAY - BROAD ST",
+		"^ EXECUTIVE CLUB",
+		"> APARTMENTS",
+	},
+}
+Words.plaqueTitle = "EST. 1888"
+Words.plaqueBody = "On this site the first shares of the\nMetropolitan Exchange changed hands."
+Words.posterTitle = "THE STREET"
+Words.posterBody = "Every career starts somewhere."
+Words.neonDefault = "OPEN LATE"
+Words.buildingDefault = "STERLING & VANCE"
+
 return Words

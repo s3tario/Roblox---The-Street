@@ -68,6 +68,9 @@ export type Def = {
 	tags: { string },
 	mount: string?,
 	surface: number?, -- height of the usable top surface (desks, tables, counters, shelves)
+	-- Local centre (X, Z) of the footprint box when the prop is deliberately off-centre from cf
+	-- (a lamp whose head overhangs the road, a hydrant cap). Default (0, 0, 0).
+	offset: Vector3?,
 	-- Options that change size and part count, mapped to the value that produces the LARGEST build.
 	-- maxParts covers that case (tests build it). footprint describes the default build.
 	scales: { [string]: any }?,

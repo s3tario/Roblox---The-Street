@@ -104,7 +104,15 @@ end
 Core.off = off
 
 -- Frame in pixel coordinates (top-left origin).
-function Core.px(parent: Instance, x: number, y: number, w: number, h: number, color: Color3, transparency: number?): Frame
+function Core.px(
+	parent: Instance,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	color: Color3,
+	transparency: number?
+): Frame
 	local f = Instance.new("Frame")
 	f.BorderSizePixel = 0
 	f.BackgroundColor3 = color
@@ -263,6 +271,19 @@ function Core.arrow(parent: Instance, x1: number, y1: number, x2: number, y2: nu
 	for _, s in { 1, -1 } do
 		local b = a + math.pi + s * 0.5
 		Core.line(parent, x2, y2, x2 + math.cos(b) * head, y2 + math.sin(b) * head, thick, color)
+	end
+end
+
+-- Checkerboard of `cols` x `rows` cells filling `parent` (scale coordinates).
+function Core.checker(parent: Instance, cols: number, rows: number, a: Color3, b: Color3)
+	Core.bg(parent, a)
+	local cw, ch = 1 / cols, 1 / rows
+	for r = 0, rows - 1 do
+		for c = 0, cols - 1 do
+			if (r + c) % 2 == 1 then
+				Core.frame(parent, c * cw, r * ch, cw, ch, b)
+			end
+		end
 	end
 end
 

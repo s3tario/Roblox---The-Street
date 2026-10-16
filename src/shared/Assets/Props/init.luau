@@ -8,7 +8,10 @@
 --       PropCategory, PropMount, tag "Prop", an Attachment "Use" under Root (where a ProximityPrompt
 --       belongs) and only anchored parts. Unknown ids raise an error (use Props.has or Props.tryBuild).
 --   Props.tryBuild(id, parent, cf, opts?) -> (Model?, string?)   never throws
---   Props.list() -> { {id, category, footprint, maxParts, tags, mount, surface?, scales?} }
+--   Props.list() -> { {id, category, footprint, maxParts, tags, mount, surface?, offset?, scales?, maxOpts?} }
+--       footprint = approximate X/Y/Z size of the default build; offset = local centre of that box when the
+--       prop is deliberately off-centre (default zero); surface = usable top height; scales = option names
+--       that change the size (maxOpts maps each to its largest value, which maxParts covers).
 --   Props.has(id) -> boolean,  Props.get(id) -> Info?,  Props.ids(category?) -> {string}
 --
 -- Common opts: color (main colour), accent, variant (number or string), seed, lit (lamps, screens),
@@ -29,6 +32,7 @@ export type Info = {
 	tags: { string },
 	mount: string,
 	surface: number?,
+	offset: Vector3?,
 	scales: { string }?,
 	maxOpts: { [string]: any }?,
 }
@@ -149,6 +153,7 @@ local function info(d: Common.Def): Info
 		tags = table.clone(d.tags),
 		mount = d.mount or "floor",
 		surface = d.surface,
+		offset = d.offset,
 		scales = scaleNames,
 		maxOpts = if d.scales then table.clone(d.scales) else nil,
 	}
