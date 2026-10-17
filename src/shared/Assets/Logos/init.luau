@@ -68,12 +68,14 @@ local function register(list: { P.Spec })
 	end
 end
 
+local Schools = require(script.Schools)
+
 register(require(script.Banks))
 register(require(script.Anaeio))
 register(require(script.Funds))
 register(require(script.Lotus))
 register(require(script.Ventures))
-register(require(script.Schools))
+register(Schools.list)
 register(require(script.Brands))
 register(require(script.Windmill))
 register(require(script.HouseBrands))
@@ -262,7 +264,6 @@ local function brandMarkSpec(id: string, name: string, rarity: string?): P.Spec
 end
 
 local function crestSpec(id: string, name: string, rarity: string?): P.Spec
-	local Schools = require(script.Schools) :: any
 	return Schools.generic(id, name, rarity or "common")
 end
 
@@ -270,8 +271,10 @@ end
 local generated: { [string]: P.Spec | false } = {}
 local function generatedSpec(id: string): P.Spec?
 	local hit = generated[id]
-	if hit ~= nil then
-		return if hit then hit else nil
+	if hit == false then
+		return nil
+	elseif hit ~= nil then
+		return hit :: P.Spec
 	end
 	local spec: P.Spec? = nil
 	if string.sub(id, 1, 6) == "brand_" then
@@ -345,7 +348,7 @@ local function build(
 ): Frame
 	local spec, known = resolveSpec(logoId)
 	local aspect = aspectOf(spec)
-	local theme = o.theme
+	local theme: string = o.theme or "light"
 	if theme ~= "dark" and theme ~= "color" then
 		theme = "light"
 	end
@@ -354,7 +357,14 @@ local function build(
 		base = table.clone(base)
 		base.tier = rarityColor(spec.rarity)
 	end
-	local pal, bg = Colors.resolve(base, theme, o.tint, spec.themes)
+	local pal: Colors.Palette, bg: Color3
+	if spec.keepColors and not o.tint and theme ~= "light" then
+		pal = Colors.resolve(base, "light", nil, spec.themes)
+		bg = if theme == "dark" then Colors.DARK_BG else (base.field or base.main or Colors.INK)
+		pal.bg = bg
+	else
+		pal, bg = Colors.resolve(base, theme, o.tint, spec.themes)
+	end
 
 	local wantBg: boolean | Color3 = if o.background ~= nil then o.background else theme == "color"
 	local pad = math.clamp(o.padding or (if wantBg ~= false then 0.12 else 0), 0, 0.45)

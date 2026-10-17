@@ -1,7 +1,8 @@
 --!strict
 -- Wardrobe screen: item cards. Each card shows the item's colour swatches, its name, the brand line in the
--- rarity colour (a prismatic gradient for Mythic), a rarity strip along the top and a state badge (price,
--- Owned, Wearing, or the lock reason). The whole card is one tap target.
+-- rarity colour (a prismatic gradient for Mythic), a rarity strip along the top, the clothing level ("Lv 3",
+-- v3 §5) in the top corner and a state badge (price, Owned, Wearing, or the lock reason). The whole card is one
+-- tap target.
 --
 --   Cards.item(item, state: View.State, opts) -> Card
 --     opts = { selected: boolean?, onClick: () -> () }
@@ -87,6 +88,14 @@ function Cards.item(item: Catalog.Item, state: View.State, opts: { selected: boo
 	local swatches = swatchRow(item)
 	swatches.LayoutOrder = 1
 	swatches.Parent = body
+
+	-- clothing level, top-right over the swatch row (outside the list layout)
+	local level = Kit.Badge({ text = View.levelBadge(item), color = "surface", name = "Level", size = "xs" })
+	level.frame.AnchorPoint = Vector2.new(1, 0)
+	level.frame.Position = UDim2.new(1, -6, 0, 10)
+	level.frame.ZIndex = 3
+	level.label.ZIndex = 3
+	level.frame.Parent = root
 
 	local name = Kit.Label({
 		text = item.name,

@@ -60,8 +60,16 @@ return function(t)
 		t.it("normalize repairs junk from the DataStore", function()
 			local inv = Inventory.normalize({
 				owned = { oxford_white = true, gone_item = true, [5] = true, tie_navy = false },
-				equipped = { top = "oxford_white", bottom = "oxford_white", hat = "beanie_charcoal", outer = "doorman_coat" },
-				presets = { ["1"] = { name = "  Work  ", equipped = { top = "oxford_white", shoes = "nope" } }, ["9"] = {} },
+				equipped = {
+					top = "oxford_white",
+					bottom = "oxford_white",
+					hat = "beanie_charcoal",
+					outer = "doorman_coat",
+				},
+				presets = {
+					["1"] = { name = "  Work  ", equipped = { top = "oxford_white", shoes = "nope" } },
+					["9"] = {},
+				},
 				wearAvatar = "yes",
 				stages = { student = true, wizard = true },
 			})

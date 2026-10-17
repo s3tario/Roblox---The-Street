@@ -11,7 +11,9 @@
 --   Look.fetch(player) -> HumanoidDescription?                         the avatar from the web (fallback)
 --   Look.standardize(character, original) -> boolean                    yields (ApplyDescription)
 --   Look.restore(character, original) -> boolean                        yields (ApplyDescription)
---   Look.dress(character, equipped, skin?) -> Wardrobe.Result           sync: templates + 3D layers
+--   Look.dress(character, equipped, skin?, logo?) -> Wardrobe.Result    sync: templates + 3D layers
+--       logo = { id = logoId?, monogram = string? }: the wearer's company logo, drawn by Wardrobe.apply only on a
+--       vest or quarter-zip (v3 §16)
 --   Look.undress(character)                                             sync: removes templates + layers
 --   Look.skinOf(description) -> Color3
 --   Look.inWorkspace(character, timeout) -> boolean                     waits until parented under Workspace
@@ -297,8 +299,10 @@ local function hatHair(character: Model, hatted: boolean)
 	end
 end
 
+export type Logo = { id: string?, monogram: string? }
+
 -- Templates and fitted layers for `equipped` (already validated). Synchronous.
-function Look.dress(character: Model, equipped: { [string]: string }, skin: Color3?): Wardrobe.Result
+function Look.dress(character: Model, equipped: { [string]: string }, skin: Color3?, logo: Logo?): Wardrobe.Result
 	-- the look actually worn includes the plain base pieces for empty required slots
 	local worn: { [string]: string } = table.clone(equipped)
 	for slot, id in Catalog.REQUIRED do
@@ -309,7 +313,12 @@ function Look.dress(character: Model, equipped: { [string]: string }, skin: Colo
 	setTemplate(character, "Shirt", Look.SHIRT_NAME, templateFor(worn, "shirt"))
 	setTemplate(character, "Pants", Look.PANTS_NAME, templateFor(worn, "pants"))
 	hatHair(character, equipped.head ~= nil)
-	return Wardrobe.apply(character, equipped, { anchored = false, skin = skin })
+	return Wardrobe.apply(character, equipped, {
+		anchored = false,
+		skin = skin,
+		companyLogo = if logo then logo.id else nil,
+		companyMonogram = if logo then logo.monogram else nil,
+	})
 end
 
 function Look.undress(character: Model)

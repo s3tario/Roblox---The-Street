@@ -7,6 +7,10 @@
 --   View.rarity(rarityId) -> { name, color: Color3, color2: Color3? }
 --   View.brandLine(item) -> "Gapline · Common"
 --   View.errorText(errKey) -> string
+--   View.levelBadge(item) -> "Lv 3"              the clothing level (= tier, v3 §5) shown on cards and the preview
+--   View.outfit(equipped) -> Outfit               the Outfit Level of a look, with the part holding it down
+--   View.dressCode(level, minLevel?, companyName?) -> DressCode?   the firm's minimum Outfit Level vs the look
+--   View.canUsePrompt(career, events, companyId?) -> boolean   hide "EmployeesOnly" prompts for visitors
 -- viewer = { owned, rank, passes } (Catalog.Viewer); equipped = inventory.equipped.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -85,7 +89,14 @@ function View.state(item: Catalog.Item, viewer: Catalog.Viewer, equipped: { [str
 	end
 	if access == "roll" or access == "heirloom" then
 		local text = Catalog.text("locked_" .. access)
-		return { state = access, badge = text, badgeColor = "surface", action = "none", actionText = text, locked = true }
+		return {
+			state = access,
+			badge = text,
+			badgeColor = "surface",
+			action = "none",
+			actionText = text,
+			locked = true,
+		}
 	end
 	local price = Format.money(item.price)
 	return {
@@ -147,6 +158,87 @@ function View.errorText(err: string?): string
 		return Catalog.strings[key]
 	end
 	return Catalog.strings.err_generic
+end
+
+---------------------------------------------------------------------------------------------------
+-- Clothing level and Outfit Level (v3 §5)
+---------------------------------------------------------------------------------------------------
+function View.levelBadge(item: Catalog.Item): string
+	return Catalog.text("level_badge", { level = Catalog.levelOf(item) })
+end
+
+export type Outfit = {
+	level: number,
+	text: string, -- "Outfit Lv 3"
+	held: string?, -- "Held at Lv 2 by your shoes" when a part is below the others
+	parts: Catalog.OutfitParts,
+}
+
+function View.outfit(equipped: { [string]: string }?): Outfit
+	local level, parts = Catalog.outfitLevel(equipped)
+	local held: string? = nil
+	if math.max(parts.torso, parts.bottom, parts.shoes) > level then
+		-- every part sitting at the Outfit Level ("Held at Lv 3 by your bottoms and shoes")
+		local names: { string } = {}
+		for _, part in { "torso", "bottom", "shoes" } do
+			if (parts :: any)[part] == level then
+				table.insert(names, Catalog.text("part_" .. part))
+			end
+		end
+		local list = names[1] or ""
+		for i = 2, #names do
+			list = Catalog.text("list_and", { a = list, b = names[i] })
+		end
+		held = Catalog.text("outfit_held_by", { part = list, level = level })
+	end
+	return { level = level, text = Catalog.text("outfit_level", { level = level }), held = held, parts = parts }
+end
+
+export type DressCode = { required: number, ok: boolean, text: string, color: string }
+
+-- nil when there is no requirement to show (no firm, or the firm's level is unknown).
+function View.dressCode(level: number, minLevel: any, companyName: any): DressCode?
+	if type(minLevel) ~= "number" or minLevel ~= minLevel or minLevel < 1 then
+		return nil
+	end
+	local required = math.clamp(math.floor(minLevel), 1, Catalog.LEVELS)
+	local ok = level >= required
+	local text = if type(companyName) == "string" and companyName ~= ""
+		then Catalog.text("dress_code", { company = companyName, level = required })
+		else if ok then Catalog.text("dress_code_ok") else Catalog.text("dress_code_short", { level = required })
+	return { required = required, ok = ok, text = text, color = if ok then "good" else "bad" }
+end
+
+-- Whether this client should show an "EmployeesOnly" prompt of companyId: the player works there, or the two
+-- firms are paired by a Merger Mania event (the server checks again either way: CareerService:IsEmployeeOf).
+--   career = the replicated `career` key; events = the global `events` key (contracts §13)
+function View.canUsePrompt(career: any, events: any, companyId: any): boolean
+	if type(companyId) ~= "string" or companyId == "" then
+		return true
+	end
+	local mine = if type(career) == "table" then career.companyId else nil
+	if type(mine) ~= "string" or mine == "" then
+		return false
+	end
+	if mine == companyId then
+		return true
+	end
+	local corporate = if type(events) == "table" then events.corporate else nil
+	if type(corporate) == "table" and corporate.id == "merger_mania" and type(corporate.data) == "table" then
+		local seen: { [string]: boolean } = {}
+		local function scan(v: any, depth: number)
+			if type(v) == "string" then
+				seen[v] = true
+			elseif type(v) == "table" and depth < 3 then
+				for _, x in v do
+					scan(x, depth + 1)
+				end
+			end
+		end
+		scan(corporate.data, 0)
+		return seen[mine] == true and seen[companyId] == true
+	end
+	return false
 end
 
 -- Item colour swatches for a card ("#RRGGBB" -> Color3), primary first.

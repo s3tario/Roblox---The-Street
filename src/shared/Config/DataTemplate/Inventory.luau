@@ -6,7 +6,7 @@
 --   presets     { ["1".."5"] = { name, equipped = { [slot] = itemId } } }   saved outfits (string keys so the
 --                                              DataStore never sees a sparse array)
 --   wearAvatar  boolean                        true = show the player's own Roblox avatar instead of the Career Look
---   stages      { [stageId] = true }           starter outfits already granted (student, intern, analyst)
+--   stages      { [stageId] = true }           starter outfits already granted (student, analyst, associate)
 
 return {
 	inventory = {

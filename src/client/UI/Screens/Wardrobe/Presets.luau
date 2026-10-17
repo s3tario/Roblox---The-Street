@@ -53,10 +53,12 @@ function Presets.build(opts: { onSave: (number, string?) -> (), onLoad: (number)
 		local texts = Kit.List({ gap = 0, name = "Texts", size = UDim2.new(1, -250, 1, 0) })
 		texts.layout.VerticalAlignment = Enum.VerticalAlignment.Center
 		row.add(texts)
-		local name = Kit.Label({ text = "", size = "md", font = "bodyBold", autoSize = "none", height = 22, name = "Name" })
+		local name =
+			Kit.Label({ text = "", size = "md", font = "bodyBold", autoSize = "none", height = 22, name = "Name" })
 		name.frame.TextTruncate = Enum.TextTruncate.AtEnd
 		texts.add(name)
-		local info = Kit.Label({ text = "", size = "xs", color = "textDim", autoSize = "none", height = 16, name = "Info" })
+		local info =
+			Kit.Label({ text = "", size = "xs", color = "textDim", autoSize = "none", height = 16, name = "Info" })
 		texts.add(info)
 		local lock = Kit.Badge({ text = Catalog.text("preset_locked"), color = "accent", name = "Lock" })
 		texts.add(lock)
@@ -101,7 +103,9 @@ function Presets.build(opts: { onSave: (number, string?) -> (), onLoad: (number)
 			end
 			local empty = type(p) ~= "table"
 			r.name.setText(if empty then Catalog.text("preset_name", { index = i }) else tostring(p.name))
-			r.info.setText(if empty then Catalog.text("preset_empty") else Catalog.text("preset_pieces", { count = count }))
+			r.info.setText(
+				if empty then Catalog.text("preset_empty") else Catalog.text("preset_pieces", { count = count })
+			)
 			r.info.frame.Visible = not locked
 			r.lock.frame.Visible = locked
 			r.wear.setDisabled(locked or empty or busy)

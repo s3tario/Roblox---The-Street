@@ -1,12 +1,14 @@
 --!strict
 -- Wardrobe screen (UI screen id "Wardrobe", owned by `wardrobe`). Opened by WardrobeController (wardrobe
--- interact prompts, the menu tab) with optional args { slot = "outer", item = "wk_jacket" } to pre-select.
+-- interact prompts, the menu tab) with optional args { slot = "outer", item = "pm_jacket" } to pre-select.
 --
--- Layout: a live 3D preview (drag to turn) with the "Wear my avatar" toggle, and the catalogue: slot tabs plus
--- "Outfits" (presets), a grid of item cards (rarity strip and brand line, price / Owned / Wearing / lock badge)
--- and a details bar with the action for the selected item (Wear, Take off, Buy). Wide screens put the preview on
--- the left; narrow ones stack it on top. Tapping a card tries the item on in the preview only; the action
--- button makes it real through WardrobeController (server-validated).
+-- Layout: a live 3D preview (drag to turn) with the Outfit Level of the look on it ("Outfit Lv 3", v3 §5), the
+-- firm's dress code when the player has one, and the "Wear my avatar" toggle; and the catalogue: slot tabs plus
+-- "Outfits" (presets), a grid of item cards (rarity strip, "Lv N" badge, brand line, price / Owned / Wearing /
+-- lock badge) and a details bar with the action for the selected item (Wear, Take off, Buy). Wide screens put the
+-- preview on the left; narrow ones stack it on top. Tapping a card tries the item on in the preview only; the
+-- action button makes it real through WardrobeController (server-validated). The preview wears the company logo
+-- on vests and quarter-zips exactly like the real character (v3 §16).
 --
 -- ctx (from UIController) = { Registry, Store, UI, close, ... }; every field is optional so the screen also
 -- opens under Lune for tests.
@@ -19,6 +21,7 @@ local View = require(script.View)
 local Cards = require(script.Cards)
 local Preview = require(script.Preview)
 local PresetsPanel = require(script.Presets)
+local Status = require(script.Status)
 
 local Screen = { id = "Wardrobe", hideHud = true, View = View }
 
@@ -97,7 +100,7 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 	local tab: string = if type(a.slot) == "string" and Catalog.SLOT_SET[a.slot] then a.slot else View.TABS[1]
 	local selected: string? = nil
 	if type(a.item) == "string" then
-		local item = Catalog.get(a.item)
+		local item = Catalog.get(Catalog.canonical(a.item))
 		if item and not item.hidden then
 			selected = item.id
 			tab = item.slot
@@ -134,9 +137,17 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 
 	-- Preview + controls
 	local playerName, skin = playerLook()
-	local preview = Preview.new({ name = playerName, skin = skin, hint = Catalog.text("preview_hint") })
+	local preview = Preview.new({
+		name = playerName,
+		skin = skin,
+		hint = Catalog.text("preview_hint"),
+		companyLogo = (access :: any).companyLogo,
+	})
 	preview.frame.Size = UDim2.new(1, 0, 1, -CONTROLS_H)
 	preview.frame.Parent = previewArea
+
+	-- Outfit Level of the look on the preview, what holds it down, and the firm's dress code
+	local status = Status.build(preview.overlay)
 
 	local controls = Kit.List({ direction = "horizontal", gap = 8, name = "Controls" })
 	controls.frame.AnchorPoint = Vector2.new(0, 1)
@@ -256,12 +267,14 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 	detail.frame.Parent = catalogArea
 	local detailText = Kit.List({ gap = 2, name = "Texts", size = UDim2.new(1, -168, 1, 0) })
 	detail.add(detailText)
-	local dName = Kit.Label({ text = "", size = "md", font = "bodyBold", autoSize = "none", height = 24, name = "Name" })
+	local dName =
+		Kit.Label({ text = "", size = "md", font = "bodyBold", autoSize = "none", height = 24, name = "Name" })
 	dName.frame.TextTruncate = Enum.TextTruncate.AtEnd
 	detailText.add(dName)
 	local dBrand = Kit.Label({ text = "", size = "xs", autoSize = "none", height = 16, name = "Brand" })
 	detailText.add(dBrand)
-	local dDesc = Kit.Label({ text = "", size = "xs", color = "textDim", autoSize = "none", height = 34, name = "Desc" })
+	local dDesc =
+		Kit.Label({ text = "", size = "xs", color = "textDim", autoSize = "none", height = 34, name = "Desc" })
 	dDesc.frame.TextTruncate = Enum.TextTruncate.AtEnd
 	detailText.add(dDesc)
 	local buttons = Kit.List({ gap = 6, name = "Buttons", size = UDim2.new(0, 160, 1, 0) })
@@ -346,11 +359,11 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 
 	local function refreshPreview()
 		local item = selectedItem()
-		if item then
-			preview.set(View.preview(inv.equipped, item.slot, item.id))
-		else
-			preview.set(View.preview(inv.equipped))
-		end
+		local look = if item then View.preview(inv.equipped, item.slot, item.id) else View.preview(inv.equipped)
+		preview.set(look)
+		preview.setLogo((access :: any).companyLogo)
+		local career = if storeApi then storeApi:Get("career") else nil
+		status.update(look, if type(career) == "table" then career.companyId else nil)
 	end
 
 	function refresh()
@@ -471,7 +484,8 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 
 	-- Layout ------------------------------------------------------------------------------------
 	local function layout()
-		local size = body.AbsoluteSize
+		-- in Offset units (UIScale undone); nil before the first layout pass (and under Lune): assume a wide window
+		local size = Kit.Core.unscaledSize(body) or Vector2.new(960, 600)
 		local wide = size.X >= 640 and size.X > size.Y * 0.9
 		local catalogWidth: number
 		if wide then
@@ -515,6 +529,23 @@ function Screen.open(args: any, root: Instance, ctx: any): { close: () -> () }
 						rebuildList()
 					else
 						refresh()
+					end
+				end)
+			)
+		end
+	end
+	if storeApi and type(storeApi.Changed) == "function" then
+		local sig = storeApi:Changed("career")
+		if sig then
+			table.insert(
+				conns,
+				sig:Connect(function()
+					if closed then
+						return
+					end
+					refresh()
+					if api then
+						api:GetAccess(true) -- rank and company may have changed; AccessChanged repaints
 					end
 				end)
 			)

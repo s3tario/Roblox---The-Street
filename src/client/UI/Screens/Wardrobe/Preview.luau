@@ -4,9 +4,12 @@
 -- under Lune; input wiring is skipped there.
 --
 --   Preview.new(opts) -> Preview
---     opts = { name: string?, skin: Color3?, hairStyle: string?, hairColor: Color3?, hint: string? }
+--     opts = { name: string?, skin: Color3?, hairStyle: string?, hairColor: Color3?, hint: string?,
+--              companyLogo: string? }
 --   preview.frame                 root Frame (parent it yourself; fills its parent)
+--   preview.overlay               transparent Frame over the top of the stage for badges (a vertical list)
 --   preview.set(equipped)         rebuild the figure in this look (coalesced to one rebuild per frame)
+--   preview.setLogo(logoId?)      the company logo a vest / quarter-zip shows (v3 §16), as on the real character
 --   preview.reset()               face the camera again
 --   preview.destroy()
 
@@ -23,11 +26,14 @@ export type Opts = {
 	hairStyle: string?,
 	hairColor: Color3?,
 	hint: string?,
+	companyLogo: string?,
 }
 export type Preview = {
 	frame: Frame,
 	viewport: ViewportFrame,
+	overlay: Frame,
 	set: (equipped: { [string]: string }) -> (),
+	setLogo: (logoId: string?) -> (),
 	reset: () -> (),
 	destroy: () -> (),
 	rig: () -> Model?,
@@ -97,6 +103,14 @@ function Preview.new(opts: Opts?): Preview
 	hint.frame.Visible = (o.hint or "") ~= ""
 	hint.frame.Parent = card
 
+	local overlay = Kit.frame("Overlay", UDim2.new(1, -16, 0, 0))
+	overlay.Position = UDim2.fromOffset(8, 8)
+	overlay.AutomaticSize = Enum.AutomaticSize.Y
+	overlay.ZIndex = 4
+	local overlayList = Kit.list(overlay, false, 4)
+	overlayList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	overlay.Parent = card
+
 	local yaw = START_YAW
 	local function aim()
 		local offset = Vector3.new(math.sin(yaw) * DISTANCE, math.sin(PITCH) * DISTANCE, -math.cos(yaw) * DISTANCE)
@@ -105,6 +119,8 @@ function Preview.new(opts: Opts?): Preview
 	aim()
 
 	local current: Model? = nil
+	local logo: string? = o.companyLogo
+	local lastLook: { [string]: string }? = nil
 	local pending: { [string]: string }? = nil
 	local scheduled = false
 	local dead = false
@@ -126,6 +142,7 @@ function Preview.new(opts: Opts?): Preview
 				humanoid = false,
 				anchored = true,
 				glint = true,
+				companyLogo = logo,
 			})
 		end)
 		if not ok then
@@ -141,6 +158,7 @@ function Preview.new(opts: Opts?): Preview
 
 	local function set(equipped: { [string]: string })
 		pending = equipped
+		lastLook = equipped
 		if scheduled then
 			return
 		end
@@ -175,8 +193,10 @@ function Preview.new(opts: Opts?): Preview
 			if not d then
 				return
 			end
-			local moving = (d.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseMovement)
-				or (d.UserInputType == Enum.UserInputType.Touch and input == d)
+			local moving = (
+				d.UserInputType == Enum.UserInputType.MouseButton1
+				and input.UserInputType == Enum.UserInputType.MouseMovement
+			) or (d.UserInputType == Enum.UserInputType.Touch and input == d)
 			if moving then
 				local x = input.Position.X
 				yaw -= (x - lastX) * 0.012
@@ -217,7 +237,19 @@ function Preview.new(opts: Opts?): Preview
 	return {
 		frame = root,
 		viewport = viewport,
+		overlay = overlay,
 		set = set,
+		setLogo = function(logoId: string?)
+			local id = if type(logoId) == "string" and logoId ~= "" then logoId else nil
+			if id == logo then
+				return
+			end
+			logo = id
+			local look = lastLook
+			if look then
+				set(look)
+			end
+		end,
 		reset = function()
 			yaw = START_YAW
 			aim()

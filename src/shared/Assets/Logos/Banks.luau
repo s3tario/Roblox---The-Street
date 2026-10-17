@@ -15,7 +15,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "MG Freeman",
 		initials = "MG",
-		colors = { main = hex("#0B1F3A"), accent = hex("#C9A54C"), counter = hex("#FFFFFF") },
+		colors = { main = hex("#1B2A4A"), accent = hex("#B8935A"), counter = hex("#FFFFFF") },
 		draw = function(cv, c)
 			P.octagon(cv, 50, 50, 96, c.main)
 			P.octagon(cv, 50, 50, 87, c.accent)
@@ -45,7 +45,7 @@ local list: { P.Spec } = {
 		name = "Morrow Stanton",
 		initials = "MS",
 		aspect = 3.2,
-		colors = { main = hex("#19365F"), accent = hex("#6F8FB8") },
+		colors = { main = hex("#0E3B5B"), accent = hex("#8FB8DE") },
 		draw = function(cv, c)
 			P.rect(cv, 6, 18, 308, 1.8, c.main)
 			P.text(cv, "Morrow Stanton", 6, 28, 308, 56, c.main, { font = F.Garamond })
@@ -57,7 +57,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Merriweather Lynch",
 		initials = "ML",
-		colors = { main = hex("#1A2E55"), accent = hex("#9FB2CC"), counter = hex("#FFFFFF") },
+		colors = { main = hex("#23262B"), accent = hex("#C2272D"), counter = hex("#FFFFFF") },
 		draw = function(cv, c)
 			P.circle(cv, 50, 50, 49, c.accent)
 			P.circle(cv, 50, 50, 46.5, c.main)
@@ -84,7 +84,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Evermoor",
 		initials = "E",
-		colors = { main = hex("#1F4D3A"), accent = hex("#B8933F") },
+		colors = { main = hex("#1F4D3A"), accent = hex("#C2A464") },
 		draw = function(cv, c)
 			P.laurel(cv, 50, 52, 38, 195, 335, 6, 14, c.main)
 			P.laurel(cv, 50, 52, 38, 165, 25, 6, 14, c.main)
@@ -99,7 +99,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Lazaro Frères",
 		initials = "LF",
-		colors = { main = hex("#5E1A2A"), accent = hex("#B8933F") },
+		colors = { main = hex("#141414"), accent = hex("#C8A951") },
 		draw = function(cv, c, ctx)
 			P.text(cv, "LF", 6, 8, 88, 62, c.main, { font = F.Fondamento, italic = true })
 			P.rect(cv, 24, 73, 52, 1.4, c.accent)
@@ -114,7 +114,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Centerline",
 		initials = "C",
-		colors = { main = hex("#0F5C6E"), accent = hex("#E39B3A") },
+		colors = { main = hex("#3B4552"), accent = hex("#C77D4A") },
 		draw = function(cv, c)
 			P.ring(cv, 50, 50, 47, 4.5, c.main)
 			P.ring(cv, 50, 50, 34, 4.5, c.main)
@@ -129,7 +129,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Harrow Williams",
 		initials = "HW",
-		colors = { main = hex("#1E4D40"), accent = hex("#C8A45A"), counter = hex("#FFFFFF") },
+		colors = { main = hex("#6B1E2E"), accent = hex("#E3D3B5"), counter = hex("#FFFFFF") },
 		draw = function(cv, c)
 			P.diamond(cv, 50, 50, 48, c.main, { radius = 5 })
 			P.diamondRing(cv, 50, 50, 41, 1.4, c.accent, { radius = 3 })
@@ -142,7 +142,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Blairmont & Co.",
 		initials = "B",
-		colors = { main = hex("#1B365D"), accent = hex("#B08D57") },
+		colors = { main = hex("#0F5C5C"), accent = hex("#F0B429") },
 		draw = function(cv, c)
 			local left = P.clip(cv, 8, 6, 42, 20.5)
 			local right = P.clip(cv, 50, 6, 42, 20.5)
@@ -164,7 +164,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Houlton Lockey",
 		initials = "HL",
-		colors = { main = hex("#7A2232"), accent = hex("#C9A54C") },
+		colors = { main = hex("#4B2A63"), accent = hex("#B9A2D4") },
 		draw = function(cv, c)
 			local g = P.layer(cv, 0, 0, 100, 100, -38)
 			P.ring(cv, 28, 50, 19, 7.5, c.main, { g = g })
@@ -180,7 +180,7 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Sterling & Vance",
 		initials = "SV",
-		colors = { main = hex("#13294B"), accent = hex("#C9A54C") },
+		colors = { main = hex("#2F3E55"), accent = hex("#C9A54C") },
 		draw = function(cv, c)
 			P.ring(cv, 50, 50, 48, 3.6, c.accent)
 			P.ring(cv, 50, 50, 42, 1.2, c.accent)
@@ -195,9 +195,10 @@ local list: { P.Spec } = {
 		kind = "company",
 		name = "Eastbridge Capital Advisors",
 		initials = "EC",
-		colors = { main = hex("#2F5D8A"), accent = hex("#8FB8DE") },
+		colors = { main = hex("#8A3B1F"), accent = hex("#E8B04B") },
 		draw = function(cv, c)
-			P.ring(cv, 50, 70, 42, 5.5, c.main, { keep = { { 0, 0.5 } }, dir = 90 })
+			local arch = P.clip(cv, 8, 28, 84, 42)
+			P.ring(cv, 50, 70, 42, 5.5, c.main, { g = arch })
 			P.bar(cv, 4, 63, 96, 63, 4.5, c.main, { cap = "flat" })
 			local rc = 42 - 5.5 / 2
 			for _, x in { 22, 32, 42, 58, 68, 78 } do
