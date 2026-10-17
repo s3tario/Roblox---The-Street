@@ -101,7 +101,10 @@ local function wire(inst: Instance, interactId: string, onTriggered: Handler, co
 	prompt:SetAttribute("EmployeesOnly", false)
 	wired[prompt] = true
 	prompt.Triggered:Connect(function(player: Player)
-		local ok, err = pcall(onTriggered, player, interactId, inst, prompt)
+		local ok, err = pcall(function(): string?
+			onTriggered(player, interactId, inst, prompt)
+			return nil
+		end)
 		if not ok then
 			warn(("[OfficeService] %s prompt failed: %s"):format(interactId, tostring(err)))
 		end

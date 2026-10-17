@@ -154,7 +154,9 @@ local function placeAt(run: Run, anchor: BasePart): (CFrame, string, BasePart?)
 end
 
 local function looks(seed: string): (Color3, Color3, string)
-	return pickFrom(Palette.skin, seed, "skin"), pickFrom(Palette.hair, seed, "hair"), pickFrom(HAIR_STYLES, seed, "style")
+	return pickFrom(Palette.skin, seed, "skin"),
+		pickFrom(Palette.hair, seed, "hair"),
+		pickFrom(HAIR_STYLES, seed, "style")
 end
 
 local function nameTag(model: Model, name: string, title: string)
@@ -252,6 +254,8 @@ local function spawnStaff(run: Run, anchor: BasePart, role: string, name: string
 		hairColor = hairColor,
 		hairStyle = if role == "boss" then "side_part" else hairStyle,
 		seed = seed,
+		companyLogo = run.company.logo,
+		companyMonogram = run.company.short,
 	}, role)
 	if model then
 		model:SetAttribute("DisplayName", name)
@@ -321,6 +325,8 @@ local function coworkers(run: Run)
 			hairColor = hairColor,
 			hairStyle = hairStyle,
 			seed = seed,
+			companyLogo = run.company.logo,
+			companyMonogram = run.company.short,
 		}, "coworker")
 		if model then
 			-- Give the desk back the moment another feature assigns it to a player.

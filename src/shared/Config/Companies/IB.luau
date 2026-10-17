@@ -6,10 +6,10 @@
 --   middle    Uncommon+ school (tier 2) or GPA >= 3.3
 --   regional  anyone (Sterling & Vance always offers a walk-on seat to anyone who reaches its Superday bar)
 
-local BULGE = { anyOf = { { schoolTier = 3 }, { gpa = 3.6 } }, baseOdds = 0.22, bar = 70 }
-local ELITE = { anyOf = { { schoolTier = 4 }, { schoolTier = 3, gpa = 3.7 } }, baseOdds = 0.16, bar = 75 }
-local MIDDLE = { anyOf = { { schoolTier = 2 }, { gpa = 3.3 } }, baseOdds = 0.38, bar = 60 }
-local REGIONAL = { anyOf = { {} }, baseOdds = 0.6, bar = 45 }
+local BULGE = { anyOf = { { schoolTier = 3 }, { gpa = 3.6 } } :: { any }, baseOdds = 0.22, bar = 70 }
+local ELITE = { anyOf = { { schoolTier = 4 }, { schoolTier = 3, gpa = 3.7 } } :: { any }, baseOdds = 0.16, bar = 75 }
+local MIDDLE = { anyOf = { { schoolTier = 2 }, { gpa = 3.3 } } :: { any }, baseOdds = 0.38, bar = 60 }
+local REGIONAL = { anyOf = { {} } :: { any }, baseOdds = 0.6, bar = 45 }
 
 return {
 	-- Bulge brackets -----------------------------------------------------------------------------------
@@ -177,4 +177,4 @@ return {
 		bossNames = { ib = "Rosa Delgado" },
 		hiring = { ib = REGIONAL },
 	},
-}
+} :: { any }

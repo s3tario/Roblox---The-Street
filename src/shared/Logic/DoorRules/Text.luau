@@ -31,6 +31,7 @@ Text.en = {
 	tp_no_character = "Your character isn't ready yet.",
 	tp_failed = "Couldn't get you there. Please try again.",
 	tp_stairs = "Taking the stairs...",
+	tp_returned = "You were brought back somewhere safe.",
 
 	-- Offices
 	opening_soon = "Opening soon",
@@ -68,10 +69,17 @@ Text.en = {
 	departments_none = "No departments yet",
 	departments_sep = " · ",
 
+	directory_your_firm = "Your firm",
+	directory_open_count = "{n} open now",
+	directory_lobby_hint = "Visitors are welcome in every lobby and on every floor.",
+
 	-- Elevator
 	elevator_title = "Elevator",
 	elevator_choose = "Choose a floor",
 	elevator_floor = "Floor {n}",
+	elevator_outage_notice = "The elevators are out of service. You'll take the stairs.",
+	elevator_visitor_note = "Visitors may ride to any floor. Only employees can use the desks.",
+	elevator_riding = "Going up...",
 
 	-- NPCs
 	receptionist_title = "Front Desk",
@@ -205,13 +213,15 @@ function Text.format(key: string, vars: { [string]: any }?): string
 	if vars == nil then
 		return s
 	end
-	return (string.gsub(s, "{([%w_]+)}", function(name: string): string
-		local v = vars[name]
-		if v == nil then
-			return "{" .. name .. "}"
-		end
-		return tostring(v)
-	end))
+	return (
+		string.gsub(s, "{([%w_]+)}", function(name: string): string
+			local v = vars[name]
+			if v == nil then
+				return "{" .. name .. "}"
+			end
+			return tostring(v)
+		end)
+	)
 end
 
 return Text

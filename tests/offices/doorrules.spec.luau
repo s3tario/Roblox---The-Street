@@ -28,9 +28,8 @@ return function(t)
 			t.expect(ok).toBe(false)
 			t.expect(reason).toBe("flag")
 			t.expect((DoorRules.check(req, { rank = 0, data = { campus = { offer = true } } }))).toBe(true)
-			t.expect((DoorRules.check(req, { rank = 0, data = { campus = { offer = { companyId = "x" } } } }))).toBe(
-				true
-			)
+			t.expect((DoorRules.check(req, { rank = 0, data = { campus = { offer = { companyId = "x" } } } })))
+				.toBe(true)
 			t.expect((DoorRules.check(req, { rank = 1, data = {} }))).toBe(true)
 			t.expect((DoorRules.check(req, { rank = 0 }))).toBe(false) -- no data loaded yet
 			t.expect((DoorRules.check({ flag = "campus.offer" }, { rank = 9, data = {} }))).toBe(false)
@@ -58,7 +57,8 @@ return function(t)
 		end)
 		t.it("every World door with requirements evaluates against a crafted student and an MD", function()
 			local student = { rank = 0, employed = false, data = { campus = { offer = false } }, passes = {} }
-			local md = { rank = 5, employed = true, data = { campus = { offer = true } }, passes = { ExecutiveClub = true } }
+			local md =
+				{ rank = 5, employed = true, data = { campus = { offer = true } }, passes = { ExecutiveClub = true } }
 			for id, door in World.doors do
 				if door.requires then
 					local okMd = DoorRules.check(door.requires, md)
@@ -92,9 +92,8 @@ return function(t)
 		end)
 		t.it("uses the door's lockedText, else a reason line", function()
 			t.expect(DoorRules.lockedText(World.doors.door_street_club, "pass")).toBe("Executive Club members only.")
-			t.expect(DoorRules.lockedText(World.doors.door_street_rooftop, "employed")).toBe(
-				Text.get("locked_employed")
-			)
+			t.expect(DoorRules.lockedText(World.doors.door_street_rooftop, "employed"))
+				.toBe(Text.get("locked_employed"))
 			t.expect(DoorRules.lockedText(nil, nil)).toBe(Text.get("door_locked_default"))
 		end)
 		t.it("formats text with placeholders", function()
@@ -172,9 +171,8 @@ return function(t)
 			t.expect(DoorRules.isEmployee(career, "mg_freeman")).toBe(true)
 			t.expect(DoorRules.isEmployee(career, "goldfield_saxe")).toBe(false)
 			t.expect(DoorRules.isEmployee(nil, "mg_freeman")).toBe(false)
-			t.expect(DoorRules.isEmployee({ companyId = "mg_freeman", rank = 3, status = "fired" }, "mg_freeman")).toBe(
-				false
-			)
+			t.expect(DoorRules.isEmployee({ companyId = "mg_freeman", rank = 3, status = "fired" }, "mg_freeman"))
+				.toBe(false)
 			t.expect(DoorRules.isEmployee(career, nil)).toBe(false)
 		end)
 		t.it("honours an active merger pair in both directions", function()
@@ -193,7 +191,12 @@ return function(t)
 		end)
 		t.it("ignores merger pairs outside their window and other events", function()
 			local events = {
-				corporate = { id = "merger_mania", startsAt = 100, endsAt = 400, data = { pair = { "mg_freeman", "krk" } } },
+				corporate = {
+					id = "merger_mania",
+					startsAt = 100,
+					endsAt = 400,
+					data = { pair = { "mg_freeman", "krk" } },
+				},
 				market = { id = "crash", startsAt = 0, endsAt = 1000, data = { companies = { "mg_freeman", "a17z" } } },
 			}
 			t.expect(DoorRules.isEmployee(career, "krk", events, 50)).toBe(false)
@@ -212,7 +215,8 @@ return function(t)
 				t.expect(DoorRules.isEmployee(career, "krk", events, nil)).toBe(true)
 				t.expect(DoorRules.partnersOf("mg_freeman", events)["krk"]).toBe(true)
 			end
-			local upcoming = { upcoming = { { id = "merger_mania", startsAt = 900, data = { pair = { "mg_freeman", "krk" } } } } }
+			local upcoming =
+				{ upcoming = { { id = "merger_mania", startsAt = 900, data = { pair = { "mg_freeman", "krk" } } } } }
 			t.expect(DoorRules.isEmployee(career, "krk", upcoming, 100)).toBe(false)
 			t.expect(DoorRules.isEmployee(career, "krk", upcoming, nil)).toBe(false)
 			t.expect(DoorRules.isEmployee(career, "krk", "garbage", 100)).toBe(false)
@@ -259,6 +263,114 @@ return function(t)
 			t.expect(DoorRules.impossibleMove(from, Vector3.new(60, 0, 0), 0.1)).toBe(false) -- below the min jump
 			t.expect(DoorRules.impossibleMove(from, Vector3.new(500, 0, 0), 1)).toBe(true)
 			t.expect(DoorRules.impossibleMove(from, Vector3.new(500, 0, 0), 5)).toBe(false)
+		end)
+	end)
+
+	t.describe("DoorRules prompt texts and client state", function()
+		t.it("labels every kind of World door", function()
+			local action, object = DoorRules.promptText(World.doors.door_street_galleria)
+			t.expect(action).toBe(Text.get("door_enter"))
+			t.expect(object).toBe("The Galleria")
+			local exitAction, exitObject = DoorRules.promptText(World.doors.door_galleria_exit)
+			t.expect(exitAction).toBe(Text.get("door_exit"))
+			t.expect(exitObject).toBe("Wall Street")
+			local campusExit, campusObject = DoorRules.promptText(World.doors.door_dorm_exit)
+			t.expect(campusExit).toBe(Text.get("door_exit"))
+			t.expect(campusObject).toBe("Eastbridge")
+			local ride, line = DoorRules.promptText(World.doors.door_campus_subway)
+			t.expect(ride).toBe(Text.get("door_board"))
+			t.expect(line).toBe("Subway: Downtown")
+			local tower, name = DoorRules.promptText(World.doors.door_street_tower_mg_freeman)
+			t.expect(tower).toBe(Text.get("door_enter"))
+			t.expect(name).toBe("MG Freeman")
+			local picker, plaza = DoorRules.promptText(World.doors.door_street_tower_middle_market)
+			t.expect(picker).toBe(Text.get("door_enter"))
+			t.expect(plaza).toBe("Middle Market Plaza")
+			for id, door in World.doors do
+				local a, o = DoorRules.promptText(door)
+				if a == "" or o == "" then
+					error("door " .. id .. " has an empty prompt text")
+				end
+			end
+		end)
+		t.it("labels the office template doors", function()
+			local a1, o1 = DoorRules.officeDoorText("exit")
+			t.expect(a1).toBe(Text.get("door_exit"))
+			t.expect(o1).toBe(Text.get("office_exit"))
+			local a2, o2 = DoorRules.officeDoorText("to_lobby")
+			t.expect(a2).toBe(Text.get("office_elevator"))
+			t.expect(o2).toBe(Text.get("office_to_lobby"))
+			t.expect(DoorRules.OFFICE_DOORS.exit).toBe(true)
+			t.expect(DoorRules.OFFICE_DOORS.to_lobby).toBe(true)
+			t.expect(DoorRules.OFFICE_DOORS.elevators).toBeNil()
+			for _, kind in World.templateMarkers.OfficeDoor do
+				t.expect(DoorRules.OFFICE_DOORS[kind]).toBe(true)
+			end
+		end)
+		t.it("builds requirement state from replicated data", function()
+			local student = DoorRules.stateFromData({ career = { rank = 0 }, campus = { offer = true } })
+			t.expect(student.rank).toBe(0)
+			t.expect(student.employed).toBe(false)
+			t.expect((DoorRules.check(World.doors.door_campus_subway.requires, student))).toBe(true)
+			t.expect((DoorRules.check(World.doors.door_street_apartments.requires, student))).toBe(false)
+			local analyst = DoorRules.stateFromData({
+				career = { rank = 1, companyId = "mg_freeman", status = "active" },
+				entitlements = { passes = { "ExecutiveClub" } },
+			})
+			t.expect(analyst.employed).toBe(true)
+			t.expect((DoorRules.check(World.doors.door_street_apartments.requires, analyst))).toBe(true)
+			t.expect((DoorRules.check(World.doors.door_street_club.requires, analyst))).toBe(true)
+			local mapPasses = DoorRules.stateFromData({ entitlements = { passes = { ExecutiveClub = true } } })
+			t.expect((mapPasses.passes :: any).ExecutiveClub).toBe(true)
+			local empty = DoorRules.stateFromData(nil)
+			t.expect(empty.rank).toBe(0)
+			t.expect((DoorRules.check(World.doors.door_street_club.requires, empty))).toBe(false)
+			-- data read through a lazy view (the client's Store proxy)
+			local lazy = setmetatable({}, {
+				__index = function(_, k)
+					return if k == "campus" then { offer = { companyId = "sterling_vance" } } else nil
+				end,
+			})
+			t.expect((DoorRules.check(World.doors.door_campus_subway.requires, DoorRules.stateFromData(lazy))))
+				.toBe(true)
+		end)
+	end)
+
+	t.describe("DoorRules visitor prompts and badge", function()
+		local career = { companyId = "mg_freeman", rank = 2, status = "active" }
+		local merger = {
+			corporate = {
+				id = "merger_mania",
+				startsAt = 0,
+				endsAt = 600,
+				data = { companies = { "mg_freeman", "evermoor" } },
+			},
+		}
+		t.it("shows EmployeesOnly prompts to employees and merger partners only", function()
+			t.expect(DoorRules.promptAllowed(career, true, "mg_freeman")).toBe(true)
+			t.expect(DoorRules.promptAllowed(career, true, "goldfield_saxe")).toBe(false)
+			t.expect(DoorRules.promptAllowed(nil, true, "goldfield_saxe")).toBe(false)
+			t.expect(DoorRules.promptAllowed(career, true, "evermoor", merger, 100)).toBe(true)
+			t.expect(DoorRules.promptAllowed(career, true, "evermoor", merger, 700)).toBe(false)
+			-- prompts that aren't EmployeesOnly, or aren't in an office, always show
+			t.expect(DoorRules.promptAllowed(nil, false, "goldfield_saxe")).toBe(true)
+			t.expect(DoorRules.promptAllowed(nil, nil, "goldfield_saxe")).toBe(true)
+			t.expect(DoorRules.promptAllowed(nil, true, nil)).toBe(true)
+			-- a fired player is a visitor in their old office
+			t.expect(
+				DoorRules.promptAllowed({ companyId = "mg_freeman", rank = 2, status = "fired" }, true, "mg_freeman")
+			)
+				.toBe(false)
+		end)
+		t.it("badges visitors in another company's office", function()
+			t.expect(DoorRules.visitorBadge(career, "goldfield_saxe", "Goldfield Saxe"))
+				.toBe("Visitor · Goldfield Saxe")
+			t.expect(DoorRules.visitorBadge(career, "goldfield_saxe", nil)).toBe(Text.get("visitor"))
+			t.expect(DoorRules.visitorBadge(career, "mg_freeman", "MG Freeman")).toBeNil()
+			t.expect(DoorRules.visitorBadge(career, nil, nil)).toBeNil()
+			t.expect(DoorRules.visitorBadge(career, "evermoor", "Evermoor", merger, 100)).toBeNil()
+			t.expect(DoorRules.visitorBadge(career, "evermoor", "Evermoor", merger, 900)).toBe("Visitor · Evermoor")
+			t.expect(DoorRules.visitorBadge(nil, "mg_freeman", "MG Freeman")).toBe("Visitor · MG Freeman")
 		end)
 	end)
 end

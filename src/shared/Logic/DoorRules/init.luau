@@ -5,8 +5,11 @@
 --
 --   DoorRules.check(requires?, state) -> (ok, reason?)        reason "rank" | "employed" | "flag" | "pass"
 --       requires = Config/World door `requires` ({minRank, employed, flag, orMinRank, pass}); state = ReqState
+--   DoorRules.stateFromData(data) -> ReqState                  from player data alone (the client's view)
 --   DoorRules.lockedText(doorDef?, reason?) -> string          the door's lockedText or a generic line
 --   DoorRules.kind(doorDef) -> "target" | "ride" | "company" | "picker" | nil
+--   DoorRules.promptText(doorDef) -> (actionText, objectText)   the door's ProximityPrompt texts
+--   DoorRules.officeDoorText(kind) -> (actionText, objectText)  office template doors ("exit" | "to_lobby")
 --   DoorRules.getPath(data, "campus.offer") -> any
 --   DoorRules.streetAccess(state) -> (ok, text?)               the campus -> Street gate (the subway's rules)
 --   DoorRules.towerFor(companyId, towers?) -> TowerDef?        its own tower, else the tower that lists it as a tenant
@@ -15,6 +18,8 @@
 --   DoorRules.isEmployedCareer(career?) -> boolean
 --   DoorRules.partnersOf(companyId, events?, now?) -> { [companyId] = true }   active merger_mania pairs
 --   DoorRules.isEmployee(career?, companyId, events?, now?) -> boolean
+--   DoorRules.promptAllowed(career?, employeesOnly, companyId?, events?, now?) -> boolean   client prompt hiding
+--   DoorRules.visitorBadge(career?, officeCompanyId?, companyName?, events?, now?) -> string?   "Visitor · X"
 --   DoorRules.stageFor({employed, rank, status}) -> "campus" | "street"
 --   DoorRules.isCampusSide(zoneId?) -> boolean
 --   DoorRules.zoneLabel(zoneId?) -> string
@@ -101,6 +106,27 @@ function DoorRules.check(requires: any, state: ReqState?): (boolean, string?)
 	return true, nil
 end
 
+-- A ReqState from player data alone ({career, entitlements, campus, ...}; the client's replicated copy or the
+-- server's saved data). Passes may be stored as a map {[key] = true} or a list {key}.
+function DoorRules.stateFromData(data: any): ReqState
+	local d = if type(data) == "table" then data else {}
+	local career = d.career
+	local rank = if type(career) == "table" and type(career.rank) == "number" then career.rank else 0
+	local passes: { [string]: boolean } = {}
+	local ent = d.entitlements
+	local saved = if type(ent) == "table" then ent.passes else nil
+	if type(saved) == "table" then
+		for k, v in saved do
+			if type(k) == "string" and v == true then
+				passes[k] = true
+			elseif type(k) == "number" and type(v) == "string" then
+				passes[v] = true
+			end
+		end
+	end
+	return { rank = rank, employed = DoorRules.isEmployedCareer(career), data = d, passes = passes }
+end
+
 local REASON_TEXT = {
 	rank = "locked_rank",
 	employed = "locked_employed",
@@ -130,6 +156,47 @@ function DoorRules.kind(doorDef: any): string?
 		return "target"
 	end
 	return nil
+end
+
+local function zoneKind(zoneId: string?): string?
+	if type(zoneId) ~= "string" then
+		return nil
+	end
+	local z = World.zones[zoneId]
+	return if z then z.kind else nil
+end
+
+-- The ProximityPrompt texts for a World door: (ActionText, ObjectText).
+--   target  "Enter" + the door's label, or "Exit" + the destination's name when it leads out of an interior
+--   ride    "Board" + the line ("Subway: Downtown")
+--   company / picker   "Enter" + the tower's name
+function DoorRules.promptText(doorDef: any): (string, string)
+	if type(doorDef) ~= "table" then
+		return Text.get("door_enter"), ""
+	end
+	local label = if type(doorDef.label) == "string" then doorDef.label else ""
+	local kind = DoorRules.kind(doorDef)
+	if kind == "ride" then
+		return Text.get("door_board"), label
+	end
+	if kind == "target" then
+		local targetZone = DoorRules.anchorZone(doorDef.target)
+		local leavesInterior = zoneKind(doorDef.zone) == "interior" and zoneKind(targetZone) == "region"
+		if label == Text.get("door_exit") or leavesInterior then
+			return Text.get("door_exit"), DoorRules.zoneLabel(targetZone)
+		end
+	end
+	return Text.get("door_enter"), label
+end
+
+DoorRules.OFFICE_DOORS = { exit = true, to_lobby = true } :: { [string]: boolean }
+
+-- The prompt texts for an office template door (OfficeDoor "exit" | "to_lobby").
+function DoorRules.officeDoorText(kind: string?): (string, string)
+	if kind == "to_lobby" then
+		return Text.get("office_elevator"), Text.get("office_to_lobby")
+	end
+	return Text.get("door_exit"), Text.get("office_exit")
 end
 
 -- The campus -> Street gate: everything that moves a player from campus to the Street (the subway, the
@@ -300,6 +367,37 @@ function DoorRules.isEmployee(career: any, companyId: string?, events: any?, now
 		return true
 	end
 	return DoorRules.partnersOf(own, events, now)[companyId] == true
+end
+
+-- Should an interaction prompt show for this player? Prompts marked EmployeesOnly inside an office instance show
+-- only to that company's employees (and merger partners); everything else always shows.
+function DoorRules.promptAllowed(career: any, employeesOnly: any, companyId: any, events: any?, now: number?): boolean
+	if employeesOnly ~= true or type(companyId) ~= "string" or companyId == "" then
+		return true
+	end
+	return DoorRules.isEmployee(career, companyId, events, now)
+end
+
+-- The HUD badge while standing in an office: "Visitor · <Company>" in another company's office, nil in your own
+-- (or a merger partner's) and outside offices.
+function DoorRules.visitorBadge(
+	career: any,
+	officeCompanyId: any,
+	companyName: string?,
+	events: any?,
+	now: number?
+): string?
+	if type(officeCompanyId) ~= "string" or officeCompanyId == "" then
+		return nil
+	end
+	if DoorRules.isEmployee(career, officeCompanyId, events, now) then
+		return nil
+	end
+	local name = if type(companyName) == "string" and companyName ~= "" then companyName else nil
+	if name then
+		return Text.format("visitor_at", { name = name })
+	end
+	return Text.get("visitor")
 end
 
 ---------------------------------------------------------------------------------------------------

@@ -1,0 +1,123 @@
+local Shared = game:GetService("ReplicatedStorage").Shared
+local Leveling = require(Shared.Logic.Leveling)
+local Tracks = require(Shared.Config.Tracks)
+
+return function(t)
+	t.describe("curve", function()
+		t.it("xpForLevel grows and is rounded to 5", function()
+			local prev = 0
+			for l = 1, 100 do
+				local need = Leveling.xpForLevel(l)
+				t.expect(need % 5).toBe(0)
+				t.expect(need).toBeGreaterThan(prev)
+				prev = need
+			end
+		end)
+		t.it("totalToReach is the running sum", function()
+			t.expect(Leveling.totalToReach(1)).toBe(0)
+			t.expect(Leveling.totalToReach(3)).toBe(Leveling.xpForLevel(1) + Leveling.xpForLevel(2))
+		end)
+	end)
+
+	t.describe("addXp", function()
+		t.it("levels up and carries the remainder", function()
+			local need = Leveling.xpForLevel(10)
+			local lv, xp, added, gained = Leveling.addXp(10, 0, need + 7, 24)
+			t.expect(lv).toBe(11)
+			t.expect(xp).toBe(7)
+			t.expect(added).toBe(need + 7)
+			t.expect(gained).toBe(1)
+		end)
+		t.it("banks a full bar at the role cap and no more", function()
+			local lv, xp, added = Leveling.addXp(24, 0, 10 ^ 6, 24)
+			t.expect(lv).toBe(24)
+			t.expect(xp).toBe(Leveling.xpForLevel(24))
+			t.expect(added).toBe(Leveling.xpForLevel(24))
+			local _, _, more = Leveling.addXp(lv, xp, 500, 24)
+			t.expect(more).toBe(0)
+		end)
+		t.it("settles banked XP once the cap rises (promotion)", function()
+			local lv, xp = Leveling.addXp(24, Leveling.xpForLevel(24), 0, 40)
+			t.expect(lv).toBe(25)
+			t.expect(xp).toBe(0)
+		end)
+		t.it("never adds negative or NaN XP", function()
+			local lv, xp, added = Leveling.addXp(12, 40, -100, 24)
+			t.expect(lv).toBe(12)
+			t.expect(xp).toBe(40)
+			t.expect(added).toBe(0)
+			local _, _, nanAdded = Leveling.addXp(12, 40, 0 / 0, 24)
+			t.expect(nanAdded).toBe(0)
+		end)
+		t.it("stops at level 100", function()
+			local lv = Leveling.addXp(99, 0, 10 ^ 7, 100)
+			t.expect(lv).toBe(100)
+		end)
+	end)
+
+	t.describe("wipeout XP", function()
+		t.it("removes 25% of the XP earned inside the band and never drops below the band floor", function()
+			local floorLv = 25
+			local inBand = Leveling.xpInBand(30, 100, floorLv)
+			t.expect(inBand).toBe(Leveling.spent(25, 30) + 100)
+			local loss = Leveling.wipeoutLoss(30, 100, floorLv)
+			t.expect(loss).toBe(math.floor(inBand * 0.25))
+			local lv, xp, removed = Leveling.removeXp(30, 100, loss, floorLv)
+			t.expect(removed).toBe(loss)
+			t.expect(lv).toBeGreaterThanOrEqual(floorLv)
+			t.expect(Leveling.xpInBand(lv, xp, floorLv)).toBe(inBand - loss)
+		end)
+		t.it("removeXp stops at the floor", function()
+			local lv, xp, removed = Leveling.removeXp(26, 10, 10 ^ 7, 25)
+			t.expect(lv).toBe(25)
+			t.expect(xp).toBe(0)
+			t.expect(removed).toBe(Leveling.xpForLevel(25) + 10)
+		end)
+	end)
+
+	t.describe("caps", function()
+		t.it("uses the IB ladder bands", function()
+			t.expect(Leveling.capFor(nil, 0)).toBe(8)
+			t.expect(Leveling.capFor("ib", 1)).toBe(24)
+			t.expect(Leveling.capFor("ib", 5)).toBe(100)
+		end)
+		t.it("rank XP scale rises with rank", function()
+			t.expect(Leveling.rankXpScale(1)).toBe(1)
+			t.expect(Leveling.rankXpScale(5)).toBeGreaterThan(Leveling.rankXpScale(2))
+			t.expect(Leveling.rankXpScale(0)).toBeLessThan(1)
+		end)
+	end)
+
+	t.describe("pacing simulator (typical engaged player)", function()
+		t.it("reaches Managing Director at 30-35 active hours and L100 at 55-65 hours", function()
+			local mdSum, l100Sum, n = 0, 0, 12
+			for seed = 1, n do
+				local r = Leveling.simulate({ seed = seed })
+				t.expect(r.mdMinutes).toBeTruthy()
+				t.expect(r.l100Minutes).toBeTruthy()
+				mdSum += r.mdMinutes :: number
+				l100Sum += r.l100Minutes :: number
+				-- every individual run stays in a sane window too
+				t.expect((r.mdMinutes :: number) / 60).toBeBetween(27, 38)
+				t.expect((r.l100Minutes :: number) / 60).toBeBetween(52, 68)
+			end
+			t.expect(mdSum / n / 60).toBeBetween(30, 35)
+			t.expect(l100Sum / n / 60).toBeBetween(55, 65)
+		end)
+		t.it("promotes through every rank in order", function()
+			local r = Leveling.simulate({ seed = 99 })
+			local prev = -1
+			for rank = 1, Tracks.topRank("ib") do
+				local at = r.rankAtMin[rank]
+				t.expect(at).toBeTruthy()
+				t.expect(at :: number).toBeGreaterThan(prev)
+				prev = at :: number
+			end
+		end)
+		t.it("a weaker player (On track rarely) is slower", function()
+			local strong = Leveling.simulate({ seed = 5 })
+			local weak = Leveling.simulate({ seed = 5, reviewMean = 68 })
+			t.expect((weak.mdMinutes or math.huge)).toBeGreaterThan(strong.mdMinutes :: number)
+		end)
+	end)
+end

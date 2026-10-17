@@ -9,7 +9,9 @@
 --   Review.pay(role, company, band, mods?) -> { salary, bonus }
 --   Review.prestige(role, company, band) -> number
 --   Review.livingCost(role, company, discipline?) -> number
---   Review.dialogue(ctx) -> { string }       the boss's lines for the meeting (deterministic per seed)
+--   Review.dialogue(ctx) -> ({ string }, outcomeAt)   the boss's lines for the meeting (deterministic per seed);
+--                                           outcomeAt = index of the first outcome line (the breakdown card goes
+--                                           before it)
 --
 -- Components and weights: 35% risk-adjusted investment, 25% risk management, 25% work quality, 15% team/client
 -- reputation. Investment comes from PortfolioService:GetWindowMetrics over the week's active-time window, so a
@@ -233,7 +235,7 @@ function Review.pay(
 	mods: { bonusMult: number?, fired: boolean? }?
 ): { salary: number, bonus: number }
 	local payMult = if company then company.payMult else 1
-	local m = mods or {}
+	local m: { bonusMult: number?, fired: boolean? } = mods or {}
 	local bonusMult = num(m.bonusMult, 1)
 	local salary = math.floor(role.salary * payMult + 0.5)
 	local bonus = math.floor(role.bonus * payMult * Review.bonusFactor(band, m.fired) * bonusMult + 0.5)
@@ -273,13 +275,15 @@ export type DialogueCtx = {
 }
 
 local function fill(template: string, vars: { [string]: any }): string
-	return (string.gsub(template, "{([%w_]+)}", function(name: string): string
-		local v = vars[name]
-		if v == nil then
-			return ""
-		end
-		return tostring(v)
-	end))
+	return (
+		string.gsub(template, "{([%w_]+)}", function(name: string): string
+			local v = vars[name]
+			if v == nil then
+				return ""
+			end
+			return tostring(v)
+		end)
+	)
 end
 
 local function pick(pool: any, seed: any, tag: string): string?
@@ -290,7 +294,7 @@ local function pick(pool: any, seed: any, tag: string): string?
 	return pool[i]
 end
 
-function Review.dialogue(ctx: DialogueCtx): { string }
+function Review.dialogue(ctx: DialogueCtx): ({ string }, number)
 	local D: any = Tracks.dialogue
 	local lines: { string } = {}
 	local function add(text: string?)
@@ -327,6 +331,7 @@ function Review.dialogue(ctx: DialogueCtx): { string }
 	end
 
 	local O = D.outcome
+	local outcomeAt = #lines + 1
 	if ctx.lifeline then
 		add(pick(O.lifeline, ctx.seed, "outcome"))
 	elseif ctx.outcome == "fired" then
@@ -364,7 +369,7 @@ function Review.dialogue(ctx: DialogueCtx): { string }
 	else
 		add(pick(D.closing, ctx.seed, "close"))
 	end
-	return lines
+	return lines, math.min(outcomeAt, #lines)
 end
 
 return Review

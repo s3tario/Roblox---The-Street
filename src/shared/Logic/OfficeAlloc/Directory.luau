@@ -1,146 +1,21 @@
 --!strict
--- OfficeAlloc (offices, PURE): the bookkeeping behind per-company office instances (spec v3 §14).
---   * instance slots: each company present on a server gets the lowest free instance index; freed indices are
---     reused (World.officeOrigin(index, floor) places it)
---   * floors: floor 0 is the lobby, department i (1-based, in the company's department order) is floor i
---   * cleanup: floors nobody has been inside for `ttl` seconds expire
---   * companies: normalizes Config/Companies (whatever shape it exports) and Config/Tracks, decides which
---     companies and departments are open (a lobby template plus at least one department floor template), and
---     builds the Directory list (ordered like the Street's towers) and tower-picker lists
---   * NPC desks: picks free desks for ambient coworkers
--- No services, no clocks, no Instances.
+-- OfficeAlloc/Directory (offices, PURE): what the office system knows about companies and departments.
+--   * normalizes Config/Companies (whatever shape it exports) and Config/Tracks
+--   * decides which companies and department floors are open (a lobby template plus at least one department
+--     floor template, the company and the track available)
+--   * builds the Directory list (ordered like the Street's towers), tower-picker lists and the Directory tabs
+-- No services, no clocks, no Instances. Re-exported by OfficeAlloc.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local World = require(Shared.Config.World)
-local Text = require(script.Parent.DoorRules.Text)
+local Text = require(script.Parent.Parent.DoorRules.Text)
 
-local OfficeAlloc = {}
+local Directory = {}
 
-OfficeAlloc.LOBBY = "lobby"
-OfficeAlloc.EMPTY_TTL = 180 -- seconds a floor may stay empty before it is removed
-OfficeAlloc.MIN_COWORKERS = 4
-OfficeAlloc.MAX_COWORKERS = 8
-OfficeAlloc.BUSY_FLOORS = 6 -- with this many live floors, floors get the minimum number of coworkers
+Directory.LOBBY = "lobby"
 
----------------------------------------------------------------------------------------------------
--- Instance slots
----------------------------------------------------------------------------------------------------
-export type Alloc = { max: number, byCompany: { [string]: number }, byIndex: { [number]: string } }
-
-function OfficeAlloc.new(maxInstances: number?): Alloc
-	return { max = maxInstances or World.offices.maxInstances, byCompany = {}, byIndex = {} }
-end
-
-function OfficeAlloc.indexOf(alloc: Alloc, companyId: string): number?
-	return alloc.byCompany[companyId]
-end
-
-function OfficeAlloc.companyAt(alloc: Alloc, index: number): string?
-	return alloc.byIndex[index]
-end
-
-function OfficeAlloc.count(alloc: Alloc): number
-	local n = 0
-	for _ in alloc.byCompany do
-		n += 1
-	end
-	return n
-end
-
--- The company's index (existing, or the lowest free one). nil when every slot is taken.
-function OfficeAlloc.acquire(alloc: Alloc, companyId: string): number?
-	local existing = alloc.byCompany[companyId]
-	if existing then
-		return existing
-	end
-	for i = 1, alloc.max do
-		if alloc.byIndex[i] == nil then
-			alloc.byIndex[i] = companyId
-			alloc.byCompany[companyId] = i
-			return i
-		end
-	end
-	return nil
-end
-
-function OfficeAlloc.release(alloc: Alloc, companyId: string): number?
-	local i = alloc.byCompany[companyId]
-	if i == nil then
-		return nil
-	end
-	alloc.byCompany[companyId] = nil
-	alloc.byIndex[i] = nil
-	return i
-end
-
----------------------------------------------------------------------------------------------------
--- Floors
----------------------------------------------------------------------------------------------------
 local function maxDepartments(): number
 	return World.offices.maxFloors - 1
-end
-
--- 0 for the lobby, the department's 1-based position for a department, nil otherwise.
-function OfficeAlloc.floorIndex(departments: { string }, floor: string?): number?
-	if floor == nil or floor == OfficeAlloc.LOBBY then
-		return 0
-	end
-	local i = table.find(departments, floor)
-	if i == nil or i > maxDepartments() then
-		return nil
-	end
-	return i
-end
-
-function OfficeAlloc.floorAt(departments: { string }, index: number): string?
-	if index == 0 then
-		return OfficeAlloc.LOBBY
-	end
-	if index < 1 or index > maxDepartments() then
-		return nil
-	end
-	return departments[index]
-end
-
-function OfficeAlloc.floorKey(companyId: string, floor: string): string
-	return companyId .. "/" .. floor
-end
-
-export type FloorRec = { companyId: string, floor: string, createdAt: number, lastOccupied: number }
-
-function OfficeAlloc.newFloor(companyId: string, floor: string, now: number): FloorRec
-	return { companyId = companyId, floor = floor, createdAt = now, lastOccupied = now }
-end
-
--- Marks floors that have someone inside (occupied[key] = true) and returns the keys of floors that have been
--- empty for longer than ttl, sorted for determinism.
-function OfficeAlloc.sweep(
-	floors: { [string]: FloorRec },
-	occupied: { [string]: boolean },
-	now: number,
-	ttl: number?
-): { string }
-	local limit = ttl or OfficeAlloc.EMPTY_TTL
-	local out: { string } = {}
-	for key, rec in floors do
-		if occupied[key] then
-			rec.lastOccupied = now
-		elseif now - rec.lastOccupied > limit then
-			table.insert(out, key)
-		end
-	end
-	table.sort(out)
-	return out
-end
-
--- True when no floor of the company is still alive (its instance slot can be freed).
-function OfficeAlloc.instanceEmpty(floors: { [string]: FloorRec }, companyId: string): boolean
-	for _, rec in floors do
-		if rec.companyId == companyId then
-			return false
-		end
-	end
-	return true
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -153,7 +28,8 @@ export type Company = {
 	kind: string?,
 	tier: any,
 	tierLabel: string,
-	departments: { string },
+	departments: { string }, -- departments it runs now (one floor each)
+	planned: { string }, -- departments it will run once their milestone ships (shown as "Opening soon")
 	primary: Color3?,
 	accent: Color3?,
 	textColor: Color3?,
@@ -187,7 +63,7 @@ local function toColor(v: any): Color3?
 	end
 	return nil
 end
-OfficeAlloc.toColor = toColor
+Directory.toColor = toColor
 
 local function str(v: any): string?
 	if type(v) == "string" and v ~= "" then
@@ -195,6 +71,15 @@ local function str(v: any): string?
 	end
 	return nil
 end
+
+local function prettify(id: string): string
+	local words = {}
+	for w in string.gmatch(id, "[^_]+") do
+		table.insert(words, string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2))
+	end
+	return table.concat(words, " ")
+end
+Directory.prettify = prettify
 
 local function tierLabelOf(tier: any, kind: string?): string
 	for _, v in { tier, kind } do
@@ -206,11 +91,7 @@ local function tierLabelOf(tier: any, kind: string?): string
 		end
 	end
 	if type(kind) == "string" and kind ~= "" then
-		local words = {}
-		for w in string.gmatch(kind, "[^_]+") do
-			table.insert(words, string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2))
-		end
-		return table.concat(words, " ")
+		return prettify(kind)
 	end
 	return ""
 end
@@ -225,10 +106,22 @@ local function initials(name: string): string
 	end
 	return if out ~= "" then out else string.upper(string.sub(name, 1, 2))
 end
-OfficeAlloc.initials = initials
+Directory.initials = initials
+
+local function idList(v: any): { string }
+	local out: { string } = {}
+	if type(v) == "table" then
+		for _, d in ipairs(v) do
+			if type(d) == "string" and d ~= "" and not table.find(out, d) then
+				table.insert(out, d)
+			end
+		end
+	end
+	return out
+end
 
 -- One company def -> Company (nil when it isn't a usable company record).
-function OfficeAlloc.normalizeCompany(def: any, key: any?): Company?
+function Directory.normalizeCompany(def: any, key: any?): Company?
 	if type(def) ~= "table" then
 		return nil
 	end
@@ -240,12 +133,11 @@ function OfficeAlloc.normalizeCompany(def: any, key: any?): Company?
 	if name == nil and type(def.departments) ~= "table" then
 		return nil -- some other table that happens to sit in the module
 	end
-	local departments: { string } = {}
-	if type(def.departments) == "table" then
-		for _, d in ipairs(def.departments) do
-			if type(d) == "string" and not table.find(departments, d) then
-				table.insert(departments, d)
-			end
+	local departments = idList(def.departments)
+	local planned = idList(def.plannedDepartments)
+	for _, d in departments do
+		if not table.find(planned, d) then
+			table.insert(planned, d)
 		end
 	end
 	local colors = if type(def.colors) == "table" then def.colors else {}
@@ -267,6 +159,7 @@ function OfficeAlloc.normalizeCompany(def: any, key: any?): Company?
 		tier = def.tier,
 		tierLabel = str(def.typeName) or tierLabelOf(def.tier, kind),
 		departments = departments,
+		planned = planned,
 		primary = toColor(colors.primary) or toColor(def.primary),
 		accent = toColor(colors.accent) or toColor(def.accent),
 		textColor = toColor(colors.text),
@@ -279,14 +172,14 @@ end
 
 -- Config/Companies may export a list, a map, {list = ...}, {byId = ...} or get(id) + ids. Returns a map by id
 -- and the list in a stable order (source order for lists, id order for maps).
-function OfficeAlloc.normalizeCompanies(mod: any): ({ [string]: Company }, { Company })
+function Directory.normalizeCompanies(mod: any): ({ [string]: Company }, { Company })
 	local byId: { [string]: Company } = {}
 	local list: { Company } = {}
 	if type(mod) ~= "table" then
 		return byId, list
 	end
 	local function add(def: any, key: any?)
-		local c = OfficeAlloc.normalizeCompany(def, key)
+		local c = Directory.normalizeCompany(def, key)
 		if c and byId[c.id] == nil then
 			byId[c.id] = c
 			table.insert(list, c)
@@ -331,7 +224,7 @@ function OfficeAlloc.normalizeCompanies(mod: any): ({ [string]: Company }, { Com
 end
 
 -- Config/Tracks in the same spirit: {list}, {byId}, a map or a list of {id, name, ladder}.
-function OfficeAlloc.normalizeTracks(mod: any): { [string]: Track }
+function Directory.normalizeTracks(mod: any): { [string]: Track }
 	local out: { [string]: Track } = {}
 	if type(mod) ~= "table" then
 		return out
@@ -364,12 +257,15 @@ function OfficeAlloc.normalizeTracks(mod: any): { [string]: Track }
 	return out
 end
 
-function OfficeAlloc.departmentName(trackId: string, tracks: { [string]: Track }?): string
+function Directory.departmentName(trackId: string, tracks: { [string]: Track }?): string
+	if trackId == Directory.LOBBY then
+		return Text.get("lobby")
+	end
 	local t = if tracks then tracks[trackId] else nil
 	if t then
 		return t.name
 	end
-	return Text.get("dept_" .. trackId, trackId)
+	return Text.get("dept_" .. trackId, prettify(trackId))
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -391,8 +287,9 @@ export type Entry = {
 	placeholder: boolean?,
 }
 
--- templates = { [templateId] = true } for every template in ServerStorage.FirmTemplates.
-function OfficeAlloc.departments(
+-- The company's department floors (floor 1..n in department order). templates = { [templateId] = true } for every
+-- template in ServerStorage.FirmTemplates.
+function Directory.departments(
 	company: Company,
 	templates: { [string]: boolean },
 	tracks: { [string]: Track }?
@@ -405,23 +302,23 @@ function OfficeAlloc.departments(
 		local track = if tracks then tracks[d] else nil
 		table.insert(out, {
 			id = d,
-			name = OfficeAlloc.departmentName(d, tracks),
+			name = Directory.departmentName(d, tracks),
 			floor = i,
-			available = templates[d] == true and not (track and track.disabled),
+			available = not company.disabled and templates[d] == true and not (track and track.disabled),
 		})
 	end
 	return out
 end
 
-function OfficeAlloc.isAvailable(
+function Directory.isAvailable(
 	company: Company?,
 	templates: { [string]: boolean },
 	tracks: { [string]: Track }?
 ): boolean
-	if company == nil or company.disabled or templates[OfficeAlloc.LOBBY] ~= true then
+	if company == nil or company.disabled or templates[Directory.LOBBY] ~= true then
 		return false
 	end
-	for _, d in OfficeAlloc.departments(company, templates, tracks) do
+	for _, d in Directory.departments(company, templates, tracks) do
 		if d.available then
 			return true
 		end
@@ -429,16 +326,19 @@ function OfficeAlloc.isAvailable(
 	return false
 end
 
-function OfficeAlloc.floorOpen(
+function Directory.floorOpen(
 	company: Company,
 	floor: string,
 	templates: { [string]: boolean },
 	tracks: { [string]: Track }?
 ): boolean
-	if floor == OfficeAlloc.LOBBY then
-		return OfficeAlloc.isAvailable(company, templates, tracks)
+	if floor == Directory.LOBBY then
+		return Directory.isAvailable(company, templates, tracks)
 	end
-	for _, d in OfficeAlloc.departments(company, templates, tracks) do
+	if not Directory.isAvailable(company, templates, tracks) then
+		return false
+	end
+	for _, d in Directory.departments(company, templates, tracks) do
 		if d.id == floor then
 			return d.available
 		end
@@ -447,7 +347,7 @@ function OfficeAlloc.floorOpen(
 end
 
 -- Position of each company along the Street (tower order, tenants in picker order).
-function OfficeAlloc.streetOrder(towers: { World.TowerDef }?): { [string]: number }
+function Directory.streetOrder(towers: { World.TowerDef }?): { [string]: number }
 	local order: { [string]: number } = {}
 	local n = 0
 	for _, t in towers or World.towers do
@@ -471,12 +371,23 @@ function OfficeAlloc.streetOrder(towers: { World.TowerDef }?): { [string]: numbe
 	return order
 end
 
-function OfficeAlloc.entry(
+-- What the Directory shows for a company: its open departments, or (for a company whose milestone hasn't
+-- shipped) the departments it will run, all "Opening soon".
+function Directory.entry(
 	company: Company,
 	templates: { [string]: boolean },
 	tracks: { [string]: Track }?,
 	order: number
 ): Entry
+	local depts = Directory.departments(company, templates, tracks)
+	if #depts == 0 then
+		for i, d in company.planned do
+			if i > maxDepartments() then
+				break
+			end
+			table.insert(depts, { id = d, name = Directory.departmentName(d, tracks), floor = i, available = false })
+		end
+	end
 	return {
 		id = company.id,
 		name = company.name,
@@ -486,23 +397,23 @@ function OfficeAlloc.entry(
 		logo = company.logo,
 		primary = company.primary,
 		accent = company.accent,
-		departments = OfficeAlloc.departments(company, templates, tracks),
-		available = OfficeAlloc.isAvailable(company, templates, tracks),
+		departments = depts,
+		available = Directory.isAvailable(company, templates, tracks),
 		order = order,
 	}
 end
 
 -- Every company, open ones first, then in Street order, then by name.
-function OfficeAlloc.directory(
+function Directory.directory(
 	companies: { Company },
 	templates: { [string]: boolean },
 	tracks: { [string]: Track }?,
 	towers: { World.TowerDef }?
 ): { Entry }
-	local street = OfficeAlloc.streetOrder(towers)
+	local street = Directory.streetOrder(towers)
 	local out: { Entry } = {}
 	for i, c in companies do
-		table.insert(out, OfficeAlloc.entry(c, templates, tracks, street[c.id] or (1000 + i)))
+		table.insert(out, Directory.entry(c, templates, tracks, street[c.id] or (1000 + i)))
 	end
 	table.sort(out, function(a, b)
 		if a.available ~= b.available then
@@ -517,20 +428,12 @@ function OfficeAlloc.directory(
 end
 
 -- A placeholder for a tenant that Config/Companies doesn't know (shown greyed "Opening soon").
-function OfficeAlloc.placeholder(companyId: string, label: string?): Entry
-	local name = label
-	if name == nil then
-		local words = {}
-		for w in string.gmatch(companyId, "[^_]+") do
-			table.insert(words, string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2))
-		end
-		name = table.concat(words, " ")
-	end
-	local resolved = name :: string
+function Directory.placeholder(companyId: string, label: string?): Entry
+	local name = label or prettify(companyId)
 	return {
 		id = companyId,
-		name = resolved,
-		short = initials(resolved),
+		name = name,
+		short = initials(name),
 		tierLabel = "",
 		tagline = nil,
 		logo = companyId,
@@ -545,7 +448,7 @@ end
 
 -- The tenants of a multi-tenant tower, in the tower's order. Unknown tenants become placeholders; nothing else
 -- from the directory leaks in.
-function OfficeAlloc.pickerEntries(entries: { Entry }, tenants: { string }): { Entry }
+function Directory.pickerEntries(entries: { Entry }, tenants: { string }): { Entry }
 	local byId: { [string]: Entry } = {}
 	for _, e in entries do
 		byId[e.id] = e
@@ -555,14 +458,14 @@ function OfficeAlloc.pickerEntries(entries: { Entry }, tenants: { string }): { E
 	for _, id in tenants do
 		if type(id) == "string" and not seen[id] then
 			seen[id] = true
-			table.insert(out, byId[id] or OfficeAlloc.placeholder(id))
+			table.insert(out, byId[id] or Directory.placeholder(id))
 		end
 	end
 	return out
 end
 
--- Directory entries filtered for a Directory tab.
-function OfficeAlloc.filterOpen(entries: { Entry }, openOnly: boolean): { Entry }
+-- Directory entries filtered for a Directory tab ("open" = open firms only).
+function Directory.filterOpen(entries: { Entry }, openOnly: boolean): { Entry }
 	if not openOnly then
 		return entries
 	end
@@ -575,38 +478,18 @@ function OfficeAlloc.filterOpen(entries: { Entry }, openOnly: boolean): { Entry 
 	return out
 end
 
----------------------------------------------------------------------------------------------------
--- Ambient coworkers
----------------------------------------------------------------------------------------------------
-type RngLike = { int: (any, number, number) -> number, shuffle: (any, { number }) -> { number } }
-
-function OfficeAlloc.coworkerCount(rng: RngLike, liveFloors: number): number
-	if liveFloors >= OfficeAlloc.BUSY_FLOORS then
-		return OfficeAlloc.MIN_COWORKERS
-	end
-	return rng:int(OfficeAlloc.MIN_COWORKERS, OfficeAlloc.MAX_COWORKERS)
-end
-
--- Picks n distinct desk indices out of 1..total, drawing from the back half first (players are assigned desks
--- from the front), each half shuffled.
-function OfficeAlloc.pickDesks(total: number, n: number, rng: RngLike, skip: { [number]: boolean }?): { number }
-	local half = math.floor(total / 2)
-	local front: { number } = {}
-	local back: { number } = {}
-	for i = 1, total do
-		if not (skip and skip[i]) then
-			table.insert(if i > half then back else front, i)
+-- "Investment Banking · Sales & Trading" (open departments only unless all = true).
+function Directory.departmentLine(entry: Entry, all: boolean?): string
+	local names: { string } = {}
+	for _, d in entry.departments do
+		if all or d.available then
+			table.insert(names, d.name)
 		end
 	end
-	local pool: { number } = rng:shuffle(back)
-	for _, i in rng:shuffle(front) do
-		table.insert(pool, i)
+	if #names == 0 then
+		return Text.get("departments_none")
 	end
-	local out: { number } = {}
-	for i = 1, math.min(n, #pool) do
-		table.insert(out, pool[i])
-	end
-	return out
+	return table.concat(names, Text.get("departments_sep"))
 end
 
-return OfficeAlloc
+return Directory

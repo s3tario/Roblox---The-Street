@@ -29,7 +29,8 @@ Template.TAG_ACCENT = "FirmAccent"
 Template.NAME_LABEL = "CompanyName"
 Template.LOGO_GUI = "CompanyLogoGui"
 -- Attributes another feature may set on a DeskSlot it gave to a player (NPCs never take those desks).
-Template.OWNER_ATTRS = { "OwnerUserId", "Owner", "OwnerId", "OwnerName", "AssignedTo", "Assigned", "Occupied", "UserId" }
+Template.OWNER_ATTRS =
+	{ "OwnerUserId", "Owner", "OwnerId", "OwnerName", "AssignedTo", "Assigned", "Occupied", "UserId" }
 
 local DEFAULT_GOLD = Color3.fromRGB(201, 165, 76)
 
@@ -99,10 +100,12 @@ function Template.brand(model: Instance, company: OfficeAlloc.Company, logos: an
 	local result: BrandResult = { logos = 0, names = 0, colors = 0 }
 	local primary = company.primary
 	local accent = company.accent or company.primary
+	-- Collect first, then change: drawing a logo replaces GUI that the descendant snapshot would still list.
+	local logoParts: { BasePart } = {}
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
-			if d:HasTag(Template.TAG_LOGO) and logoOn(d, company, logos) then
-				result.logos += 1
+			if d:HasTag(Template.TAG_LOGO) then
+				table.insert(logoParts, d)
 			end
 			if primary and d:HasTag(Template.TAG_PRIMARY) then
 				d.Color = primary
@@ -114,6 +117,11 @@ function Template.brand(model: Instance, company: OfficeAlloc.Company, logos: an
 		elseif d:IsA("TextLabel") and d.Name == Template.NAME_LABEL then
 			d.Text = company.name
 			result.names += 1
+		end
+	end
+	for _, p in logoParts do
+		if logoOn(p, company, logos) then
+			result.logos += 1
 		end
 	end
 	return result
@@ -159,17 +167,17 @@ function Template.anchors(model: Instance): { [string]: BasePart }
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
 			local name = d:GetAttribute("OfficeAnchor")
-			if type(name) == "string" and out[name] == nil then
+			if type(name) == "string" and not out[name] then
 				out[name] = d
 			end
 			local id = d:GetAttribute("AnchorId")
-			if type(id) == "string" and fallback[id] == nil then
+			if type(id) == "string" and not fallback[id] then
 				fallback[id] = d
 			end
 		end
 	end
 	for id, part in fallback do
-		if out[id] == nil then
+		if not out[id] then
 			out[id] = part
 		end
 	end

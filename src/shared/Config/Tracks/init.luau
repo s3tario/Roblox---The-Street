@@ -171,7 +171,7 @@ local defs: { [string]: any } = {
 				schoolGate = 3,
 				office = true,
 			},
-		},
+		} :: { any },
 	},
 	-- Later milestones (M5+) fill in ladders, companies, floors and tasks for these.
 	st = {

@@ -23,6 +23,14 @@ local COMPANIES = {
 	},
 	{ id = "harrow_williams", name = "Harrow Williams", tier = "middle_market", departments = { "ib" } },
 	{ id = "goldfield_saxe", name = "Goldfield Saxe", tier = "bulge", departments = { "ib", "st" }, available = false },
+	{
+		id = "lotus_wealth",
+		name = "Lotus Private Wealth",
+		type = "wealth",
+		available = false,
+		departments = {},
+		plannedDepartments = { "wm" },
+	},
 }
 
 local TEMPLATES = { lobby = true, ib = true, st = true }
@@ -84,7 +92,8 @@ return function(t)
 			for i = 1, World.offices.maxFloors + 2 do
 				table.insert(many, "d" .. i)
 			end
-			t.expect(OfficeAlloc.floorIndex(many, "d" .. (World.offices.maxFloors - 1))).toBe(World.offices.maxFloors - 1)
+			t.expect(OfficeAlloc.floorIndex(many, "d" .. (World.offices.maxFloors - 1)))
+				.toBe(World.offices.maxFloors - 1)
 			t.expect(OfficeAlloc.floorIndex(many, "d" .. World.offices.maxFloors)).toBeNil()
 		end)
 		t.it("expires floors that stay empty for the TTL and keeps occupied ones", function()
@@ -115,7 +124,7 @@ return function(t)
 	t.describe("OfficeAlloc companies", function()
 		t.it("normalizes a list module", function()
 			local byId, list = OfficeAlloc.normalizeCompanies({ list = COMPANIES })
-			t.expect(#list).toBe(4)
+			t.expect(#list).toBe(5)
 			t.expect(list[1].id).toBe("mg_freeman")
 			local mgf = byId.mg_freeman
 			t.expect(mgf.short).toBe("MGF")
@@ -138,7 +147,7 @@ return function(t)
 			t.expect(byMap.helpers).toBeNil()
 			t.expect(byMap.tiers).toBeNil()
 			local _, plain = OfficeAlloc.normalizeCompanies(COMPANIES)
-			t.expect(#plain).toBe(4)
+			t.expect(#plain).toBe(5)
 			local getter = {
 				ids = { "anaeio", "missing" },
 				get = function(id)
@@ -159,7 +168,11 @@ return function(t)
 		t.it("normalizes tracks and names departments", function()
 			local tracks = OfficeAlloc.normalizeTracks({
 				list = {
-					{ id = "ib", name = "Investment Banking", ladder = { { title = "Analyst" }, { title = "Managing Director" } } },
+					{
+						id = "ib",
+						name = "Investment Banking",
+						ladder = { { title = "Analyst" }, { title = "Managing Director" } },
+					},
 					{ id = "st", name = "Sales & Trading", enabled = false },
 				},
 			})
@@ -167,7 +180,8 @@ return function(t)
 			t.expect(tracks.st.disabled).toBe(true)
 			t.expect(OfficeAlloc.departmentName("ib", tracks)).toBe("Investment Banking")
 			t.expect(OfficeAlloc.departmentName("pe", tracks)).toBe("Private Equity") -- fallback text
-			t.expect(OfficeAlloc.departmentName("zz", nil)).toBe("zz")
+			t.expect(OfficeAlloc.departmentName("zz_top", nil)).toBe("Zz Top")
+			t.expect(OfficeAlloc.departmentName("lobby", nil)).toBe("Lobby")
 		end)
 	end)
 
@@ -197,16 +211,17 @@ return function(t)
 		end)
 		t.it("lists open firms first, in Street order", function()
 			local entries = OfficeAlloc.directory(list, TEMPLATES)
-			t.expect(#entries).toBe(4)
+			t.expect(#entries).toBe(5)
 			t.expect(entries[1].id).toBe("mg_freeman")
 			t.expect(entries[2].id).toBe("harrow_williams")
 			t.expect(entries[1].available).toBe(true)
 			t.expect(entries[3].available).toBe(false)
 			t.expect(entries[3].id).toBe("goldfield_saxe") -- Bank Row comes before the Anaeio tower
 			t.expect(entries[4].id).toBe("anaeio")
+			t.expect(entries[5].id).toBe("lotus_wealth") -- Wealth House comes after the Funds tower
 			local open = OfficeAlloc.filterOpen(entries, true)
 			t.expect(#open).toBe(2)
-			t.expect(#OfficeAlloc.filterOpen(entries, false)).toBe(4)
+			t.expect(#OfficeAlloc.filterOpen(entries, false)).toBe(5)
 		end)
 		t.it("filters a tower picker to its tenants in tower order, with placeholders", function()
 			local entries = OfficeAlloc.directory(list, TEMPLATES)
@@ -224,6 +239,101 @@ return function(t)
 				t.expect(e.id ~= "mg_freeman").toBeTruthy()
 			end
 			t.expect(#OfficeAlloc.pickerEntries(entries, { "harrow_williams", "harrow_williams" })).toBe(1)
+		end)
+	end)
+
+	t.describe("OfficeAlloc directory details", function()
+		local byId, list = OfficeAlloc.normalizeCompanies({ list = COMPANIES })
+		t.it("lists a closed firm's planned departments as opening soon", function()
+			local entries = OfficeAlloc.directory(list, TEMPLATES)
+			local lotus: any = nil
+			for _, e in entries do
+				if e.id == "lotus_wealth" then
+					lotus = e
+				end
+			end
+			t.expect(lotus.available).toBe(false)
+			t.expect(#lotus.departments).toBe(1)
+			t.expect(lotus.departments[1].name).toBe("Wealth Management")
+			t.expect(lotus.departments[1].available).toBe(false)
+			t.expect(OfficeAlloc.departmentLine(lotus, true)).toBe("Wealth Management")
+			t.expect(OfficeAlloc.departmentLine(lotus)).toBe(OfficeAlloc.Directory.departmentLine(lotus, false))
+			t.expect(byId.lotus_wealth.planned[1]).toBe("wm")
+			t.expect(#byId.lotus_wealth.departments).toBe(0)
+		end)
+		t.it("never opens a floor of a disabled firm, even with templates", function()
+			t.expect(OfficeAlloc.floorOpen(byId.goldfield_saxe, "ib", TEMPLATES)).toBe(false)
+			t.expect(OfficeAlloc.floorOpen(byId.goldfield_saxe, "lobby", TEMPLATES)).toBe(false)
+			for _, d in OfficeAlloc.departments(byId.goldfield_saxe, TEMPLATES) do
+				t.expect(d.available).toBe(false)
+			end
+		end)
+		t.it("joins open department names for the directory card", function()
+			local mgf = OfficeAlloc.entry(byId.mg_freeman, TEMPLATES, nil, 1)
+			t.expect(OfficeAlloc.departmentLine(mgf)).toBe("Investment Banking · Sales & Trading")
+			local none = OfficeAlloc.entry(byId.harrow_williams, { lobby = true }, nil, 1)
+			t.expect(OfficeAlloc.departmentLine(none)).toBe("No departments yet")
+		end)
+		t.it("orders the elevator panel top floor first and marks the current floor", function()
+			local floors = {
+				{ id = "lobby", name = "Lobby", floor = 0, available = true },
+				{ id = "ib", name = "Investment Banking", floor = 1, available = true },
+				{ id = "st", name = "Sales & Trading", floor = 2, available = false },
+				{ id = "ib", name = "dupe", floor = 1, available = true },
+				{ name = "broken" },
+			}
+			local rows = OfficeAlloc.elevatorRows(floors :: any, "lobby")
+			t.expect(#rows).toBe(3)
+			t.expect(rows[1].id).toBe("st")
+			t.expect(rows[1].badge).toBe("2")
+			t.expect(rows[1].available).toBe(false)
+			t.expect(rows[3].id).toBe("lobby")
+			t.expect(rows[3].badge).toBe("L")
+			t.expect(rows[3].here).toBe(true)
+			t.expect(rows[2].here).toBe(false)
+			t.expect(#OfficeAlloc.elevatorRows({}, nil)).toBe(0)
+		end)
+	end)
+
+	t.describe("OfficeAlloc with the real Config/Companies and Config/Tracks", function()
+		local Companies = require(Shared.Config.Companies)
+		local Tracks = require(Shared.Config.Tracks)
+		local byId, list = OfficeAlloc.normalizeCompanies(Companies)
+		local tracks = OfficeAlloc.normalizeTracks(Tracks)
+		local templates = { lobby = true }
+		for _, d in World.departments do
+			templates[d] = true
+		end
+		t.it("knows every company the Street's towers name", function()
+			for _, tower in World.towers do
+				local ids = { tower.company }
+				for _, id in tower.picker or {} do
+					table.insert(ids, id)
+				end
+				for _, id in ids do
+					if byId[id] == nil then
+						error("tower " .. tower.id .. " names unknown company " .. tostring(id))
+					end
+				end
+			end
+			t.expect(#list).toBeGreaterThan(20)
+		end)
+		t.it("opens the Investment Banking firms (milestone 1) and shows the rest as opening soon", function()
+			local entries = OfficeAlloc.directory(list, templates, tracks)
+			local open = 0
+			for _, e in entries do
+				if e.available then
+					open += 1
+					t.expect(e.departments[1].id).toBe("ib")
+					t.expect(e.tierLabel ~= "").toBeTruthy()
+				else
+					t.expect(#e.departments > 0).toBeTruthy() -- planned departments are listed
+				end
+			end
+			t.expect(open).toBeGreaterThan(0)
+			t.expect(byId.mg_freeman.primary ~= nil).toBeTruthy()
+			t.expect(tracks.ib.name).toBe("Investment Banking")
+			t.expect(OfficeAlloc.isAvailable(byId.anaeio, templates, tracks)).toBe(false)
 		end)
 	end)
 
