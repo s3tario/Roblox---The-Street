@@ -27,8 +27,12 @@ export type State = {
 	locked: boolean,
 }
 
-View.TABS = table.clone(Catalog.TAB_ORDER) :: { string }
-table.insert(View.TABS, "presets")
+local tabs: { string } = {}
+for _, slot in Catalog.TAB_ORDER do
+	table.insert(tabs, slot)
+end
+table.insert(tabs, "presets")
+View.TABS = tabs
 
 function View.tabTitle(id: string): string
 	if id == "presets" then

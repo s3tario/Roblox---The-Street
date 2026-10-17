@@ -25,13 +25,14 @@ local function newStore()
 	return store
 end
 
--- Minimal model of one server's session using only SessionLock transforms.
-local function server(store, jobId)
+-- Minimal model of one server's session using only SessionLock transforms. `sid` (optional) is the
+-- per-session id DataService stamps into the lock.
+local function server(store, jobId, sid)
 	local self = { jobId = jobId, writeId = 0, data = nil, dead = nil }
 	function self.load(key, now)
 		local decision, reason, rec
 		store.update(key, function(raw)
-			local d, r, out = SessionLock.acquire(raw, now, jobId, 1)
+			local d, r, out = SessionLock.acquire(raw, now, jobId, 1, nil, sid)
 			decision, reason, rec = d, r, out
 			return out
 		end)
@@ -44,7 +45,7 @@ local function server(store, jobId)
 	function self.save(key, now, release, uncertain)
 		local status, rec
 		store.update(key, function(raw)
-			local st, out = SessionLock.write(raw, now, jobId, 1, self.writeId, self.data, release, uncertain)
+			local st, out = SessionLock.write(raw, now, jobId, 1, self.writeId, self.data, release, uncertain, sid)
 			status, rec = st, out
 			return out
 		end)
@@ -268,6 +269,60 @@ return function(t)
 		end)
 	end)
 
+	t.describe("per-session ids (sid)", function()
+		t.it("acquire and write stamp the sid; release clears the session", function()
+			local _, _, rec = SessionLock.acquire(nil, NOW, "A", 1, nil, "s1")
+			t.expect(rec.session.sid).toBe("s1")
+			local st, out = SessionLock.write(rec, NOW + 10, "A", 1, rec.writeId, { v = 1 }, false, false, "s1")
+			t.expect(st).toBe("ok")
+			t.expect(out.session.sid).toBe("s1")
+			local st2, released = SessionLock.write(out, NOW + 20, "A", 1, out.writeId, nil, true, false, "s1")
+			t.expect(st2).toBe("ok")
+			t.expect(released.session).toBeNil()
+		end)
+		t.it("a write from another session of the same job is a conflict, even when uncertain", function()
+			local rec = { data = {}, session = { jobId = "A", placeId = 1, lockedAt = NOW, sid = "new" }, writeId = 6 }
+			t.expect(SessionLock.checkWrite(rec, "A", 5, true, "old")).toBe("conflict")
+			t.expect(SessionLock.checkWrite(rec, "A", 6, false, "old")).toBe("conflict")
+			t.expect(SessionLock.checkWrite(rec, "A", 6, false, "new")).toBe("ok")
+			-- records written before sids existed fall back to the writeId chain
+			rec.session.sid = nil
+			t.expect(SessionLock.checkWrite(rec, "A", 6, false, "old")).toBe("ok")
+		end)
+		t.it("a same-server rejoin can't be overwritten by the old session's uncertain retry", function()
+			local store = newStore()
+			local old = server(store, "A", "old")
+			old.load("u_1", NOW)
+			old.data.coins = 10
+			t.expect(old.save("u_1", NOW + 10)).toBe("ok")
+			-- the old session's final save errors without committing; meanwhile the player rejoins this server
+			local fresh = server(store, "A", "fresh")
+			t.expect(fresh.load("u_1", NOW + 60)).toBe("acquire")
+			t.expect(fresh.writeId).toBe(old.writeId + 1)
+			fresh.data.coins = 11
+			-- the old session retries with the uncertain allowance (writeId == expected + 1 matches)
+			old.data.coins = 999
+			t.expect(old.save("u_1", NOW + 70, true, true)).toBe("conflict")
+			t.expect(store.get("u_1").data.coins).toBe(10)
+			t.expect(store.get("u_1").session.sid).toBe("fresh")
+			t.expect(fresh.save("u_1", NOW + 130)).toBe("ok")
+			t.expect(store.get("u_1").data.coins).toBe(11)
+		end)
+		t.it("our own uncertain write that committed is still accepted with the same sid", function()
+			local store = newStore()
+			local a = server(store, "A", "s")
+			a.load("u_1", NOW)
+			local expected = a.writeId
+			store.update("u_1", function(raw)
+				local _, out = SessionLock.write(raw, NOW + 5, "A", 1, expected, { coins = 1 }, false, false, "s")
+				return out
+			end)
+			a.data = { coins = 2 }
+			t.expect(a.save("u_1", NOW + 10, false, true)).toBe("ok")
+			t.expect(store.get("u_1").data.coins).toBe(2)
+		end)
+	end)
+
 	t.describe("SessionLock.restore", function()
 		t.it("refuses while another server's live session holds the lock", function()
 			local raw = { data = {}, session = { jobId = "B", placeId = 1, lockedAt = NOW }, writeId = 4 }
@@ -295,6 +350,11 @@ return function(t)
 			-- the source backup table is not mutated
 			t.expect(backup.audit).toBeNil()
 			t.expect(backup.meta.backupDay).toBe(498)
+		end)
+		t.it("honours the Studio steal prefix like decide()", function()
+			local raw = { data = {}, session = { jobId = "studio-old", placeId = 1, lockedAt = NOW }, writeId = 2 }
+			t.expect(SessionLock.restore(raw, NOW, "studio-new", {})).toBe("held")
+			t.expect(SessionLock.restore(raw, NOW, "studio-new", {}, nil, nil, "studio-")).toBe("ok")
 		end)
 		t.it("restores over a stale or own lock", function()
 			local stale = { data = {}, session = { jobId = "B", placeId = 1, lockedAt = NOW - 700 }, writeId = 1 }

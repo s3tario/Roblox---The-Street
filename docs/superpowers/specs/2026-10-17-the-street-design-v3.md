@@ -292,3 +292,17 @@ The integrity footnote stays on the skill boards. Robux Spent is kept separate a
   signature projects stay as each track's signature deals.
 - The Challenge Run mode is replaced by Rebirth (§9). Fastest Run uses life/rebirth starts.
 - The global deterministic market is replaced by the per-server market (§11).
+
+## 19. Release plan: test bit by bit (owner request)
+
+Every milestone produces a playable `.rbxl` the owner tests before the next one starts. Code stays generic (tracks,
+companies, events are data-driven) so later updates add content without rewrites.
+
+| Milestone | Contents |
+|---|---|
+| **M1: Investment Banking path** | The gritty campus and tutorial, the Life Roll (name, school, degree, GPA, family, clubs, stats, outfit; 3 single-field rerolls), stats/OVR/focus, recruiting into IB firms only, the Street (Bank Row towers for the IB firms, Career Services, Galleria, Apartments), per-company offices (lobby + IB floor in the owner's photo style), IB work tasks + the IPO big deal + deal plaques, the per-server market and terminal, weekly boss reviews, promotions with outfit/school gates, firing + Alumni Lifeline + recovery, the cash shop + dress levels + vest/quarter-zip logos, housing (dorm, apartment, desk, office), NPCs and dialogue, profile cards. |
+| M2: Events | Server events (weather, market crash/boom, mass firing and the rest of the corporate events, chaos/fun). |
+| M3: Social career | Phone + email, networking events and connections, email job offers and applications, headhunters, the Rival. |
+| M4: Progression | Rebirth, auras, Morning Brief daily rewards. |
+| M5+: New tracks | One update per career path: S&T, then PE, Private Credit, WM, AM/HF, ER, Corporate Banking, VC, RE, Corporate Finance (floor template + tasks + big deal + companies + towers). |
+| M-Store | Monetization (products, passes incl. Morning Brief Premium, season pass) and the ten leaderboards; can ship alongside any milestone after M1. |

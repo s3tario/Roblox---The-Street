@@ -101,6 +101,45 @@ function DataUtil.filterPrivate(data: { [string]: any }, privateSet: { [string]:
 	return out
 end
 
+-- Client-side ordering for Data.Key / Data.Global (used by the Store controller). Each update carries a
+-- sequence number; `seqs[key]` is the newest one applied to that key.
+-- acceptSeq: true when an update stamped `seq` is newer than what `seqs[key]` holds (and records it). An update
+-- without a usable sequence number is always applied and leaves the record alone, so it never blocks later ones.
+function DataUtil.acceptSeq(seqs: { [string]: number }, key: string, seq: any): boolean
+	if type(seq) ~= "number" or seq ~= seq then
+		return true
+	end
+	local last = seqs[key]
+	if last ~= nil and seq <= last then
+		return false -- older than what is already applied
+	end
+	seqs[key] = seq
+	return true
+end
+
+-- Merge a snapshot taken at sequence `at` into `target`: keys already updated past `at` keep their newer values;
+-- every other key takes the snapshot's value (including removal for keys the snapshot doesn't have), and is
+-- stamped `at` so updates older than the snapshot that arrive late are ignored.
+function DataUtil.mergeSnapshot(
+	target: { [string]: any },
+	seqs: { [string]: number },
+	snapshot: { [any]: any },
+	at: number
+)
+	for key in target do
+		if snapshot[key] == nil and (seqs[key] or -math.huge) <= at then
+			target[key] = nil
+			seqs[key] = at
+		end
+	end
+	for key, value in snapshot do
+		if type(key) == "string" and (seqs[key] or -math.huge) <= at then
+			target[key] = value
+			seqs[key] = at
+		end
+	end
+end
+
 ---------------------------------------------------------------------------------------------------
 -- Templates
 ---------------------------------------------------------------------------------------------------

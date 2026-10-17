@@ -43,16 +43,12 @@ local function fire(map: { [string]: Signal.Signal }, key: string, value: any)
 	end
 end
 
+local accept = DataUtil.acceptSeq
+
 local function onKey(key: any, value: any, seq: any)
-	if type(key) ~= "string" then
+	if type(key) ~= "string" or not accept(dataSeq, key, seq) then
 		return
 	end
-	local n = if type(seq) == "number" then seq else math.huge
-	local last = dataSeq[key]
-	if last ~= nil and n <= last then
-		return -- older than what we already have
-	end
-	dataSeq[key] = n
 	data[key] = value
 	if loaded then
 		fire(changed, key, value)
@@ -60,35 +56,12 @@ local function onKey(key: any, value: any, seq: any)
 end
 
 local function onGlobal(key: any, value: any, seq: any)
-	if type(key) ~= "string" then
+	if type(key) ~= "string" or not accept(globalSeq, key, seq) then
 		return
 	end
-	local n = if type(seq) == "number" then seq else math.huge
-	local last = globalSeq[key]
-	if last ~= nil and n <= last then
-		return
-	end
-	globalSeq[key] = n
 	globals[key] = value
 	if loaded then
 		fire(globalChanged, key, value)
-	end
-end
-
--- Merge a snapshot taken at (seq, gseq): keys already updated past those sequence numbers keep their newer
--- values; everything else takes the snapshot's value (including nil for keys the snapshot doesn't have).
-local function merge(target: { [string]: any }, seqs: { [string]: number }, snapshot: { [string]: any }, at: number)
-	for key in target do
-		if snapshot[key] == nil and (seqs[key] or -1) <= at then
-			target[key] = nil
-			seqs[key] = at
-		end
-	end
-	for key, value in snapshot do
-		if type(key) == "string" and (seqs[key] or -1) <= at then
-			target[key] = value
-			seqs[key] = at
-		end
 	end
 end
 
@@ -97,8 +70,8 @@ local function applySnapshot(snap: { [string]: any })
 	local global = if type(snap.global) == "table" then snap.global else {}
 	local seq = if type(snap.seq) == "number" then snap.seq else 0
 	local gseq = if type(snap.gseq) == "number" then snap.gseq else 0
-	merge(data, dataSeq, player, seq)
-	merge(globals, globalSeq, global, gseq)
+	DataUtil.mergeSnapshot(data, dataSeq, player, seq)
+	DataUtil.mergeSnapshot(globals, globalSeq, global, gseq)
 	loaded = true
 	-- Listeners connected before the load get every initial value.
 	for key, value in data do
