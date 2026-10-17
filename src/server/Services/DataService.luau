@@ -20,6 +20,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Net = require(Shared.Net)
+local Hash = require(Shared.Util.Hash)
 local Signal = require(Shared.Util.Signal)
 local TableUtil = require(Shared.Util.TableUtil)
 local Time = require(Shared.Util.Time)
@@ -39,6 +40,7 @@ type Session = {
 	player: Player,
 	userId: number,
 	key: string,
+	sid: string, -- unique per session; stamped into the lock so an older session of this user can never write
 	state: "loading" | "active" | "closed",
 	data: Data?,
 	leaving: boolean, -- the player left the server
@@ -55,6 +57,7 @@ type Session = {
 	lastSaveBegan: number,
 	lastSaveOk: boolean,
 	finalized: boolean,
+	finalSaved: boolean, -- the final (release) save wrote the profile
 	backupSlot: number?,
 	backupSnapshot: Data?,
 	stolenFrom: { [string]: any }?,
@@ -74,6 +77,7 @@ local FLUSH_EVERY = 0.2
 local MIN_WRITE_GAP = 6 -- DataStore allows one write per key every 6 s
 local SHUTDOWN_BUDGET = 25
 local SNAPSHOT_WAIT = 10
+local FINAL_WAIT = 40 -- a save requested while the player is leaving waits this long for the final save
 local LOAD_ERROR_RETRIES = 5
 local SAVE_RETRIES = 4
 local FINAL_SAVE_RETRIES = 5
@@ -119,9 +123,9 @@ local globalSeq = 0
 local shuttingDown = false
 local shutdownDeadline: number? = nil
 local warnedPrivate: { [string]: boolean } = {}
-local rng = Random.new()
 
 local backendMode: "pending" | "real" | "mock" = "pending"
+local backendDetecting = false
 local backendReady = Signal.new()
 local stores: { [string]: Store } = {}
 local mockValues: { [string]: { [string]: any } } = {}
@@ -206,6 +210,25 @@ local function newMockStore(name: string): Store
 		end
 		return TableUtil.deepCopy(result)
 	end
+	-- The rest of the common GlobalDataStore surface, for other server code using DataService:GetStore.
+	function store.SetAsync(_self: any, key: string, value: any): string
+		task.wait()
+		values[key] = TableUtil.deepCopy(value)
+		return ""
+	end
+	function store.RemoveAsync(_self: any, key: string): any
+		task.wait()
+		local old = values[key]
+		values[key] = nil
+		return TableUtil.deepCopy(old)
+	end
+	function store.IncrementAsync(_self: any, key: string, delta: number?): number
+		task.wait()
+		local cur = values[key]
+		local n = (if type(cur) == "number" then cur else 0) + (delta or 1)
+		values[key] = n
+		return n
+	end
 	return store :: any
 end
 
@@ -229,6 +252,10 @@ local function getStore(name: string): Store
 end
 
 local function detectBackend()
+	if backendDetecting then
+		return
+	end
+	backendDetecting = true
 	local mode: "real" | "mock" = "real"
 	local reason = ""
 	if IS_STUDIO then
@@ -263,7 +290,8 @@ local function detectBackend()
 end
 
 -- UpdateAsync with exponential backoff. Returns (ok, lastError). `onError` runs after every failed attempt
--- (a failed UpdateAsync may still have committed).
+-- (a failed UpdateAsync may still have committed). Retries stop at `deadline`, or at the shutdown deadline
+-- once the server starts closing (so a save that began earlier can't eat the BindToClose budget).
 local function updateWithRetry(
 	store: Store,
 	key: string,
@@ -289,7 +317,8 @@ local function updateWithRetry(
 			break
 		end
 		local delay = DataUtil.backoff(attempt, 1, 8)
-		if deadline and os.clock() + delay >= deadline then
+		local limit = deadline or shutdownDeadline
+		if limit and os.clock() + delay >= limit then
 			break
 		end
 		task.wait(delay)
@@ -451,8 +480,17 @@ local function writeProfile(s: Session, release: boolean, deadline: number?): bo
 		getStore(PROFILE_STORE),
 		s.key,
 		function(raw)
-			local st: SessionLock.WriteStatus, rec =
-				SessionLock.write(raw, Time.now(), JOB_ID, game.PlaceId, s.writeId, payload, release, s.writeUncertain)
+			local st: SessionLock.WriteStatus, rec = SessionLock.write(
+				raw,
+				Time.now(),
+				JOB_ID,
+				game.PlaceId,
+				s.writeId,
+				payload,
+				release,
+				s.writeUncertain,
+				s.sid
+			)
 			status, committed = st, rec
 			if st ~= "ok" then
 				local current = SessionLock.normalize(raw)
@@ -495,10 +533,23 @@ local function writeProfile(s: Session, release: boolean, deadline: number?): bo
 	return true
 end
 
+-- Result of the final (release) save, for a save requested while the player is leaving or the server is
+-- closing: that final save is moments away and will include everything, so don't spend a write (or the
+-- BindToClose budget) on a separate one.
+local function awaitFinalSave(s: Session): boolean
+	if s.state ~= "closed" then
+		waitSignal(s.closedSignal, FINAL_WAIT)
+	end
+	return s.finalSaved
+end
+
 -- Serialized per session; concurrent requests coalesce into a save that started after they were made.
 local function saveSession(s: Session, reason: string, release: boolean, deadline: number?): boolean
 	if s.data == nil or not s.lockHeld or s.dead then
 		return false
+	end
+	if not release and (s.leaving or s.closing) then
+		return awaitFinalSave(s)
 	end
 	local requestedAt = os.clock()
 	acquireSaveLock(s)
@@ -519,6 +570,11 @@ local function saveSession(s: Session, reason: string, release: boolean, deadlin
 		if s.dead or not s.lockHeld then
 			releaseSaveLock(s)
 			return false
+		end
+		if s.leaving or s.closing then
+			-- The player left (or the server began closing) while this save waited: hand over to the final save.
+			releaseSaveLock(s)
+			return awaitFinalSave(s)
 		end
 	end
 	s.lastSaveBegan = os.clock()
@@ -543,7 +599,7 @@ local function releaseOnly(s: Session)
 		s.key,
 		function(raw)
 			local st, rec =
-				SessionLock.write(raw, Time.now(), JOB_ID, game.PlaceId, s.writeId, nil, true, s.writeUncertain)
+				SessionLock.write(raw, Time.now(), JOB_ID, game.PlaceId, s.writeId, nil, true, s.writeUncertain, s.sid)
 			status = st
 			return rec
 		end,
@@ -581,7 +637,7 @@ local function load(s: Session): (boolean, string?)
 		local ok, err = pcall(function()
 			store:UpdateAsync(s.key, function(raw)
 				local d: SessionLock.Decision, r: string, rec =
-					SessionLock.acquire(raw, Time.now(), JOB_ID, game.PlaceId, STEAL_PREFIX)
+					SessionLock.acquire(raw, Time.now(), JOB_ID, game.PlaceId, STEAL_PREFIX, s.sid)
 				decision, reason, committed = d, r, rec
 				local current = SessionLock.normalize(raw)
 				previous = if current then current.session else nil
@@ -698,6 +754,7 @@ local function finalize(s: Session)
 			warn("[DataService] ProfileReleasing failed: " .. tostring(err))
 		end
 		local saved = saveSession(s, if s.closing then "shutdown" else "leave", true, shutdownDeadline)
+		s.finalSaved = saved
 		if not saved and s.lockHeld then
 			releaseOnly(s) -- e.g. oversize: the heartbeat path already released; this covers write errors
 		end
@@ -737,7 +794,8 @@ local function runSession(s: Session)
 	end
 
 	s.state = "active"
-	s.nextAutosave = os.clock() + AUTOSAVE_EVERY * (0.5 + 0.5 * rng:NextNumber()) -- staggered first autosave
+	-- Staggered first autosave (60-120 s), spread by user so a full server doesn't save in one burst.
+	s.nextAutosave = os.clock() + AUTOSAVE_EVERY * (0.5 + 0.5 * Hash.unit("autosave", s.userId, JOB_ID))
 	local data = s.data :: Data
 	s.loadedSignal:Fire(data)
 	DataService.ProfileLoaded:Fire(s.player, data)
@@ -748,7 +806,10 @@ local function runSession(s: Session)
 	if not aborted(s) then
 		s.leftSignal:Wait()
 	end
-	finalize(s)
+	local okFinal: boolean, errFinal: any = (pcall :: any)(finalize, s)
+	if not okFinal then
+		warn(("[DataService] final save of %d errored: %s"):format(s.userId, tostring(errFinal)))
+	end
 	finish(s)
 end
 
@@ -764,6 +825,7 @@ local function ensureSession(player: Player): Session?
 		player = player,
 		userId = player.UserId,
 		key = profileKey(player.UserId),
+		sid = HttpService:GenerateGUID(false),
 		state = "loading",
 		data = nil,
 		leaving = false,
@@ -780,6 +842,7 @@ local function ensureSession(player: Player): Session?
 		lastSaveBegan = -math.huge,
 		lastSaveOk = false,
 		finalized = false,
+		finalSaved = false,
 		backupSlot = nil,
 		backupSnapshot = nil,
 		stolenFrom = nil,
@@ -949,15 +1012,12 @@ function DataService:Audit(target: Player | number, kind: string, details: { [st
 	end
 	local player = if typeof(target) == "number" then Players:GetPlayerByUserId(target) else target
 	local data = if player then self:Get(player) else nil
-	if data then
+	local entry = DataUtil.auditEntry(Time.now(), kind, details)
+	if data and entry then
 		if type(data.audit) ~= "table" then
 			data.audit = {}
 		end
-		DataUtil.pushRing(
-			data.audit,
-			{ t = math.floor(Time.now()), kind = kind, d = DataUtil.compact(details) },
-			AUDIT_RING
-		)
+		DataUtil.pushRing(data.audit, entry, AUDIT_RING)
 	end
 end
 
@@ -1114,7 +1174,7 @@ function DataService:AdminRestore(userId: number, slot: number | string): (boole
 	local okWrite, errWrite = updateWithRetry(profileStore, profileKey(id), function(rawNow)
 		local now = Time.now()
 		local note = { t = math.floor(now), kind = "restore", d = { slot = which, savedAt = backup.savedAt } }
-		local status, rec = SessionLock.restore(rawNow, now, JOB_ID, backup.data, note, AUDIT_RING)
+		local status, rec = SessionLock.restore(rawNow, now, JOB_ID, backup.data, note, AUDIT_RING, STEAL_PREFIX)
 		refused = status ~= "ok"
 		return rec
 	end, 3)
@@ -1162,6 +1222,9 @@ function DataService:Init()
 		ensureSession(player)
 	end
 	game:BindToClose(onClose)
+	-- Detect the backend as soon as Init returns (not in Start), so a GetStore / IsMock / WaitFor call made from
+	-- another service's Init can never wait on a detection that only starts after every Init has finished.
+	task.defer(detectBackend)
 end
 
 function DataService:Start()
@@ -1176,7 +1239,7 @@ function DataService:Start()
 			end
 		end
 	end)
-	detectBackend()
+	detectBackend() -- no-op when the deferred detection from Init is already running
 	while not shuttingDown do
 		task.wait(1)
 		local ok, err = pcall(function()

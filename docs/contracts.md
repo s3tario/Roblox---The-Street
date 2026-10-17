@@ -1,477 +1,450 @@
-# The Street — Code Contracts
+# The Street — Code Contracts (v3)
 
-This file is the single source of truth for **interfaces between features**. A feature may change its
-internals freely but must not change anything in this file without updating every caller. If you need a
-new cross-feature API, add it here in the owning feature's section.
-
-Design numbers live in `docs/superpowers/specs/2026-10-15-the-street-design.md`.
+This file is the single source of truth for **interfaces between features**. A feature may change its internals
+freely but must not change anything in this file without updating every caller. Design numbers live in
+`docs/superpowers/specs/2026-10-17-the-street-design-v3.md`, which overrides
+`docs/superpowers/specs/2026-10-15-the-street-design.md` where they conflict.
 
 ---
 
 ## 1. Rojo tree
 
-| DataModel path | Source dir | Notes |
+| DataModel path | Source | Notes |
 |---|---|---|
 | `ReplicatedStorage.Shared` | `src/shared` | Shared modules (server + client). |
-| `ServerScriptService.Server` | `src/server` | `Main.server.luau`, `Registry.luau`, `Services/*`, `Private/*`. |
-| `ServerStorage.WorldBuilders` | `src/world` | World/zone builders (baked by Lune, callable at runtime). |
+| `ServerScriptService.Server` | `src/server` | `Main.server.luau`, `Registry.luau`, `Services/*`. |
+| `ServerStorage.WorldBuilders` | `src/world` | World, venue and office-template builders. |
+| `ServerStorage.FirmTemplates` | `build/Templates.rbxm` | Baked office templates (lobby + one floor per department). Cloned at runtime by OfficeService. |
 | `StarterPlayer.StarterPlayerScripts.Client` | `src/client` | `Main.client.luau`, `Registry.luau`, `Controllers/*`, `UI/*`. |
-| `Workspace.World` | `build/World.rbxm` | Produced by `lune run tools/bake`. Never edit by hand. |
-| `Workspace.Handmade` | `src/handmade` (optional `.rbxm`) | Owner's hand-edited content survives rebuilds. |
-
-Shared layout:
+| `Workspace.World` | `build/World.rbxm` | Baked exteriors and venues. Never edit by hand. |
+| `Workspace.Handmade` | `src/handmade` (optional) | The owner's hand-edited content survives rebuilds. |
 
 ```
 src/shared/
-  Net.luau                 remote registry (foundation)
-  Guard.luau               argument validation (foundation)
-  Util/                    Signal, Rng, Hash, Time, Format, TableUtil (foundation)
-  Config/                  pure data tables (each file owned by one feature; see §12)
-    World.luau             zones, anchors, doors, interiors, interaction ids (foundation)
-    DataTemplate/          per-feature default profile data, merged by init.luau (§3)
-  Logic/                   PURE logic (no Roblox services, no clocks): unit-tested in Lune
-    Tasks/<taskId>.luau    work task modules (§7)
-    Projects/<id>.luau     multi-step project modules (§8)
-  Build/                   Kit.luau, Palette.luau (foundation): bake-safe builder primitives
-  Assets/                  bake-safe asset builders: Props/, Wardrobe/, Signs/, Npc/
+  Net.luau, Guard.luau, Util/*            foundation
+  Config/                                 pure data tables (each file owned by one feature, §14)
+    World.luau                            regions, venues, office system, towers, doors, anchors, interact ids (foundation)
+    DataTemplate/                         per-feature default player data, merged by init.luau (§3)
+  Logic/                                  PURE logic (no services, no clocks, no Instances): unit-tested in Lune
+    Tasks/<taskId>.luau                   work task modules (§8)
+    Projects/<id>.luau                    multi-step project modules (§9)
+  Build/                                  Kit.luau, Palette.luau (foundation)
+  Assets/                                 bake-safe builders: Props/, Signs/, Wardrobe/, Npc/, Logos/, EventProps/
 ```
 
-## 2. Runtime frameworks (foundation-owned)
+## 2. Runtime frameworks (foundation)
 
-### Server services
-`src/server/Services/<Name>.luau` is auto-discovered by `Main.server.luau`.
+**Server services** (`src/server/Services/<Name>.luau`, auto-discovered):
 
 ```lua
-local Service = { Name = "MarketService", Priority = 20 } -- lower Priority inits first (default 100)
-function Service:Init() end   -- create remotes, connect signals. No yielding. No DataStore calls.
-function Service:Start() end  -- spawned with task.spawn; loops and DataStore work go here.
-return Service
+local Service = { Name = "X", Priority = 100 }  -- lower inits first
+function Service:Init() end   -- remotes and signals only; no yielding; no DataStore calls
+function Service:Start() end  -- spawned; loops and DataStore work
 ```
 
-Other services are reached lazily: `local Registry = require(script.Parent.Parent.Registry)` then
-`Registry.CareerService:AddXP(...)`. Never cache a service at module top level before `Init`.
-A missing optional service must not crash the caller: use `Registry.get("Name")`, which returns
-nil and logs once.
+- Reach other services with `local Registry = require(script.Parent.Parent.Registry)`. `Registry.X` errors if X is
+  missing; `Registry.get("X")` returns nil (logged once). Guard every cross-feature call so a missing or erroring
+  feature never breaks yours.
+- Priorities: DataService 1, AuditService 2, NotifyService 5, MarketService 10, EventService 15, OfficeService 20.
+- **Client controllers** (`src/client/Controllers/<Name>.luau`) have the same shape, reached via
+  `require(script.Parent.Parent.Registry)`.
 
-Priorities: DataService 1, AuditService 2, NotifyService 5, MarketService 10, EventService 15,
-everything else defaults to 100.
-
-### Client controllers
-`src/client/Controllers/<Name>.luau` has the same shape and is reached through
-`require(script.Parent.Parent.Registry)`.
-
-### Net (`Shared/Net`)
-Remote names are namespaced by feature: `"Market.Trade"`. The server creates remotes lazily on first
-use; the client waits up to 30 s.
+**Net** (`Shared/Net`): remotes are namespaced `Feature.Action`.
 
 ```lua
 -- server
-Net.on(name, handler, opts?)          -- RemoteEvent; handler(player, ...). opts = {rate = per-second (default 8), burst = (default rate*3)}
-Net.handle(name, handler, opts?)      -- RemoteFunction; handler(player, ...) -> ...; errors are caught -> returns nil, "error"
+Net.on(name, handler, opts?)
+Net.handle(name, handler, opts?)
+Net.declare(name, kind?)
 Net.fire(name, player, ...)
 Net.fireAll(name, ...)
 Net.fireList(name, players, ...)
 Net.fireUnreliable(name, player, ...) / Net.fireAllUnreliable(name, ...)
 -- client
-Net.send(name, ...)                   -- fire server
-Net.invoke(name, ...) -> ...          -- RemoteFunction with 15 s timeout -> nil, "timeout"
-Net.listen(name, handler) -> RBXScriptConnection
+Net.send(name, ...)
+Net.invoke(name, ...) -> ... (15 s timeout)
+Net.listen(name, handler, unreliable?)
 ```
 
-Rate-limited calls are dropped silently (and counted for AntiCheat). **Every handler validates every
-argument with `Guard`** (`Guard.str(x, maxLen)`, `Guard.int(x, lo, hi)`, `Guard.num(x, lo, hi)`,
-`Guard.oneOf(x, set)`, `Guard.id(x)` for `[%w_%-:]` ids up to 64 characters, and `Guard.map(x, maxKeys)`).
-Handlers never trust client-sent prices, amounts, scores or times.
+Rate limiting is built in (`opts = {rate, burst}`). **Validate every argument with `Guard`.** Never trust client
+numbers.
 
-### Replicated player state
-- Server: `DataService:Replicate(player, key)` queues top-level key `key` for that player (batched every
-  0.2 s, deep-copied).
-- Client: the `Store` controller exposes `Store:Get(key)`, `Store:Changed(key) -> Signal(newValue)`,
-  `Store:Wait(key, timeout)`, `Store:GetGlobal(key)` and `Store:GlobalChanged(key)`.
-- Global state: server `Registry.DataService:SetGlobal(key, value)` replicates to all players. Global
-  keys: `events` (§10), `serverInfo`.
-- Private keys are never replicated: `receipts`, `audit`, `flags`, `altCareers`, `_session`.
-- Wire protocol (data-owned): `Data.Key(key, value, seq)` with a per-player sequence number, and
-  `Data.Global(key, value, gseq)`. `Data.Snapshot` returns `{player, global, seq, gseq}`. Always read through
-  `Store`; never listen to `Data.Key` directly.
-- `data._session` is a per-session scratch table: never saved, never replicated, reset to `{}` on each load.
-  Use it for transient server-side state that should die with the session.
+**Replicated state:**
+- `DataService:Replicate(player, key)` pushes a top-level key to its owner (batched every 0.2 s).
+- The client `Store` controller reads it: `Store:Get(key)`, `Store:GetPath("a.b")`, `Store:Changed(key)`,
+  `Store:Wait(key)`, `Store:GetGlobal(key)`, `Store:GlobalChanged(key)`, `Store.Loaded`, `Store:IsLoaded()`.
+- Global keys are set with `DataService:SetGlobal`: `events`, `serverInfo`, `market` (light summary).
+- Private keys never replicate: `receipts`, `audit`, `flags`, `_session`.
+- `_session` is a per-session scratch table (never saved).
+- Wire protocol: `Data.Key(key, value, seq)`, `Data.Global(key, value, gseq)`, `Data.Snapshot`. Read through
+  `Store` only.
 
-### Time (`Shared/Util/Time`)
-- `Time.now()` returns synced server time in seconds (`workspace:GetServerTimeNow()`; `os.time()` in Lune).
-- `Logic/*` modules never call it. Callers pass `now` in.
+**Time:** `Time.now()` in services; Logic takes `now`. Clocks: `Time.DAY_LEN` (market day 360 s),
+`Time.REVIEW_WINDOW` (40 active min = 1 work week), `Time.WORKDAY` (8 active min).
 
-### Rng / Hash (`Shared/Util/Rng`, `Shared/Util/Hash`)
-- `Rng.new(seed: number) -> rng` with `rng:next() -> [0,1)`, `rng:int(a, b)`, `rng:range(a, b)`,
-  `rng:normal(mean, sd)`, `rng:pick(list)`, `rng:weighted({ {item, weight}, ... })`, `rng:shuffle(list)`,
-  `rng:chance(p)`, `rng:clone()`.
-- `Hash.u32(...)` returns a deterministic 32-bit hash of numbers/strings; `Hash.unit(...)` returns it in
-  [0,1). Use these, never `math.random` or `Random`, in `Logic/`.
+**Rng/Hash:** deterministic; never `math.random`/`Random` in Logic or builders.
 
 ## 3. Player data (DataService, owned by `data`)
 
-`Shared/Config/DataTemplate/init.luau` merges every sibling module. Each module returns
-`{ [topLevelKey] = defaultValue }`, and the owning feature owns its key. On load, DataService deep-fills
-missing fields from the template, so adding fields is always safe.
+`Config/DataTemplate/init.luau` merges sibling modules (`{ [key] = default }`, plus an optional `_private` set). On
+load, DataService deep-fills missing fields, so adding fields is safe.
 
-| Key | Owner | Contents (minimum other features may read) |
+| Key | Owner | Contents others may read |
 |---|---|---|
-| `meta` | data | `{ schema, createdAt, lastSeen, sessions, activeSec, backupDay, backupSlot }` |
-| `profile` | career | `{ built, firstName (filtered), familyName, school = {id, rarity}, family = {id, rarity}, gpa, clubs = {clubId}, stats = {knowledge, skill, speed, charisma, network, discipline, risk, luck}, statXp = {}, outfitRoll = {brand, rarity, itemIds}, rerollsLeft, refreshTokens, credits = {reroll, rebuild}, pending = <unlocked roll> }` |
-| `career` | career | `{ level, xp, roleId, track, status, reputation, rank, firmId, week, weekday, reviews = {}, signatures = {}, prestige, wipeouts, comebacks, history = {}, windowStartActive, lastReview, offers = {}, rival = {...}, streak = {day, count} }` |
-| `portfolio` | market | `{ seasonId, cash, positions = {[ticker] = {shares, avgCost}}, bookSize, realized, trades = {}, flows = {}, peakEquity, violations, credits = {capital}, paidCapital }` |
-| `work` | work | `{ completed = {[taskId] = n}, quality = {}, coreDone, lastTaskAt, cooldowns = {}, deal = nil }` |
-| `realms` | realms | `{ [projectOrRealmId] = state }` |
-| `campus` | tutorial | `{ step, quests = {}, offer = false, interviews = 0, club = false }` |
-| `wallet` | shop | `{ cash, earned, spent }` |
-| `inventory` | wardrobe | `{ owned = {[itemId] = true}, equipped = {[slot] = itemId}, presets = {}, wearAvatar = false }` |
-| `housing` | housing | `{ owned = {[decorId] = true}, placed = {[context] = {[slotId] = decorId}}, theme }` |
-| `season` | monetization | `{ id, xp, premium, claimed = {free = {}, premium = {}} }` |
-| `entitlements` | monetization | `{ passes = {}, products = {} }` |
-| `boards` | leaderboards | `{ prestige, deal, comeback, runBest = {}, skill = {} }` |
-| `achievements` | social | `{ [achievementId] = unixTime }` |
-| `settings` | ui | `{ music, sfx, reducedMotion }` |
-| `receipts` | monetization (private) | `{ [purchaseId] = unixTime }` (ring-trimmed to 200) |
-| `audit` | data (private) | ring buffer of 100 entries |
-| `flags` | leaderboards (private) | `{ hidden, reasons = {} }` |
-| `altCareers` | career (private) | `{ main = {...}, challenge = {...} }` swapped snapshots of the career-scoped keys `profile, career, portfolio, work, realms, campus` |
+| `meta` | data | `{schema, createdAt, lastSeen, sessions, activeSec, backupDay, backupSlot}` |
+| `profile` | careerCore | `{built, firstName, familyName, school = {id, rarity}, degree = "bs"|"ms", gpa, family = {id, rarity}, clubs = {{id, rarity}}, perks = {[perkId] = count}, stats = {knowledge, skill, speed, charisma, network, discipline, risk, luck}, statXp = {}, ovr, archetype, focus, outfitRoll = {brand, rarity, itemIds}, rerollsLeft, refreshTokens, credits = {reroll, rebuild}, rebirths, incomeMult, pending}` |
+| `career` | careerPath | `{level, xp, track, companyId, roleId, rank, title, status, reputation, week, weekday, weekActive, reviewDue, reviews = {}, signatures = {}, plaques = {{id, name, at, quality}}, prestige, wipeouts, comebacks, history = {}, offers = {}, applications = {}, connections = {[companyId] = n}, rival = {...}, xpToNext, promotion = {ready, missing = {string}}, fitScore, outfitLevel, lifeStartActive}` |
+| `portfolio` | market | `{cash, positions = {[ticker] = {shares, avgCost}}, bookSize, realized, trades = {}, weekReturns = {}, peak, violations, credits = {capital}, paidCapital}` (positions are session-only: flattened on leave, §6) |
+| `work` | work | `{completed = {[taskId] = n}, quality = {}, coreDone, lastTaskAt, cooldowns = {}}` |
+| `projects` | projects | `{[projectId] = state}` |
+| `campus` | tutorial | `{step, quests = {}, offer = false, applications = {}, club = false}` |
+| `wallet` | shop | `{cash, earned, spent}` |
+| `inventory` | wardrobe | `{owned = {[itemId] = true}, equipped = {[slot] = itemId}, presets = {}, wearAvatar = false}` |
+| `housing` | shop | `{owned = {[decorId] = true}, placed = {[context] = {[slotId] = decorId}}, theme}` |
+| `mail` | phone | `{inbox = {{id, from, subject, body, at, read, kind, data}}, nextId}` (ring of 60) |
+| `daily` | careerCore | `{lastDay, streak, boosts = {{kind, mult, endsAt}}}` |
+| `season` | monetization | `{id, xp, premium, claimed = {free = {}, premium = {}}, cosmetics = {}}` |
+| `entitlements` | monetization | `{passes = {}, products = {}, robuxSpent, pending = {}}` |
+| `boards` | leaderboards | last submitted values |
+| `achievements` | tutorial | `{[achievementId] = unixTime}` |
+| `settings` | ui | `{music, sfx, reducedMotion, showTicker, uiScale, showAuras}` |
+| `receipts`, `audit`, `flags` | private | as before |
 
-DataService API:
+## 4. Career core (owned by `careerCore`): life roll, stats, rebirth, aura, daily
+
+Rarity ids: `common uncommon rare epic legendary mythic`. `Config/Rarity` exports
+`Rarity.list = { {id, name, odds, color, order} }`, `Rarity.get(id)` and `Rarity.oddsFor(rebirths)` (the v3 §1 shift).
+
 ```lua
-DataService.ProfileLoaded    : Signal(player, data)
-DataService.ProfileReleasing : Signal(player, data)    -- fired before the final save on leave
-DataService:Get(player) -> data?                       -- nil until loaded
-DataService:WaitFor(player, timeout?) -> data?
-DataService:Replicate(player, key)
-DataService:Save(player, reason) -> boolean
-DataService:Audit(player, kind: string, details: table)
-DataService:SetGlobal(key, value)
-DataService:GetGlobal(key)
-DataService:IsLoaded(player) -> boolean
-DataService:IsMock() -> boolean                        -- true in Studio without API access
--- server-only support tools (no remote reaches them):
-DataService:AdminListBackups(userId) / DataService:AdminRestore(userId, slot)
+ProfileService:GetProfile(player) -> profile?
+ProfileService:GetStats(player) -> {knowledge, skill, speed, charisma, network, discipline, risk, luck}
+ProfileService:GetStat(player, statId) -> number          -- 1..99
+ProfileService:GetOVR(player) -> number
+ProfileService:AwardStatXp(player, statIds: {string}, quality: number, source)  -- the ONLY way stats grow (focus applied inside)
+ProfileService:HasPerk(player, perkId) -> boolean
+ProfileService:ConsumePerk(player, perkId) -> boolean     -- e.g. "alumni_lifeline"
+ProfileService:GrantCredit(player, "reroll" | "rebuild")  -- monetization (one reroll credit = one single-field reroll)
+ProfileService:AddRefreshToken(player, n, source)
+ProfileService:GetIncomeMult(player) -> number            -- rebirth multiplier (1.0..3.0)
+ProfileService:GetSchoolTierOrder(player) -> number       -- 1 common .. 6 mythic (perk Boardroom Pedigree adds 1 for gating)
+ProfileService.ProfileLocked : Signal(player)             -- life roll finished (first time and after each rebirth)
+RebirthService:CanRebirth(player) -> (boolean, reason?)
+RebirthService.Rebirthed : Signal(player, count)
+DailyService:GetBoostMult(player, kind: "money"|"xp") -> number   -- active daily boosts (stack with events)
+AuraService                                               -- server sets attribute AuraTier (0..5) on characters; AuraController renders
 ```
 
-## 4. Career, profile, reviews (owned by `career`)
+Rebirth: `RebirthService` (careerCore) runs the reset. It calls `CareerService:ResetForRebirth(player)` (careerPath
+resets `career`, keeping `plaques`, `signatures`, `prestige` history and the comeback/wipeout counters) and
+`PortfolioService:ResetForRebirth(player)` (market). It resets `work`, `projects` and `campus` to template defaults
+itself, rerolls `profile` through a new Life Roll, and increments `profile.rebirths`/`incomeMult`. Cash, inventory,
+housing, achievements and season data are never touched.
 
-Role ids and rank order:
-`student(0) intern(1) analyst(2) associate(3) vp(4) director(5) md(6)`, then realm bands `band1(7) band2(8) band3(9)`,
-then `partner(10) senior_partner(11) founder(12)`.
-
-Realm band role ids: `pe_associate pe_vp pe_principal`, `hf_analyst hf_pm hf_senior_pm`,
-`vc_associate vc_principal vc_partner`, `re_analyst re_acquisitions re_director`,
-`cd_manager cd_director cd_vp`. Partner tier ids are `partner senior_partner founder` with realm-specific
-display titles.
-
-Realm ids: `ib pe hf vc re cd`. Status values: `active review_due coaching probation fired`.
-
-**Life Roll and firms (owner v2, spec §4 and §4b).** Rarity ids are `common uncommon rare legendary mythic`.
-`Shared/Config/Rarity.luau` (career-owned) gives `{id, name, odds, color, order}` and is shared by every rarity UI.
-`Shared/Config/LifeRoll.luau` (career) holds schools, families, clubs and stat rules. `Shared/Config/Firms.luau`
-(career) holds `Firms.list[firmId] = {id, name, short, tier, realm, colors = {primary, accent}, payMult, bookMult,
-prestigeMult, dressCode, eligibility, culture, tagline}`. Pure logic lives in `Logic/LifeRoll` (rolls, single-field
-rerolls, odds tables) and `Logic/Recruiting` (eligibility, offer odds).
+Stat effect helpers (pure, `Logic/Stats`) that work and project code use:
 
 ```lua
-CareerService:GetFirm(player) -> firmDef?              -- nil for students
-CareerService:GetStat(player, statId) -> number         -- knowledge skill speed charisma network discipline risk luck
-CareerService:GrantOffer(player, firmId, source)       -- recruiting/headhunter (tutorial and career)
-CareerService:AcceptOffer(player, firmId) -> ok, err   -- students: HireIntern at that firm; employed: lateral move
-CareerService:GetWeek(player) -> (week, weekday)       -- "Week 12 · Wed"
+Stats.timerMult(speed) -> number           -- 0.8..1.2
+Stats.hintCount(knowledge) -> 0..3
+Stats.toleranceMult(skill) -> 1..1.5
+Stats.charismaBonus(charisma) -> 0..8
 ```
 
-Wardrobe Catalog items have `brand` and `rarity` fields. `Catalog.rollPools[rarity] = { {brand, itemIds = {...}}, ... }`
-(the starting outfit roll; Mythic has exactly one entry). The Life Roll grants the rolled items through
-`WardrobeService:Grant`.
+Other modules: `Config/LifeRoll` (schools with crest specs, degrees, families, clubs with rarity/boosts/perks, stat
+rules, archetypes, focus areas), `Logic/LifeRoll`, `Logic/Stats`, `Logic/Rebirth`, `Logic/DailyRewards`.
 
-`Shared/Config/Careers.luau` exports:
-- `Careers.roles[roleId] = {id, title, rank, minLevel, maxLevel, realm, bookSize, salary, perks}`
-- `Careers.rankOf(roleId)`
-- `Careers.roleForLevel(realm, level)`
-- `Careers.xpForLevel(level)` (XP needed to go from `level` to `level+1`)
+## 5. Career path (owned by `careerPath`): tracks, companies, levels, reviews, offers, rival
+
+Track ids are `ib st pe credit wm am er corpbank vc re corp`. `Config/Tracks` holds each track's
+`{id, name, entryTitle, ladder = { {rank, title, roleId, schoolGate?} }, difficulty, levelBands}`. Role ids look
+like `ib_analyst`, `pe_senior_associate`, `corp_ceo`. Rank 0 = student, 1 = entry; the top index varies by track.
+
+`Config/Companies` holds each company:
+`{id, name, short, type, departments = {trackId}, colors = {primary, accent, text}, logo = logoId, tier,
+payMult, bookMult, prestigeMult, minOutfitLevel, culture, bossNames = {[track] = name}, tagline, hiring =
+{[track] = {eligibility}}}`.
 
 ```lua
-CareerService.LevelChanged  : Signal(player, newLevel, oldLevel)
-CareerService.RoleChanged   : Signal(player, newRoleId, oldRoleId, reason) -- "promotion"|"fired"|"reentry"|"reinstated"|"fresh_start"|"realm_switch"|"challenge"|"hired"
-CareerService.StatusChanged : Signal(player, newStatus, oldStatus)
-CareerService.ReviewCompleted : Signal(player, review)  -- review = {score, band, components = {invest, risk, work, rep}, at}
-CareerService:GetRole(player) -> roleDef
+CareerService.LevelChanged    : Signal(player, newLevel, oldLevel)
+CareerService.RoleChanged     : Signal(player, newRoleId, oldRoleId, reason)  -- "hired"|"promotion"|"fired"|"lateral"|"reentry"|"reinstated"|"rebirth"
+CareerService.StatusChanged   : Signal(player, new, old)                       -- active|probation|fired
+CareerService.ReviewCompleted : Signal(player, review)                         -- {score, band, outcome = "promoted"|"keep_going"|"warning"|"fired", components, at, week}
+CareerService:GetRole(player) -> roleDef?
 CareerService:GetRank(player) -> number
+CareerService:GetTrack(player) -> trackId?
+CareerService:GetCompany(player) -> companyDef?
 CareerService:GetLevel(player) -> number
 CareerService:GetStatus(player) -> string
-CareerService:IsEmployed(player) -> boolean            -- rank >= 1 and status ~= "fired"
-CareerService:AddXP(player, amount, source) -> number   -- returns XP actually applied (role caps)
+CareerService:IsEmployed(player) -> boolean
+CareerService:IsEmployeeOf(player, companyId) -> boolean   -- used by every office interaction
+CareerService:AddXP(player, amount, source) -> number
 CareerService:AddReputation(player, amount, source)
-CareerService:TrainStat(player, statId, amount)
-CareerService:RecordWork(player, result)                -- result = {taskId, quality: 0..100, onTime: boolean, core: boolean, category: string}
-CareerService:RecordSignature(player, signatureId, quality)
-CareerService:GetRiskLimitMultiplier(player) -> number  -- 1, or 0.6 on probation
-CareerService:HireIntern(player)                         -- called by tutorial when the internship offer is accepted
-CareerService:GrantReinstatementCredit(player)           -- monetization (receipt-safe, idempotent per call)
-ProfileService:GrantCredit(player, "reroll" | "rebuild") -- monetization
-ProfileService:AddRefreshToken(player, n, source)
-ProfileService:GetStats(player) -> {knowledge, skill, speed, charisma, network, discipline, risk, luck}
-ActivityService:GetActiveSeconds(player) -> number       -- lifetime active seconds (AFK excluded)
-ActivityService.ActiveTick : Signal(player, deltaSec)    -- every 10 s while active
-CareerService:GetBoardValues(player) -> {prestige, deal, comeback, fastestRunSec?}  -- read by LeaderboardService
+CareerService:RecordWork(player, {taskId, quality, onTime, core, category, clientFacing?})
+CareerService:RecordDeal(player, dealId, name, quality)    -- signature/project completion -> plaque + Deal Mastery
+CareerService:GetRiskLimitMultiplier(player) -> number
+CareerService:GrantOffer(player, offer)                     -- offer = {companyId, track, rank, source}; recruiting/email/headhunter
+CareerService:AcceptOffer(player, offerId) -> (ok, err)
+CareerService:GetWeek(player) -> (week, weekday)
+CareerService:GetClientBonus(player) -> number              -- 1.0..1.1 (fit and dress code)
+CareerService:GetOutfitLevel(player) -> number              -- 1..5 (v3 §5)
+CareerService:MassFiring(companyId, reason) -> {players fired, players saved}  -- events
+CareerService:GrantReinstatementCredit(player)
+CareerService:GetBoardValues(player) -> {prestige, deal, comeback, fastestRunSec?}
+CareerService:ResetForRebirth(player)
+OfferService:AddConnection(player, companyId, amount, source)  -- networking events and NPC conversations
+OfferService:GetConnections(player) -> {[companyId] = number}
+OfferService:SendInvite(player, eventKind)                      -- networking invitations by email (EmailService)
+ActivityService:GetActiveSeconds(player) -> number
+ActivityService.ActiveTick : Signal(player, dt)
 ```
 
-Derived fields that CareerService keeps in `data.career` for the HUD (replicated): `roleTitle`, `rank`,
-`xpToNext`, `windowRemaining` (active seconds left in the review window), `reviewPreview` (estimated
-score so far), `promotion = {ready, missing = {string}}`.
+Boss reviews: the `boss_review` interact on each floor (OfficeAnchor `review_spot`/`boss_chair`) opens the weekly review
+meeting when `career.reviewDue` and the player is an employee. The remote phone review applies after 10 overdue active
+minutes. Logic modules: `Logic/Review`, `Logic/CareerState`, `Logic/Promotion` (requirements incl. outfit level and the
+school gate), `Logic/Recruiting`, `Logic/Rival`, `Logic/FitScore`, `Logic/Leveling`.
 
-**Promotion evaluations.** Leaving role R needs task `eval_<R>` to be passed (quality >= 70). These exist for
-`intern analyst associate vp director` (work), the realm bands `eval_pe_associate eval_pe_vp eval_pe_principal`,
-and the hf/vc/re/cd equivalents (realmsA: pe hf vc; realmsB: re cd), plus `eval_partner eval_senior_partner`
-(realmsB). Students are hired through the campus Superday (`superday_interview`, tutorial calls
-`CareerService:HireIntern`). MD leaves the IB track through Career Services (realm choice) once the
-`ipo` signature is done. Band 3 to partner needs the realm signature project. Senior partner to founder
-needs the `partner_firm` signature.
+## 6. Market (owned by `market`): per-server market
 
-## 5. Market and portfolio (owned by `market`)
-
-Tickers: `APX NMB MRB VLT SMT TTN HBR CRL ORN BLF`, plus benchmark id `ST10`.
-
-The market secret seed lives only on the server: generated once into DataStore `MarketSecret/v1` with
-`UpdateAsync`, or random per session in Studio mock mode. **Never replicate the seed or any future price.**
+The market runs per server from a random server seed (v3 §11). Tickers: `APX NMB MRB VLT SMT TTN HBR CRL ORN BLF`
+(`Config/Tickers`), benchmark `ST10`. Future prices are never replicated.
 
 ```lua
-MarketService.Tick      : Signal(now, prices)            -- every 2 s; prices = {[ticker] = number, ST10 = number}
-MarketService.DayClosed : Signal(dayIndex)
-MarketService:GetPrice(ticker) -> number
-MarketService:GetPrices() -> {[ticker] = number}
-MarketService:GetQuote(ticker) -> {price, open, prevClose, high, low, changePct}
-MarketService:GetSeason() -> number
-MarketService:GetDayIndex() -> number                    -- market day within season
-MarketService:GetCompanyFacts(ticker) -> {name, sector, price, shares, revenue, ebitda, netIncome, eps, growth, debt, cash, peerPe, nextEarningsDay, consensusEps}
-MarketService:GetResearchSignal(ticker, quality) -> {direction = "beat"|"miss"|"inline", confidence = 0..1, accurate: boolean (server only)}
-MarketService:GetNews(limit) -> { {at, headline, body, tickers, kind} }
-MarketService:GetMarketEvents(fromTime, toTime) -> { {id, startsAt, endsAt, announcedAt, params} }  -- global shake-ups (§10)
-PortfolioService.Traded        : Signal(player, trade)
-PortfolioService.RiskViolation : Signal(player, info)    -- info = {kind, ticker, severity}
+MarketService.Tick : Signal(now, prices)                    -- every 2 s
+MarketService:GetPrice(ticker) / :GetPrices() / :GetQuote(ticker)
+MarketService:GetCompanyFacts(ticker) -> {...}              -- fundamentals for tasks
+MarketService:GetResearchSignal(ticker, quality) -> {direction, confidence}
+MarketService:GetNews(limit) -> {...}
+MarketService:TriggerEvent(eventId, params) -> boolean      -- events feature: crash|boom|flash_crash|meme_rally|rate_shock|earnings_frenzy|crazy_day|fed_day|holiday
+MarketService:GetActiveEvent() -> {id, startsAt, endsAt, params}?
+PortfolioService.Traded : Signal(player, trade)
+PortfolioService.RiskViolation : Signal(player, info)
 PortfolioService:GetEquity(player) -> number
-PortfolioService:GetWindowMetrics(player, fromTime, toTime) -> {twr, benchReturn, excess, maxDrawdown, volatility, trades, violations, warningsIgnored, active: boolean}
-PortfolioService:SetBookSize(player, size, reason)      -- top-up/down as an external flow (doesn't change returns)
-PortfolioService:WipeBook(player) -> number              -- returns the amount lost; resets to max(10%, 5000)
-PortfolioService:GrantCapitalCredit(player)              -- monetization
-PortfolioService:GetSeasonSkill(player) -> number?       -- risk-adjusted season score, nil if below the activity threshold
+PortfolioService:GetInvested(player) -> number              -- live market value of open positions
+PortfolioService:GetWindowMetrics(player, fromActive, toActive) -> {twr, benchReturn, excess, maxDrawdown, volatility, trades, violations, active}
+PortfolioService:SetBookSize(player, size, reason)
+PortfolioService:WipeBook(player) -> number
+PortfolioService:GrantCapitalCredit(player)
+PortfolioService:FlattenAll(player, reason)                -- closes positions (on leave/shutdown)
+PortfolioService:GetSeasonSkill(player) -> number?
 ```
 
-## 6. Economy, shop, housing (owned by `shop`)
+## 7. Economy, shop, housing (owned by `shop`)
 
 ```lua
-EconomyService:GetCash(player) -> number
-EconomyService:AddCash(player, amount, source, kind?)    -- kind "salary"|"bonus"|"reward"|"refund"; salary/bonus apply EventService salaryMult
+EconomyService:GetCash(player)
+EconomyService:AddCash(player, amount, source, kind?)       -- salary/bonus: × EventService salaryMult × DailyService money boost × ProfileService:GetIncomeMult
 EconomyService:SpendCash(player, amount, reason) -> boolean
+EconomyService:ChargeLiving(player, amount) -> number
 EconomyService.CashChanged : Signal(player, newCash, delta)
-HousingService:GetAssignment(player) -> {unit = n?, desk = n?, office = n?, firm = n?, context = "dorm"|"apartment"}
-ShopService:GrantItem(player, itemId, source) -> boolean -- wearable (via WardrobeService:Grant) or decor id; used by monetization/season/events
-EconomyService:ChargeLiving(player, amount) -> number    -- deducts up to the balance (never below 0); returns charged
+ShopService:GrantItem(player, itemId, source) -> boolean   -- wearable or decor (idempotent)
+HousingService:GetAssignment(player) -> {context, unit?, desk?, office?}
+HousingService:RefreshPlaques(player)                      -- career calls after RecordDeal; renders plaques on desk/bookshelf (v3 §13)
 ```
 
-Catalog items (wardrobe and decor) are bought through `Shop.Buy` (`ShopService`), which checks price,
-`pass`, `minRank` and the event discount.
-
-## 7. Work tasks (owned by `work`; task modules may be added by any feature)
-
-Task module `Shared/Logic/Tasks/<taskId>.luau`. WorkService auto-discovers the folder.
+## 8. Work tasks (owned by `work`/`work2`; any feature may add task modules)
 
 ```lua
+-- Shared/Logic/Tasks/<taskId>.luau
 return {
-  id = "pitchbook_format", title = "Pitchbook Formatting", desc = "...",
-  roles = { "intern", "analyst" },       -- allowed role ids (any realm role id allowed)
-  category = "work",                     -- "academics"|"networking"|"interview"|"work"|"evaluation"|"reentry"|"campus"
-  core = true, stat = "discipline", timeLimit = 150, baseXp = 140, basePay = 450, cooldown = 0,
-  generate = function(rng, ctx) return publicPayload, secret end,
-    -- ctx = {level, roleId, rank, stats, difficulty = 0..1, facts = {[ticker] = companyFacts}, now}
-  grade = function(secret, answers, ctx) return {quality = 0..100, correct = n, total = n, feedback = {string}} end,
+  id, title, desc,
+  tracks = {"ib"} | nil, ranks = {1, 2} | nil, student = boolean?, -- availability
+  category = "academics"|"networking"|"interview"|"work"|"client"|"reentry"|"campus"|"headtohead",
+  core = true, stats = {"skill", "knowledge"}, clientFacing = false,
+  timeLimit, baseXp, basePay, cooldown,
+  generate = function(rng, ctx) return payload, secret end,
+    -- ctx = {level, rank, track, stats, ovr, difficulty (0..1), facts, now, hints (0..3), toleranceMult, charismaBonus}
+  grade = function(secret, answers, ctx) return {quality, correct, total, feedback} end,
 }
+WorkService:OfferTask(player, taskId, opts?) -> boolean
+WorkService:StartTask(player, taskId, opts?) -> (instanceId?, err?)
+WorkService.TaskCompleted : Signal(player, taskId, result)  -- result = {quality, onTime, xp, pay, category, stats}
+WorkService:GetLastTaskTime(player) -> number?
 ```
 
-Both functions are pure (no services). The secret never leaves the server.
+Rewards: `xp = baseXp × qualityFactor × rankScale × DailyService xp boost`. Pay goes through
+`EconomyService:AddCash(..., "salary")`. Each completion calls `CareerService:RecordWork` and
+`ProfileService:AwardStatXp(module.stats, quality)`. The timer is multiplied by `Stats.timerMult(speed)` and the
+pizza buff.
 
-```lua
-WorkService:OfferTask(player, taskId, opts?) -> boolean   -- puts a specific task on the player's board (tutorial, events, career services)
-WorkService:StartTask(player, taskId) -> (instanceId?, err?)  -- server-initiated start (opens the runner on the client)
-WorkService.TaskCompleted : Signal(player, taskId, result)    -- result = {quality, onTime, xp, pay, category}
-WorkService:GetLastTaskTime(player) -> number?            -- unix time of the last completed task (CEO walkthrough)
-``` Reward:
-`xp = baseXp * qualityFactor * roleScale`, and `pay` likewise, times `EventService:GetModifier("taskPayMult")`.
-Every completion calls `CareerService:RecordWork`, `CareerService:TrainStat`, `EconomyService:AddCash(..., "salary")`
-and `SeasonService:AddSeasonXP`.
-
-**Payload kinds** (rendered by `src/client/UI/WorkKinds/<kind>.luau`, owned by `work`):
+Payload kinds (renderers `src/client/UI/WorkKinds/<kind>.luau`), as before:
 
 | kind | payload | answers |
 |---|---|---|
-| `mcq` | `{prompt, questions = {{id, text, options = {string}, context?}}}` | `{[qid] = optionIndex}` |
-| `fill` | `{prompt, table? = {headers, rows}, fields = {{id, label, unit?, hint?}}}` | `{[fieldId] = number}` |
-| `order` | `{prompt, items = {{id, text}}}` | `{itemId, ...}` (in order) |
-| `match` | `{prompt, left = {{id, text}}, right = {{id, text}}}` | `{[leftId] = rightId}` |
-| `spot` | `{prompt, table = {headers, rows}, maxPicks}` | `{{row, col}, ...}` |
-| `alloc` | `{prompt, items = {{id, text, info?}}, total = 100, step = 5, minEach?, maxEach?}` | `{[itemId] = number}` |
-| `dialogue` | `{prompt, speaker, lines = {{id, text, options = {{id, text}}}}}` | `{[lineId] = optionId}` |
-| `call` | `{prompt, items = {{id, label, chart = {number}, news = {string}}}, options = {string}}` | `{[itemId] = optionIndex}` |
-| `format` | `{prompt, elements = {{id, text, style = {font, size, align, color}}}, issues = {{id, label}}}` | `{[elementId] = {issueId, ...}}` |
-| `multi` | `{prompt, sections = {payload, ...}}` | `{[sectionIndex] = answers}` |
+| `mcq` | `{prompt, questions = {{id, text, options, context?}}}` | `{[qid] = optionIndex}` |
+| `fill` | `{prompt, table?, fields = {{id, label, unit?, hint?}}}` | `{[fieldId] = number}` |
+| `order` | `{prompt, items = {{id, text}}}` | `{itemId, ...}` |
+| `match` | `{prompt, left, right}` | `{[leftId] = rightId}` |
+| `spot` | `{prompt, table, maxPicks}` | `{{row, col}, ...}` |
+| `alloc` | `{prompt, items, total, step, minEach?, maxEach?}` | `{[itemId] = number}` |
+| `dialogue` | `{prompt, speaker, lines = {{id, text, options}}}` | `{[lineId] = optionId}` |
+| `call` | `{prompt, items = {{id, label, chart, news}}, options}` | `{[itemId] = optionIndex}` |
+| `format` | `{prompt, elements, issues}` | `{[elementId] = {issueId}}` |
+| `multi` | `{prompt, sections}` | `{[i] = answers}` |
 
-Every payload has `kind` and `title`. Renderer interface:
-`mount(container: Frame, payload, api) -> cleanup()`, where `api = {setAnswers(answers), theme}`.
+Every payload has `kind`, `title`, and an optional `hints = {string}`. Renderers expose
+`mount(container, payload, api) -> cleanup`.
 
-## 8. Multi-step projects (owned by `realms`; project modules may be added by any feature)
-
-Project module `Shared/Logic/Projects/<projectId>.luau`. ProjectService auto-discovers the folder.
-Used for the IB IPO signature (`ipo`, written by `work`), realm signature projects (`pe_buyout hf_mandate
-vc_fund re_tower cd_acquisition`), partner firm (`partner_firm`), endgame contracts (`contract_*`) and
-re-entry (`reentry`, written by `career`).
+## 9. Projects / big deals (owned by `projects`; modules may come from any feature)
 
 ```lua
-return {
-  id = "pe_buyout", title = "...", realm = "pe", roles = { "pe_associate", ... }, signature = true,
-  stages = { "screen", "bid", "finance", "operate", "exit" },
-  new = function(rng, ctx) return state end,                     -- full server state (serializable, no Instances)
-  view = function(state, ctx) return { stage, stageIndex, stageCount, summary = {...}, payload = <§7 payload> } end,
-  act = function(state, answers, ctx) return state, { ok, message, done, quality? } end,
-  score = function(state) return { quality = 0..100, metrics = {...} } end,
-}
+-- Shared/Logic/Projects/<id>.luau
+return { id, title, track, ranks = {...}, signature = true, stages = {...},
+  new(rng, ctx) -> state, view(state, ctx) -> {stage, stageIndex, stageCount, summary, payload}, act(state, answers, ctx) -> (state, result), score(state) -> {quality, metrics} }
+ProjectService.ProjectCompleted : Signal(player, projectId, result)
 ```
 
-State persists in `data.realms[projectId]`. Completion of a `signature` project calls
-`CareerService:RecordSignature(player, projectId, quality)`.
+State lives in `data.projects[id]`. Completion calls `CareerService:RecordDeal(player, id, dealName, quality)`, which
+creates the deal plaque. Signature deals: `ipo` (IB), `st_book` (S&T), `pe_buyout` (PE), `credit_direct_lending`
+(Credit), `wm_client_book` (WM), `am_mandate` (AM/HF), `er_initiation` (ER), `corpbank_facility` (Corp Banking),
+`vc_fund` (VC), `re_tower` (RE), `corp_acquisition` (Corp), plus `reentry` (careerPath) and `contract_*` (endgame).
 
-## 9. Wardrobe, characters, NPC rigs (owned by `wardrobe`)
-
-`Shared/Config/Catalog` exports `Catalog.items[itemId] = {id, name, slot, category, price, currency = "cash"|"pass"|"roll"|"heirloom",
-pass?, minRank?, colors, builder, tier, brand, rarity, desc}`, `Catalog.brands`, `Catalog.rollPools` (see §4). Slots: `top outer bottom shoes neck wrist eyes head bag`.
+## 10. Wardrobe, logos, characters (owned by `wardrobe` and `logos`)
 
 ```lua
-Wardrobe.apply(character: Model, equipped: {[slot] = itemId}, opts) -- Shared/Assets/Wardrobe/init.luau; bake-safe; builds fitted layers into folder "CareerLook"
+-- Config/Catalog: items {id, name, slot, category, price, currency = "cash"|"pass"|"roll"|"heirloom", pass?, minRank?,
+--   colors, builder, tier (= clothing level 1..5), brand, rarity, desc}; Catalog.brands, Catalog.rollPools[rarity]
+Wardrobe.apply(character, equipped, opts) -- opts.companyLogo = logoId: drawn ONLY on vest/quarter-zip items (v3 §16)
 Wardrobe.clear(character)
-WardrobeService:ApplyLook(player)                  -- server: standardizes the body, then Wardrobe.apply
-WardrobeService:Equip(player, slot, itemId) -> ok
-NpcRig.build({name, skin, equipped, hairStyle, hairColor}) -> Model  -- Shared/Assets/Npc/Rig.luau; R15-named Parts; bake-safe
-NpcRig.spawn(...) -> Model                         -- server runtime: Players:CreateHumanoidModelFromDescription + Wardrobe.apply
+WardrobeService:ApplyLook(player) / :Equip(player, slot, itemId) / :Grant(player, itemId, source) / :Owns(player, itemId)
+NpcRig.build(opts) -> Model ; NpcRig.spawn(opts) -> Model
+-- Shared/Assets/Logos (logos feature, bake-safe):
+Logos.render(container: GuiObject, logoId: string, opts?) -> Frame  -- company ids, school ids, brand ids; unknown -> monogram
+Logos.surface(part: BasePart, face: Enum.NormalId, logoId, opts?) -> SurfaceGui
+Logos.has(logoId) -> boolean
 ```
 
-## 10. Events (owned by `events`)
-
-Global market shake-ups are computed by `market` (`MarketService:GetMarketEvents`). EventService adds
-server-local weather, bonus and chaos events and presents all four families.
+## 11. Offices (owned by `offices`)
 
 ```lua
--- Global replicated key "events":
-{ weather = {id, startsAt, endsAt, intensity}?, bonus = {id, startsAt, endsAt}?, chaos = {id, startsAt, endsAt, data}?,
-  market = { {id, startsAt, endsAt, announcedAt, params}, ... }, upcoming = { ... } }
+OfficeService:EnterCompany(player, companyId, floor?: "lobby"|trackId) -> (ok, err)  -- creates the instance/floor lazily, teleports
+OfficeService:GetInstance(companyId) -> Model?            -- lobby + floors (Model attribute CompanyId)
+OfficeService:GetFloor(companyId, trackId) -> Model?      -- floor model (attributes CompanyId, Department, LightingPreset)
+OfficeService:GetPlayerLocation(player) -> {companyId, floor}?
+OfficeService.FloorCreated : Signal(companyId, trackId, model)     -- housing, NPCs and events listen
+OfficeService.FloorRemoved : Signal(companyId, trackId)
+WorldService:Teleport(player, cframe, opts?) -> ok          -- fade, streaming request, PivotTo, cooldown
+WorldService.ZoneChanged : Signal(player, zoneId)
+```
+
+- Floors are cloned from `ServerStorage.FirmTemplates[<trackId>]`, the lobby from `[lobby]`, placed with
+  `World.officeOrigin(instanceIndex, floorIndex)`. They're branded server-side on clone: parts tagged `CompanyLogo` get
+  `Logos.surface` with the company logo; TextLabels named `CompanyName` get the name; parts tagged `FirmColor` get the
+  primary colour. Empty floors are removed after 3 minutes.
+- `CareerService:IsEmployeeOf` also returns true for the partner company while `merger_mania` pairs two companies
+  (EventService:IsActive and its event data).
+- Visitors can walk around but every interaction inside an instance must check
+  `CareerService:IsEmployeeOf(player, instance.CompanyId)`. Prompts are hidden client-side for visitors
+  (attribute-driven) and refused server-side.
+
+Template markers: see `Config/World.templateMarkers`, `World.floorSlots` and `World.templateEventSpots`.
+- Every floor has exactly 24 `DeskSlot` models (each with 3 `DecorSlot` of `SlotKind = "plaque"` plus 2 desk decor
+  slots) and 8 `OfficeSlot` models (each with a bookshelf holding 24 plaque slots, decor slots, a `Nameplate`, and
+  `ThemeWall`/`ThemeFloor` tags).
+- `OfficeAnchor` markers: `floor_entry`, `boss_chair`, `review_spot`, `rival_desk` (and on the lobby: `entry`,
+  `elevators`, `receptionist`). `OfficeDoor` markers: `to_lobby` (and `exit` on the lobby).
+- Interacts: `work_desk`, `terminal`, `project_desk`, `boss_review`, `housing_panel` (Context desk/office),
+  `elevator_panel` (lobby).
+
+## 12. Phone and email (owned by `phone`)
+
+```lua
+EmailService:Send(player, mail) -> mailId   -- mail = {from, subject, body, kind = "offer"|"invite"|"hr"|"rival"|"event"|"system", data?, actions? = {{id, label}}}
+EmailService.Action : Signal(player, mailId, actionId, data)   -- e.g. "accept_offer", "apply", "rsvp"
+PhoneController:Open(appId?)                                   -- client; apps: mail calendar stats directory market contacts
+PhoneController:RegisterApp({id, title, glyph, order, open})
+```
+
+## 13. Events (owned by `events`): per server
+
+The global `events` key:
+`{ weather?, bonus?, chaos?, market?, corporate?, upcoming = {...} }`, where each entry is
+`{id, startsAt, endsAt, data}`.
+
+```lua
 EventService:IsActive(eventId) -> boolean
-EventService:GetModifier(name) -> number     -- names: salaryMult taskPayMult taskCooldownMult shopDiscount interviewBonus reputationMult (default 1, or 0 for shopDiscount/interviewBonus)
-EventService:GetPlayerBuff(player, name) -> number   -- "taskTimer" (1 = none)
-EventService.EventStarted : Signal(family, eventId)
-EventService.EventEnded   : Signal(family, eventId)
+EventService:GetModifier(name) -> number    -- salaryMult taskPayMult taskCooldownMult shopDiscount interviewBonus offerBonus bonusMult ipoMult reputationMult
+EventService:GetPlayerBuff(player, name) -> number
+EventService.EventStarted / EventEnded : Signal(family, eventId)
 ```
 
 Event ids:
 - Weather: `clear fog rain storm snow heatwave blackout`
-- Market: `crazy_day flash_crash earnings_frenzy rate_shock meme_rally`
-- Bonus: `recruiting_fair bonus_day deal_rush fashion_week mixer`
+- Market: `crash boom flash_crash meme_rally rate_shock earnings_frenzy crazy_day fed_day holiday`
+- Corporate: `mass_firing bonus_season hiring_spree merger_mania regulatory_audit ipo_frenzy`
+- Bonus: `recruiting_fair fashion_week mixer`
 - Chaos: `fire_drill ceo_walkthrough pigeons pizza_party golden_briefcase elevator_outage`
 
-## 11. World (foundation config, world agents build)
+## 14. Feature ownership (v3)
 
-`Shared/Config/World.luau` (authoritative) defines regions, zones (AABBs with lighting preset and
-theme), anchors, doors, interior slots and interaction ids. Builders (`src/world/<Zone>.luau`) return
-`build(parent: Instance) -> Model` and must:
-- place geometry only inside their region or interior slot bounds
-- create every anchor and door they're responsible for, using `Kit.anchor(parent, anchorId, cframe)` and
-  `Kit.door(parent, doorId, cframe, size)`
-- tag interaction points with `Kit.interact(part, interactId, attrs)`. `interactId` must be listed in
-  `World.interactIds`, and the owning feature wires the ProximityPrompt at runtime
-- keep within their part budget (checked by bake).
-
-Instance conventions (bake-safe, since Lune supports attributes): anchors carry attribute `AnchorId`, doors
-`DoorId`, interaction points `InteractId` plus extras. Housing slots: `DeskSlot = n`, `OfficeSlot = n`,
-`UnitSlot = n`, and `DecorSlot = "<slotId>"` with `SlotKind` (`desk_item wall_art floor plant lamp rug chair
-monitor`) parented under their slot model. Leaderboard monoliths: a part named `Screen` with attribute
-`BoardId`. Event spots: interaction-less parts with attribute `EventSpot = "<id>"` (see `World.eventSpots`).
-
-`WorldService` (owned by `interiorsA`) wires doors, teleports (fade + `PivotTo`), access requirements,
-spawn selection by career stage, and region bounds.
-
-Kit marker helpers (all set the attribute **and** a CollectionService tag of the same name):
-`Kit.anchor(parent, anchorId, cf)` → tag `Anchor`; `Kit.door(parent, doorId, cf, size)` → tag `Door`;
-`Kit.interact(part, interactId, attrs)` / `Kit.interactPoint(parent, interactId, cf, attrs)` → tag `Interact`;
-`Kit.npcSpot(parent, npcId, cf)` (an `Interact` with `InteractId = "npc"`); `Kit.eventSpot(parent, spotId, cf)` →
-tag `EventSpot`; `Kit.spawn(parent, "Spawn_campus" | "Spawn_street", cf)` → SpawnLocation. Housing slot models
-carry `DeskSlot`/`OfficeSlot`/`UnitSlot`/`FirmSlot` attributes and a tag of the same name; decor slots carry
-`DecorSlot` + `SlotKind` and tag `DecorSlot`. Exact counts are in `World.housing`. NPC ids per zone are in
-`World.npcSpots`, event spots per zone in `World.eventSpots`.
-
-Firm branding: signage parts inside shared firm interiors (HQ lobby, floors, realm offices) carry tag `FirmBrand`
-with a SurfaceGui TextLabel named `BrandText` and optionally a coloured part tagged `FirmColor`. Each client
-re-skins them locally with its own player's firm (WorldController).
-
-Lighting tags used by events (Blackout Evening, Thunderstorm): world builders tag every street/park lamp light
-source **part** with `StreetLight` (its Light children get switched off). `Kit.windowGrid` lit panes are already
-tagged `LitWindow`. Interior ceiling light parts get `InteriorLight` (dimmed and flickered during a fire drill).
-
-## 12. Feature ownership
-
-| Feature key | Owns |
+| Feature | Owns |
 |---|---|
-| foundation | `default.project.json`, `Net`, `Guard`, `Util/*`, `Build/*`, `Config/World`, `Config/DataTemplate/init`, `src/server/Main`, `src/server/Registry`, `src/client/Main`, `src/client/Registry`, `tools/*` core, `tests/foundation/*` |
-| data | `DataService`, `AuditService`, `Logic/Migrations`, `Logic/DataUtil`, `DataTemplate/Meta`, `src/client/Controllers/Store` |
-| ui | `src/client/UI/Theme`, `UI/Kit/*`, `UI/Screens/Menu`, `UI/Screens/Settings`, `HudController`, `UIController`, `NotifyService`, `Config/Sounds`, `Config/Strings`, `DataTemplate/Settings` |
-| props | `Shared/Assets/Props/*`, `Shared/Assets/Signs/*` (desks, chairs, monitors, lamps, plants, sofas, shelves, cabinets, street furniture, vehicles, signage) |
-| wardrobe | `Config/Catalog` (wearables), `Assets/Wardrobe/*`, `Assets/Npc/*`, `WardrobeService`, `WardrobeController`, `UI/Screens/Wardrobe`, `tools/clothing/*`, `Config/ClothingIds`, `DataTemplate/Inventory` |
-| market | `Config/Companies`, `Logic/Market*`, `Logic/Portfolio*`, `MarketService`, `PortfolioService`, `TerminalController`, `UI/Screens/Terminal`, `DataTemplate/Portfolio` |
-| career | `Config/Careers`, `Config/Rarity`, `Config/LifeRoll`, `Config/Firms`, `Logic/LifeRoll`, `Logic/Recruiting`, `Logic/Leveling`, `Logic/Review`, `Logic/CareerState`, `Logic/FitScore`, `Logic/Rival`, `ProfileService`, `CareerService`, `ReviewService`, `ActivityService`, `CareerController`, `UI/Screens/LifeRoll`, `UI/Screens/Career`, `UI/Screens/CareerServices`, `UI/Screens/Offers`, `UI/Screens/MorningBrief`, `Logic/Projects/reentry`, `DataTemplate/Profile`, `DataTemplate/Career`, `DataTemplate/AltCareers` |
-| work | `Config/Tasks`, `Logic/Tasks/*` (student, intern, analyst, associate, VP/MD, evaluation), `WorkService`, `WorkController`, `UI/WorkKinds/*`, `UI/Screens/Work`, `Logic/Projects/ipo`, `DataTemplate/Work` |
-| realmsA | `ProjectService`, `ProjectController`, `UI/Screens/Project`, `Logic/Projects/pe_* hf_* vc_*`, `Config/Realms`, `DataTemplate/Realms` |
-| realmsB | `Logic/Projects/re_* cd_* partner_* contract_*`, `UI/Screens/Firm` |
-| events | `Config/Events`, `Logic/EventDirector`, `EventService`, `EnvironmentController` (zone lighting, weather FX, day/night), `EventFxController`, `UI/Screens/Events` |
-| campus | `src/world/Campus*.luau` |
-| street | `src/world/Street*.luau` |
-| interiorsA | `src/world/HQ*.luau`, `src/world/CareerServices.luau`, `src/world/ExecClub.luau`, `src/world/Rooftop.luau`, `WorldService`, `WorldController` |
-| interiorsB | `src/world/Realm*.luau`, `src/world/Apartments.luau`, `src/world/Galleria.luau`, `src/world/PartnerFirm.luau` |
-| shop | `Config/Decor`, `Config/Shop`, `EconomyService`, `ShopService`, `HousingService`, `UI/Screens/Shop`, `UI/Screens/Housing`, `DataTemplate/Wallet`, `DataTemplate/Housing` |
-| monetization | `Config/Products`, `MonetizationService`, `SeasonService`, `Config/Season`, `UI/Screens/Store`, `UI/Screens/SeasonPass`, `DataTemplate/Season`, `DataTemplate/Entitlements`, `DataTemplate/Receipts` |
-| leaderboards | `Config/Leaderboards`, `LeaderboardService`, `AntiCheatService`, `UI/Screens/Leaderboards`, `DataTemplate/Boards`, `DataTemplate/Flags` |
-| tutorial | `TutorialService`, `QuestService`, `NpcService`, `DialogueService`, `SocialService`, `AchievementService`, `Config/Npcs`, `Config/Dialogue`, `Config/Quests`, `Config/Achievements`, `UI/Screens/Dialogue`, `UI/Screens/Quests`, `UI/Screens/ProfileCard`, `UI/Screens/Recruiting`, `DataTemplate/Campus`, `DataTemplate/Achievements` |
+| foundation | `default.project.json`, `Net`, `Guard`, `Util/*`, `Build/*`, `Config/World`, `Config/DataTemplate/init`, `src/server/Main+Registry`, `src/client/Main+Registry`, `tools/*`, `tests/foundation` |
+| data | `DataService`, `AuditService`, `Logic/{SessionLock,Migrations,DataUtil}`, `DataTemplate/Meta`, `Controllers/Store` |
+| ui | `UI/Theme`, `UI/Kit/*`, `UI/Sfx`, `UIController`, `HudController`, `NotifyService`, `SettingsService`, `UI/Screens/{Menu,Settings}`, `Config/{Sounds,Strings}`, `DataTemplate/Settings` |
+| props | `Assets/Props/*`, `Assets/Signs/*` |
+| wardrobe | `Config/Catalog/*`, `Config/ClothingIds`, `Assets/Wardrobe/*`, `Assets/Npc/*`, `WardrobeService`, `WardrobeController`, `UI/Screens/Wardrobe`, `tools/clothing/*`, `assets/clothing/*`, `DataTemplate/Inventory` |
+| logos | `Assets/Logos/*` (company logos, school crests, brand marks incl. the Pan Miller windmill, Anaeio, Lotus) |
+| market | `Config/Tickers`, `Logic/Market/*`, `Logic/Portfolio/*`, `MarketService`, `PortfolioService`, `TerminalController`, `UI/Screens/Terminal*`, `DataTemplate/Portfolio` |
+| careerCore | `Config/{Rarity,LifeRoll}`, `Logic/{LifeRoll,Stats,Rebirth,DailyRewards}`, `ProfileService`, `RebirthService`, `DailyService`, `AuraService`, `Controllers/{CareerCoreController,AuraController}`, `UI/Screens/{LifeRoll,Stats,MorningBrief,Rebirth}`, `DataTemplate/{Profile,Daily}` |
+| careerPath | `Config/{Tracks,Companies}`, `Logic/{Leveling,Review,CareerState,Promotion,Recruiting,Rival,FitScore}`, `CareerService`, `ReviewService`, `ActivityService`, `RivalService`, `OfferService`, `Controllers/CareerController`, `UI/Screens/{Career,CareerServices,Offers,ReviewMeeting}`, `Logic/Projects/reentry`, `DataTemplate/Career` |
+| phone | `EmailService`, `Controllers/PhoneController`, `UI/Screens/Phone*`, `DataTemplate/Mail` |
+| work | `WorkService`, `Controllers/WorkController`, `UI/WorkKinds/*`, `UI/Screens/Work*`, `Config/Tasks`, `Logic/Tasks/` (student + ib, er, corpbank, corp entry/core tasks + `_shared`), `DataTemplate/Work` |
+| work2 | `Logic/Tasks/` (st, pe, credit, wm, am, vc, re tasks + senior/client/head-to-head/reentry tasks + `_senior`), `Logic/Projects/ipo` |
+| projects | `ProjectService`, `Controllers/ProjectController`, `UI/Screens/Project*`, `Logic/Projects/{st_book,pe_buyout,credit_direct_lending,wm_client_book,am_mandate}`, `DataTemplate/Projects` |
+| projects2 | `Logic/Projects/{er_initiation,corpbank_facility,vc_fund,re_tower,corp_acquisition,contract_*}` |
+| events | `Config/Events`, `Logic/EventDirector`, `EventService`, `Controllers/{EnvironmentController,EventFxController}`, `UI/Screens/Events`, `Assets/EventProps/*` |
+| shop | `Config/{Decor,Shop}`, `Logic/Economy`, `EconomyService`, `ShopService`, `HousingService`, `Controllers/ShopController`, `UI/Screens/{Shop,Housing}*`, `DataTemplate/{Wallet,Housing}` |
+| offices | `OfficeService`, `WorldService`, `Logic/DoorRules`, `Controllers/{WorldController,OfficeController}`, `UI/Screens/{Directory,Elevator}` |
+| officesA | `src/world/{OfficeLobby,OfficeFloorsA}*` |
+| officesB | `src/world/{OfficeFloorsB,OfficeFloorsC}*` |
+| campus | `src/world/{Campus,CampusInteriors}*` |
+| street | `src/world/Street*` |
+| venues | `src/world/{CareerServices,ExecClub,Rooftop,Apartments,Galleria}*` |
+| monetization | `Config/{Products,Season}`, `Logic/{Receipts,SeasonPass}`, `MonetizationService`, `SeasonService`, `Controllers/StoreController`, `UI/Screens/{Store,SeasonPass}`, `DataTemplate/{Season,Entitlements,Receipts}` |
+| leaderboards | `Config/Leaderboards`, `Logic/Scores`, `LeaderboardService`, `AntiCheatService`, `Controllers/LeaderboardController`, `UI/Screens/Leaderboards`, `DataTemplate/{Boards,Flags}` |
+| tutorial | `TutorialService`, `QuestService`, `NpcService`, `DialogueService`, `SocialService`, `AchievementService`, `Config/{Npcs,Dialogue,Quests,Achievements}`, `Logic/{QuestLine,Dialogue}`, `Controllers/{TutorialController,SocialController}`, `UI/Screens/{Dialogue,Quests,ProfileCard,Recruiting}`, `DataTemplate/{Campus,Achievements}` |
 
-Cross-feature calls not listed in §3–§11, documented by their owners:
+Other documented calls:
 
 ```lua
-NotifyService:Notify(player, text, kind?)               -- kind "info"|"good"|"bad"|"warn"|"cash"|"xp"
-NotifyService:NotifyAll(text, kind?)
-NotifyService:Banner(playerOrNil, {title, subtitle, style, duration})
-NotifyService:Ticker(text)                               -- news ticker line for everyone
-QuestService:SetObjective(player, questId, text)
-QuestService:Complete(player, questId)
+NotifyService:Notify(player, text, kind?) / :NotifyAll(text, kind?) / :Banner(playerOrNil, {title, subtitle, style, duration}) / :Ticker(text)
+QuestService:SetObjective(player, questId, text) / :Complete(player, questId)
 DialogueService:Open(player, npcId, dialogueId)
 SeasonService:AddSeasonXP(player, amount, source)
-MonetizationService:OwnsPass(player, passKey) -> boolean -- passKey "ExecutiveClub"|"CornerOffice"|"OfficeThemes"
-LeaderboardService:Submit(player, boardId, value)        -- boardId "CareerPrestige"|"MarketSkill"|"DealMastery"|"FastestRun"|"Comeback"
-AntiCheatService:Flag(player, kind, details)
-AntiCheatService:IsFlagged(player) -> boolean
-UIController:Open(screenId, args?) / :Close(screenId) / :Toggle(screenId)    -- client
-UIController:RegisterMenuTab({id, title, glyph, order, screen})              -- client
-HudController:SetObjective(text) / :Flash(text, kind)                        -- client
+MonetizationService:OwnsPass(player, key)    -- "ExecutiveClub"|"CornerOffice"|"OfficeThemes"|"MorningBriefPremium"
+MonetizationService:GetRobuxSpent(player) -> number
+LeaderboardService:Submit(player, boardId, value)  -- CareerPrestige MarketSkill DealMastery FastestRun Comeback RobuxSpent TimePlayed LiveInvested Rebirths TopStats
+AntiCheatService:Flag(player, kind, details) / :IsFlagged(player)
+SocialService:GetXpBoost(player) / :ConsumeXpBoost(player)
+UIController:Open(id, args?) / :Close(id) / :Toggle(id) / :RegisterMenuTab({id, title, glyph, order, screen, quick?})
+HudController:SetObjective(text) / :Flash(text, kind)
 ```
 
-Client screens live in `src/client/UI/Screens/<Id>.luau` and return
-`{ id = "Terminal", open = function(args, root: ScreenGui, ctx) return {close = fn} end }`, where
-`ctx = {Registry, Net, Theme, Kit}`. UIController auto-discovers them.
+Client screens: `src/client/UI/Screens/<Id>.luau` returning `{id, open(args, root, ctx) -> {close}}`.
 
-## 13. Bake-safe rules (everything under `Shared/Build`, `Shared/Assets`, `src/world`)
+## 15. Bake-safe rules (Shared/Build, Shared/Assets, src/world)
 
-These modules run inside Lune at bake time, so they may use **only**:
-- `Instance.new`, property assignment, `.Parent`, `.Name`, `:SetAttribute`, `:GetAttribute`, `:AddTag`, `:HasTag`,
-  `:FindFirstChild`, `:GetChildren`, `:GetDescendants`, `:Clone`, `:Destroy`, `:IsA`
-- the datatypes `Vector3 Vector2 CFrame Color3 BrickColor UDim UDim2 Enum NumberSequence
-  NumberSequenceKeypoint ColorSequence ColorSequenceKeypoint NumberRange Font PhysicalProperties Rect Faces Axes`
-- `math string table` and `Shared/Util/*`.
+Allowed:
+- `Instance.new`, properties, `.Parent`, `.Name`, attributes, tags (`AddTag`/`HasTag`), `FindFirstChild`/`GetChildren`/
+  `GetDescendants`/`Clone`/`Destroy`/`IsA`
+- the Roblox datatypes
+- `math string table`, `Shared/Util/*`
+- GUI instances
 
-**Forbidden:** `game`, `workspace`, `script` (except `require(script.Parent...)`), `task`, `wait`, any
-`:GetService`, `:PivotTo`, `:GetPivot`, `:GetBoundingBox`, `:ScaleTo`, CSG, `TweenService`, `Random`,
-`math.random`, `tick`, `os.time`, and asset ids. Use `Rng` for variation. Set `Model.PrimaryPart` when
-useful.
+Forbidden: `game`, `workspace`, `task`, any service, `PivotTo`/`GetPivot`/`GetBoundingBox`, CSG, `TweenService`,
+`Random`/`math.random`, clocks, asset ids.
+
+## 16. Canonical ids (shared by config, logos and world builders)
+
+- **School ids:**
+  - Common: `eastbridge_state coastal_cc midvale riverbend pinecrest_state union_valley_tech`
+  - Uncommon: `lakeshore granite_tech harborview`
+  - Rare: `northfield ridgemont`
+  - Epic: `kingsbridge ashworth`
+  - Legendary: `whartonia stanfjord`
+  - Mythic: `harvale`
+- **Company ids:** `mg_freeman goldfield_saxe morrow_stanton merriweather_lynch evermoor lazaro_freres centerline
+  harrow_williams blairmont houlton_lockey sterling_vance eastbridge_capital anaeio bluestone krk ironclad aresmont
+  gray_heron bridgecrest citrine quantum_ridge lotus_wealth sequel a17z seedline brookfold keystone northwind
+  applewood`
+- **Logo ids:** the company id, the school id, or `brand_<brandId>` for clothing brands (e.g. `brand_pan_miller`).
+- **Track ids:** `ib st pe credit wm am er corpbank vc re corp`

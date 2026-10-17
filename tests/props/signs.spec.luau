@@ -145,6 +145,25 @@ return function(t)
 			Signs.buildingName(nil, CF, { text = string.rep("LONG NAME ", 40) })
 		end)
 
+		t.it("buildingName firmBrand = true tags one BrandText carrier in every style", function()
+			for _, style in Signs.STYLES do
+				for _, brand in { true, false } do
+					local m = Signs.buildingName(nil, CF, { style = style, text = "HALCYON", firmBrand = brand })
+					local n = 0
+					for _, d in m:GetDescendants() do
+						if d:IsA("BasePart") and d:HasTag("FirmBrand") then
+							for _, g in d:GetDescendants() do
+								if g:IsA("TextLabel") and g.Name == "BrandText" and g.Text == "HALCYON" then
+									n += 1
+								end
+							end
+						end
+					end
+					t.expect(n).toBe(if brand then 1 else 0)
+				end
+			end
+		end)
+
 		t.it("neon signs glow when lit and carry flicker hooks", function()
 			local m = Signs.neon(nil, CF, { text = "OPEN 24H", flicker = true })
 			check("neon", "neon", "wall", m, CF, 20)
@@ -185,6 +204,7 @@ return function(t)
 						labels += 1
 						t.expect(d.TextWrapped).toBe(false)
 						t.expect(d.TextScaled).toBe(false)
+						t.expect(d.AutomaticSize).toBe(Enum.AutomaticSize.X)
 						t.expect(type(d:GetAttribute("BaseOffsetPx"))).toBe("number")
 						t.expect(d.Parent and d.Parent.Name).toBe("Viewport")
 					end

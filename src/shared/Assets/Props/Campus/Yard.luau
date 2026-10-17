@@ -32,7 +32,7 @@ end
 add({
 	id = "chainlink_fence",
 	category = "campus",
-	footprint = V(12.3, 7.55, 0.4),
+	footprint = V(12.4, 7.55, 0.5),
 	maxParts = 40,
 	tags = { "fence", "gritty", "structure" },
 	scales = { length = 40, barbed = true },
@@ -91,7 +91,7 @@ add({
 add({
 	id = "bike_rack",
 	category = "campus",
-	footprint = V(5.2, 3.3, 5.8),
+	footprint = V(5.0, 2.85, 5.8),
 	maxParts = 24,
 	tags = { "street", "gritty", "bike" },
 	build = function(c: Ctx)
@@ -169,7 +169,7 @@ add({
 add({
 	id = "fire_escape",
 	category = "campus",
-	footprint = V(12.2, 36.6, 4.2),
+	footprint = V(12.2, 39.6, 4.15),
 	maxParts = 150,
 	tags = { "structure", "gritty", "wall" },
 	mount = "wall",
@@ -313,7 +313,7 @@ add({
 add({
 	id = "puddle",
 	category = "campus",
-	footprint = V(4.8, 0.03, 3.3),
+	footprint = V(4.6, 0.03, 3.1),
 	maxParts = 5,
 	tags = { "gritty", "ground" },
 	build = function(c: Ctx)

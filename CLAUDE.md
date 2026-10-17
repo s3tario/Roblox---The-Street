@@ -1,7 +1,9 @@
 # The Street — Roblox finance career game
 
 Read before changing anything:
-- `docs/superpowers/specs/2026-10-15-the-street-design.md`: what the game is, with every design number.
+- `docs/superpowers/specs/2026-10-17-the-street-design-v3.md`: the owner's latest design. It **overrides** the v1/v2 spec
+  where they conflict.
+- `docs/superpowers/specs/2026-10-15-the-street-design.md`: the base design with every other number.
 - `docs/contracts.md`: cross-feature interfaces, data schema, file ownership, bake-safe rules. **Stay inside your
   feature's files** (§12). If you need something from another feature, call its documented API. Never edit their
   files. If an API you need is missing, add a clearly-marked TODO note to your final report instead of inventing one.

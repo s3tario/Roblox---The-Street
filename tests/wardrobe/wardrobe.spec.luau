@@ -320,6 +320,127 @@ return function(t)
 		end)
 	end)
 
+	t.describe("Brand looks and signature details", function()
+		local function named(model: Instance, name: string): number
+			local n = 0
+			for _, p in layers(model) do
+				if p.Name == name then
+					n += 1
+				end
+			end
+			return n
+		end
+
+		t.it("dresses every Life Roll look completely, fitted and within budget", function()
+			for rarity, pool in Catalog.rollPools do
+				for _, look in pool do
+					local eq = {}
+					for _, id in look.itemIds do
+						eq[(Catalog.get(id) :: Catalog.Item).slot] = id
+					end
+					for _, anchored in { true, false } do
+						local rig = NpcRig.build({
+							name = look.id,
+							equipped = eq,
+							hairStyle = "short",
+							anchored = anchored,
+							strict = true,
+						})
+						local sig = Wardrobe.appliedSignature(rig) :: string
+						for slot, id in eq do
+							if not string.find(sig, slot .. "=" .. id, 1, true) then
+								error(("%s (%s) is not wearing %s"):format(look.id, rarity, id))
+							end
+						end
+						checkFit(rig, 0.6, look.id)
+						checkLayerFlags(rig, anchored, look.id)
+						t.expect(#layers(rig)).toBeLessThanOrEqual(MAX_PARTS)
+					end
+				end
+			end
+		end)
+
+		t.it("draws brand emblems and replaces the default logo", function()
+			local polo = NpcRig.build({ equipped = { top = "th_polo_white" }, hairStyle = "none", strict = true })
+			t.expect(named(polo, "top_Emblem")).toBe(3) -- the three-colour flag
+			t.expect(named(polo, "top_Logo")).toBe(0)
+			t.expect(named(polo, "top_Tipping")).toBe(2)
+			local plain = NpcRig.build({ equipped = { top = "polo_navy" }, hairStyle = "none", strict = true })
+			t.expect(named(plain, "top_Logo")).toBe(1)
+			local vest = NpcRig.build({
+				equipped = { top = "pt_shirt_blue", outer = "pt_vest_fleece" },
+				hairStyle = "none",
+				strict = true,
+			})
+			t.expect(named(vest, "outer_Patch")).toBe(1)
+			t.expect(named(vest, "outer_Logo")).toBe(0)
+			t.expect(named(vest, "top_CollarButton")).toBe(0) -- the vest draws the collar
+		end)
+
+		t.it("hides a top's chest details under a jacket but keeps the cuff monogram", function()
+			local open = NpcRig.build({ equipped = { top = "jc_gingham_blue" }, hairStyle = "none", strict = true })
+			t.expect(named(open, "top_Check")).toBe(11)
+			local covered = NpcRig.build({
+				equipped = { top = "jc_gingham_blue", outer = "jc_blazer_navy" },
+				hairStyle = "none",
+				strict = true,
+			})
+			t.expect(named(covered, "top_Check")).toBe(0)
+			local kingsley = NpcRig.build({
+				equipped = { top = "wk_shirt", outer = "wk_jacket", neck = "wk_tie" },
+				hairStyle = "none",
+				strict = true,
+			})
+			t.expect(named(kingsley, "top_Monogram")).toBe(2)
+			t.expect(named(kingsley, "outer_LapelPin")).toBe(1)
+			t.expect(named(kingsley, "outer_PocketSquare")).toBe(2)
+			-- gold buttons
+			local gold = Fit.colorsOf(Catalog.get("wk_jacket")).accent
+			local buttons = 0
+			for _, p in layers(kingsley) do
+				if p.Name == "outer_Button" then
+					buttons += 1
+					t.expect(p.Color).toEqual(gold)
+				end
+			end
+			t.expect(buttons).toBe(6)
+		end)
+
+		t.it("applies finishes and the new shoe and trouser styles", function()
+			local suede = NpcRig.build({ equipped = { shoes = "jc_loafer_suede" }, hairStyle = "none", strict = true })
+			for _, p in layers(suede) do
+				if p.Name == "shoes_Toe" then
+					t.expect(p.Material).toBe(Enum.Material.Fabric)
+				end
+			end
+			local patent =
+				NpcRig.build({ equipped = { shoes = "tf_patent_oxford" }, hairStyle = "none", strict = true })
+			for _, p in layers(patent) do
+				if p.Name == "shoes_Toe" then
+					t.expect(p.Reflectance).toBeGreaterThan(0.2)
+				end
+			end
+			local boat = NpcRig.build({ equipped = { shoes = "vw_boat_brown" }, hairStyle = "none", strict = true })
+			t.expect(named(boat, "shoes_CollarLace")).toBe(2)
+			local tassel = NpcRig.build({ equipped = { shoes = "zg_tassel_suede" }, hairStyle = "none", strict = true })
+			t.expect(named(tassel, "shoes_Tassel")).toBe(4)
+			local joggers =
+				NpcRig.build({ equipped = { bottom = "hw_joggers_grey" }, hairStyle = "none", strict = true })
+			t.expect(named(joggers, "bottom_Rib")).toBe(2)
+			t.expect(named(joggers, "bottom_Crease")).toBe(0)
+			local ring =
+				NpcRig.build({ equipped = { wrist = "heirloom_signet_ring" }, hairStyle = "none", strict = true })
+			local ringParts = 0
+			for _, p in layers(ring) do
+				if string.sub(p.Name, 1, 6) == "wrist_" then
+					ringParts += 1
+					t.expect(p:GetAttribute(Fit.ATTR_PART)).toBe("RightHand")
+				end
+			end
+			t.expect(ringParts).toBe(3)
+		end)
+	end)
+
 	t.describe("Wardrobe.clear", function()
 		t.it("restores every original colour and material and removes all layers", function()
 			local model = Instance.new("Model")

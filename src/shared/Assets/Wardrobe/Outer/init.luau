@@ -52,6 +52,27 @@ local function jacket(ctx: Ctx)
 		spec.lapelMaterial = SMOOTH
 		spec.buttonColor = col.secondary
 		spec.pockets = "jetted"
+	elseif style == "shawl" then
+		-- tuxedo with a satin shawl collar (Tom Fordham)
+		spec.apex = 0.7
+		spec.lapel = 0.22
+		spec.shawl = true
+		spec.buttons = "one"
+		spec.lapelColor = col.secondary
+		spec.lapelMaterial = SMOOTH
+		spec.lapelEdge = Fit.shade(col.secondary, 0.12)
+		spec.buttonColor = col.secondary
+		spec.pockets = "jetted"
+	elseif style == "kingsley" then
+		-- William Kingsley Signature: chalk-stripe double-breasted, gold buttons, claret silk square
+		spec.apex = 0.5
+		spec.lapel = 0.27
+		spec.peak = true
+		spec.buttons = "double"
+		spec.buttonColor = col.accent
+		spec.pocketSquare = col.trim
+		spec.lapelEdge = Fit.shade(col.primary, 0.18)
+		spec.pockets = "jetted"
 	end
 	tailored(ctx, spec)
 end
@@ -79,6 +100,15 @@ local function blazer(ctx: Ctx)
 		spec.cuffButtons = true
 		spec.structured = true
 		spec.pockets = "flap"
+	elseif style == "heirloom" then
+		-- the Vanderfeller crest blazer: gold crest buttons, gold-piped lapels, embroidered crest
+		spec.buttonColor = col.accent
+		spec.crest = col.accent
+		spec.lapelEdge = col.accent
+		spec.cuffButtons = true
+		spec.structured = true
+		spec.pockets = "flap"
+		spec.peak = true
 	elseif style == "trader" then
 		spec.badge = col.accent
 		spec.buttons = "three"

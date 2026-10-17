@@ -33,8 +33,8 @@ local CREAM = hex("#EDE3CC")
 add({
 	id = "cafeteria_table",
 	category = "campus",
-	footprint = V(8, 2.8, 5.1),
-	maxParts = 22,
+	footprint = V(8, 3.0, 5.1),
+	maxParts = 28,
 	tags = { "table", "seat", "gritty" },
 	surface = 2.76,
 	build = function(c: Ctx)
@@ -48,9 +48,15 @@ add({
 		end
 		local stool = c.color("fabric", c.rng:pick({ hex("#2C5E8A"), hex("#C9A13B"), hex("#8A2C2C") }))
 		for _, sz in { -1, 1 } do
+			-- each sitter faces the table: the -Z row turns round to look along +Z
+			local face = if sz < 0 then R(0, 180, 0) else CFrame.identity
 			for _, x in { -2.6, 0, 2.6 } do
 				c.dcyl(P(x, 0.85, sz * 2.0), 1.7, 0.15, frame, M.Metal)
-				c.cyl(P(x, 1.72, sz * 2.0), 0.15, 1.1, stool, M.SmoothPlastic)
+				c.dcyl(P(x, 1.72, sz * 2.0), 0.15, 1.1, stool, M.SmoothPlastic)
+				-- hidden square pad inside the round stool top: a Seat with opts.seat, a plain collider otherwise
+				local pad = c.seat(P(x, 1.73, sz * 2.0) * face, V(0.78, 0.17, 0.78), stool, M.SmoothPlastic)
+				pad.Transparency = 1
+				pad.Name = "SeatPad"
 			end
 		end
 		if c.rng:chance(0.6) then
@@ -374,7 +380,8 @@ add({
 add({
 	id = "pizza_box",
 	category = "campus",
-	footprint = V(2.1, 2.6, 2.45),
+	footprint = V(2.1, 2.4, 2.4),
+	offset = V(0, 0, 0.2),
 	maxParts = 14,
 	tags = { "clutter", "food", "desk_item" },
 	scales = { count = 4 },
@@ -469,7 +476,8 @@ add({
 		for _, sx in { -1, 1 } do
 			c.part(P(sx * 2.2, 0.75, 0), V(1.8, 1.5, 4.5), shade(vinyl, -0.2), M.Leather)
 			c.detail(P(sx * 2.2, 0.2, 0), V(1.82, 0.4, 4.52), chrome, M.Metal)
-			c.seat(P(sx * 2.2, 1.65, 0), V(1.8, 0.3, 4.5), vinyl, M.Leather)
+			-- the bench Seat is turned so its front (where a sitter looks) points across the table
+			c.seat(P(sx * 2.2, 1.65, 0) * R(0, sx * 90, 0), V(4.5, 0.3, 1.8), vinyl, M.Leather)
 			c.part(P(sx * 3.35, 2.6, 0), V(0.5, 2.2, 4.5), vinyl, M.Leather)
 			c.dcylZ(P(sx * 3.35, 3.75, 0), 4.5, 0.55, c.color("accent", CREAM), M.Leather)
 		end
@@ -507,10 +515,16 @@ add({
 		c.dcyl(P(0, 1.2, 0), 2.2, 0.25, chrome, M.Metal)
 		c.dcyl(P(0, 2.33, 0), 0.1, 1.2, chrome, M.Metal)
 		c.dcyl(P(0, 2.43, 0), 0.1, 1.3, chrome, M.Metal)
-		c.cyl(P(0, 2.55, 0), 0.32, 1.25, c.color("color", VINYL_RED), M.Leather)
+		local vinyl = c.color("color", VINYL_RED)
 		if c.o.seat == true then
-			local s = c.seat(P(0, 2.55, 0), V(1.0, 0.3, 1.0), VINYL_RED, M.Leather)
+			-- the visible cushion turns into trim and a hidden Seat a hair taller takes the collisions, so
+			-- the sitter touches the Seat (not a solid cushion covering it)
+			c.dcyl(P(0, 2.55, 0), 0.32, 1.25, vinyl, M.Leather)
+			local s = c.seat(P(0, 2.56, 0), V(0.95, 0.34, 0.95), vinyl, M.Leather)
 			s.Transparency = 1
+			s.Name = "SeatPad"
+		else
+			c.cyl(P(0, 2.55, 0), 0.32, 1.25, vinyl, M.Leather)
 		end
 	end,
 })

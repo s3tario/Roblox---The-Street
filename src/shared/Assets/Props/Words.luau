@@ -50,6 +50,7 @@ Words.emails = {
 }
 
 Words.sheetRows = { "Revenue", "EBITDA", "Margin", "Capex", "FCF", "EV/EBITDA", "IRR" }
+Words.sheetCols = { "FY23A", "FY24A", "FY25E", "FY26E" }
 Words.deckTitles = { "Situation Overview", "Valuation Summary", "Buyer Universe", "Transaction Timeline" }
 Words.deckBullets = "- Market leader\n- 22% EBITDA margin\n- Clear path to IPO"
 Words.confidential = "STRICTLY CONFIDENTIAL"
@@ -155,6 +156,10 @@ Words.artTitles = {
 	"The Long Position",
 	"Arbitrage II",
 }
+Words.litter = "LITTER"
+Words.atmBrand = "BLUEFIN BANK"
+Words.atmWelcome = "WELCOME"
+Words.atmInsert = "INSERT CARD TO BEGIN"
 Words.humidor = "70% RH"
 Words.vip = "VIP"
 Words.wayfinding = {

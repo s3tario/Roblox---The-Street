@@ -3,17 +3,28 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" }
+      "Shared": {
+        "$path": "src/shared"
+      }
     },
     "ServerScriptService": {
-      "Server": { "$path": "src/server" }
+      "Server": {
+        "$path": "src/server"
+      }
     },
     "ServerStorage": {
-      "WorldBuilders": { "$path": "src/world" }
+      "WorldBuilders": {
+        "$path": "src/world"
+      },
+      "FirmTemplates": {
+        "$path": "build/Templates.rbxm"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": {
+          "$path": "src/client"
+        }
       },
       "$properties": {
         "CameraMaxZoomDistance": 60,
@@ -25,8 +36,14 @@
         "StreamingEnabled": true,
         "SignalBehavior": "Deferred"
       },
-      "World": { "$path": "build/World.rbxm" },
-      "Handmade": { "$path": { "optional": "src/handmade" } }
+      "World": {
+        "$path": "build/World.rbxm"
+      },
+      "Handmade": {
+        "$path": {
+          "optional": "src/handmade"
+        }
+      }
     },
     "Lighting": {
       "$properties": {
@@ -37,14 +54,22 @@
         "EnvironmentDiffuseScale": 0.6,
         "EnvironmentSpecularScale": 0.8,
         "GlobalShadows": true,
-        "OutdoorAmbient": [0.5, 0.5, 0.52]
+        "OutdoorAmbient": [
+          0.5,
+          0.5,
+          0.52
+        ]
       }
     },
     "Players": {
-      "$properties": { "MaxPlayers": 24 }
+      "$properties": {
+        "MaxPlayers": 24
+      }
     },
     "SoundService": {
-      "$properties": { "RespectFilteringEnabled": true }
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
     }
   }
 }

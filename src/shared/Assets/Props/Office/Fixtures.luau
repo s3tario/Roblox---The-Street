@@ -209,6 +209,7 @@ add({
 ---------------------------------------------------------------------------------------------------
 -- reception_desk: marble-fronted reception counter with a walnut transaction ledge, brass band, gold
 -- firm name (opts.text) and a lit monitor and orchid for the receptionist. Visitors stand at -Z.
+-- opts.firmBrand = true tags the name plate FirmBrand + FirmColor (label "BrandText") for per-player re-skins.
 ---------------------------------------------------------------------------------------------------
 add({
 	id = "reception_desk",
@@ -234,12 +235,19 @@ add({
 			c.detail(P(x, 1.75, -D / 2 - 0.02), V(0.12, 2.6, 0.04), shade(face, -0.12), M.Marble)
 		end
 		local plate = c.detail(P(0, 2.0, -D / 2 - 0.03), V(5, 1.0, 0.06), S.navy, M.SmoothPlastic)
-		c.sign(plate, c.str("text", Words.reception, 40), {
+		plate.Name = "NamePlate"
+		local name = c.sign(plate, c.str("text", Words.reception, 40), {
 			font = Enum.Font.Bodoni,
 			color = S.goldBright,
 			pixelsPerStud = 40,
 			padding = 0.12,
 		})
+		if c.bool("firmBrand", false) then
+			-- contracts §11: each client re-skins FirmBrand signage with its own player's firm name/colour
+			name.Name = "BrandText"
+			c.tag(plate, "FirmBrand")
+			c.tag(plate, "FirmColor")
+		end
 		c.sub("monitor_single", P(-2.5, 2.8, 0.15) * R(0, 180, 0), { screens = "email" })
 		local vase = c.dcyl(P(3.8, 3.85 + 0.3, -D / 2 + 0.35), 0.6, 0.3, hex("#DCEBF0"), M.Glass)
 		vase.Transparency = 0.4

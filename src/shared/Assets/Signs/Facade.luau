@@ -101,7 +101,7 @@ local function neonPanel(
 	font: Enum.Font,
 	lit: boolean,
 	flicker: boolean
-): Part
+): (Part, TextLabel)
 	local backer = c.part(P(0, H / 2, -0.06), V(W, H, 0.12), hex("#0C0D10"), M.SmoothPlastic)
 	backer.Name = "Backer"
 	local t = math.clamp(H * 0.05, 0.08, 0.3)
@@ -126,7 +126,7 @@ local function neonPanel(
 			ball.Name = "Tube"
 		end
 	end
-	letters(
+	local label = letters(
 		c,
 		P(0, H / 2, -0.2 - t),
 		W - 0.8 - t * 2,
@@ -146,7 +146,7 @@ local function neonPanel(
 			backer:SetAttribute("Flicker", true)
 		end
 	end
-	return backer
+	return backer, label
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -165,9 +165,10 @@ function Facade.buildingName(parent: Instance?, cf: CFrame, opts: Opts?): Model
 	local H = c.num("height", 2.4, 0.6, 20)
 	local W = c.num("width", Base.fitWidth(text, H, 3, 120), 1, 160)
 	model:SetAttribute("SignStyle", style)
+	local main: TextLabel
 	if style == "brass" then
 		local gold = c.color("color", S.gold)
-		letters(c, P(0, H / 2 + 0.2, -0.14), W, H, text, gold, fontFor(c, "serif"), {
+		main = letters(c, P(0, H / 2 + 0.2, -0.14), W, H, text, gold, fontFor(c, "serif"), {
 			shadow = hex("#1A140A"),
 			stroke = shade(gold, -0.45),
 			strokeT = 0.2,
@@ -186,13 +187,23 @@ function Facade.buildingName(parent: Instance?, cf: CFrame, opts: Opts?): Model
 		end
 	elseif style == "neon" then
 		local color = c.color("color", hex("#FF4F5E"))
-		neonPanel(c, text, W + 0.8, H + 0.6, color, fontFor(c, "tech"), c.bool("lit", true), c.bool("flicker", false))
+		local _, label = neonPanel(
+			c,
+			text,
+			W + 0.8,
+			H + 0.6,
+			color,
+			fontFor(c, "tech"),
+			c.bool("lit", true),
+			c.bool("flicker", false)
+		)
+		main = label
 	elseif style == "stone" then
 		local stone = c.color("color", S.limestone)
 		local panel = c.part(P(0, H / 2 + 0.3, -0.2), V(W + 0.8, H + 0.6, 0.4), stone, M.Limestone)
 		panel.Name = "Tablet"
 		Shapes.frameRect(c, P(0, H / 2 + 0.3, -0.43), W + 0.4, H + 0.2, 0.15, 0.06, shade(stone, -0.12), M.Limestone)
-		letters(
+		main = letters(
 			c,
 			P(0, H / 2 + 0.3, -0.41),
 			W,
@@ -210,7 +221,8 @@ function Facade.buildingName(parent: Instance?, cf: CFrame, opts: Opts?): Model
 		local bcf = P(0, H / 2 + 0.15, -0.08)
 		local panel = c.part(bcf, V(W + 0.4, H + 0.3, 0.12), board, M.WoodPlanks)
 		panel.Name = "Board"
-		letters(c, bcf * P(0, 0, -0.07), W, H * 0.9, text, ink, fontFor(c, "type"), { shadow = shade(board, -0.5) })
+		main =
+			letters(c, bcf * P(0, 0, -0.07), W, H * 0.9, text, ink, fontFor(c, "type"), { shadow = shade(board, -0.5) })
 		for _ = 1, 2 do
 			c.detail(
 				bcf
@@ -237,7 +249,7 @@ function Facade.buildingName(parent: Instance?, cf: CFrame, opts: Opts?): Model
 			{ glow = lit, brightness = 1.2, pps = ppsFor(W), name = "Lightbox" }
 		)
 		Gui.Core.bg(gui, face)
-		Gui.Core.label(
+		main = Gui.Core.label(
 			gui,
 			text,
 			0.03,
@@ -249,6 +261,17 @@ function Facade.buildingName(parent: Instance?, cf: CFrame, opts: Opts?): Model
 		)
 		if lit then
 			c.light(panel, "surface", { Face = Enum.NormalId.Front, Range = 8, Brightness = 0.9, Color = S.warmLight })
+		end
+	end
+	if c.bool("firmBrand", false) then
+		-- contracts §11: each client re-skins FirmBrand signage with its own player's firm name
+		main.Name = "BrandText"
+		local carrier: Instance? = main.Parent
+		while carrier and not carrier:IsA("BasePart") do
+			carrier = carrier.Parent
+		end
+		if carrier then
+			c.tag(carrier, "FirmBrand")
 		end
 	end
 	return Base.finish(model, parent, "wall")

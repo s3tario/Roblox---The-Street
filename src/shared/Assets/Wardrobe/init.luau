@@ -20,12 +20,14 @@
 --   Wardrobe.clear(character)  removes "CareerLook" and restores every recoloured body part.
 --   Wardrobe.resolve(equipped, fallbacks?) -> { [slot] = Item }    Wardrobe.isApplied(character) -> boolean
 --   Wardrobe.bodyParts(character) -> { [name] = BasePart }         Wardrobe.builders / Wardrobe.hasBuilder(id)
+--   Wardrobe.Details.has(detailId)   signature details listed in item.details (Details.luau)
 --
 -- Every layer part is Massless with CanCollide/CanQuery/CanTouch off, named "<slot>_<Piece>", and carries
 -- the attribute CareerLookPart = <body part name>. Bake-safe (contracts §13): no services, no clocks.
 
 local Catalog = require(script.Parent.Parent.Config.Catalog)
 local Fit = require(script.Fit)
+local Details = require(script.Details)
 
 export type Result = {
 	ok: boolean,
@@ -44,6 +46,7 @@ type Builder = { build: (Fit.Ctx) -> (), covers: any }
 
 local Wardrobe = {}
 Wardrobe.Fit = Fit
+Wardrobe.Details = Details
 Wardrobe.FOLDER = Fit.FOLDER
 Wardrobe.ATTR_PART = Fit.ATTR_PART
 Wardrobe.ATTR_EQUIPPED = "CareerLookItems" -- on the folder: "slot=id;slot=id" (sorted) for quick checks
@@ -253,9 +256,11 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 		ctx.colors = Fit.colorsOf(item)
 		if o.strict then
 			b.build(ctx)
+			Details.apply(ctx)
 		else
 			local ok, err = pcall(function()
 				b.build(ctx)
+				Details.apply(ctx)
 			end)
 			if not ok then
 				table.insert(result.failed, item.id)

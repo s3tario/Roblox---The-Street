@@ -143,7 +143,7 @@ add({
 	id = "bull_bear_statue",
 	category = "street",
 	footprint = V(16.6, 8.75, 7.6),
-	maxParts = 32,
+	maxParts = 44,
 	tags = { "street", "landmark", "art", "statue" },
 	build = function(c: Ctx)
 		local stone = c.color("accent", S.granite)
@@ -164,29 +164,50 @@ add({
 			font = Enum.Font.Garamond,
 			align = Enum.TextXAlignment.Center,
 		})
-		-- the bull (left), head down and charging toward +X, tail up
-		c.part(P(-4.2, 5.0, 0) * R(0, 0, -8), V(5.2, 2.5, 2.6), bronze, B)
-		c.dball(P(-2.7, 5.75, 0), 2.9, bronze, B)
-		c.dball(P(-6.2, 5.3, 0), 2.6, bronze, B)
-		c.detail(P(-0.95, 4.6, 0) * R(0, 0, -30), V(1.9, 1.5, 1.5), bronze, B)
-		c.detail(P(-0.05, 4.0, 0) * R(0, 0, -30), V(0.8, 0.9, 1.1), dark, B)
+		-- Both animals are modelled from capsules (a cylinder capped by balls) so the bronze reads as
+		-- smooth cast metal rather than boxes. The big masses collide; limbs, horns and ears are trim.
+		local top = 2.225 -- plinth cap surface
+		-- the bull (left), shoulders high and head low, charging toward +X with its tail whipping up
+		local bull = -4.3
+		c.cylX(P(bull, 5.0, 0) * R(0, 0, 7), 3.3, 2.7, bronze, B) -- barrel
+		c.ball(P(bull + 1.65, 5.35, 0), 3.05, bronze, B) -- shoulder hump
+		c.ball(P(bull - 1.75, 4.85, 0), 2.6, bronze, B) -- haunch
+		Shapes.tube(c, V(bull + 2.4, 5.5, 0), V(bull + 3.75, 4.35, 0), 1.75, bronze, B) -- neck
+		c.detail(P(bull + 4.1, 3.95, 0) * R(0, 0, -38), V(1.25, 1.35, 1.3), bronze, B) -- head
+		c.dball(P(bull + 4.55, 3.45, 0), 1.0, shade(bronze, -0.12), B) -- muzzle
 		for _, sz in { -1, 1 } do
-			Shapes.tube(c, V(-1.2, 5.25, sz * 0.6), V(-0.6, 5.5, sz * 1.5), 0.28, dark, B)
-			Shapes.tube(c, V(-0.6, 5.5, sz * 1.5), V(0.3, 6.1, sz * 1.35), 0.2, dark, B)
-			Shapes.strut(c, V(-2.3, 4.2, sz * 0.8), V(-1.4, 2.25, sz * 0.85), 0.6, bronze, B)
-			Shapes.strut(c, V(-5.9, 4.4, sz * 0.8), V(-7.1, 2.25, sz * 0.9), 0.6, bronze, B)
+			-- horns sweep out from the poll, then forward and up toward the bear
+			local root = V(bull + 3.9, 4.6, sz * 0.5)
+			local bend = V(bull + 3.95, 4.95, sz * 1.35)
+			Shapes.tube(c, root, bend, 0.42, dark, B)
+			Shapes.tube(c, bend, V(bull + 4.85, 5.55, sz * 1.5), 0.28, dark, B)
+			-- forelegs braced back under the hump, hind legs driving out behind
+			Shapes.tube(c, V(bull + 1.5, 4.3, sz * 0.8), V(bull + 2.5, top + 0.3, sz * 0.85), 0.88, bronze, B)
+			c.dcyl(P(bull + 2.55, top + 0.15, sz * 0.85), 0.3, 0.85, dark, B)
+			Shapes.tube(c, V(bull - 1.6, 4.3, sz * 0.8), V(bull - 3.0, top + 0.3, sz * 0.9), 0.98, bronze, B)
+			c.dcyl(P(bull - 3.05, top + 0.15, sz * 0.9), 0.3, 0.9, dark, B)
 		end
-		Shapes.tube(c, V(-7.3, 5.8, 0), V(-7.9, 6.9, 0.2), 0.18, dark, B)
-		-- the bear (right), rearing toward -X with a raised swipe
-		c.part(P(4.5, 5.2, 0) * R(0, 0, 18), V(2.5, 3.6, 2.4), dark, B)
-		c.dball(P(4.6, 4.2, 0), 2.9, dark, B)
-		c.dball(P(3.2, 7.45, 0), 1.75, dark, B)
-		c.detail(P(2.35, 7.25, 0), V(0.8, 0.6, 0.7), shade(dark, -0.2), B)
+		Shapes.tube(c, V(bull - 2.9, 5.5, 0), V(bull - 3.5, 6.75, 0.25), 0.22, dark, B) -- tail
+		c.dball(P(bull - 3.55, 6.85, 0.27), 0.42, dark, B)
+		-- the bear (right), reared up on its haunches toward -X, one paw raised to swipe
+		local bear = 4.4
+		c.ball(P(bear + 0.4, 3.75, 0), 3.0, dark, B) -- haunches
+		Shapes.tube(c, V(bear + 0.4, 4.1, 0), V(bear - 0.55, 6.45, 0), 2.45, dark, B) -- torso
+		c.ball(P(bear - 0.6, 6.4, 0), 2.6, dark, B) -- chest and shoulders
+		c.dball(P(bear - 1.35, 7.65, 0), 1.75, dark, B) -- head
+		c.dcylX(P(bear - 2.3, 7.5, 0), 0.8, 0.8, shade(dark, 0.08), B) -- snout
+		c.dball(P(bear - 2.72, 7.55, 0), 0.36, shade(dark, -0.35), B) -- nose
 		for _, sz in { -1, 1 } do
-			c.dball(P(3.45, 8.25, sz * 0.55), 0.6, dark, B)
-			Shapes.strut(c, V(3.7, 6.5, sz * 1.0), V(2.0, 6.0, sz * 1.35), 0.7, dark, B)
-			Shapes.strut(c, V(5.0, 3.6, sz * 0.75), V(5.4, 2.25, sz * 0.85), 0.9, dark, B)
+			c.dball(P(bear - 1.15, 8.4, sz * 0.62), 0.55, dark, B) -- ears
+			-- hind leg and broad foot planted on the plinth
+			Shapes.tube(c, V(bear + 0.2, 3.5, sz * 0.95), V(bear - 0.35, top + 0.35, sz * 1.0), 1.0, dark, B)
+			c.detail(P(bear - 0.55, top + 0.18, sz * 1.0), V(1.4, 0.36, 0.85), dark, B)
 		end
+		-- near arm (-Z) raised high for the swipe; far arm (+Z) guarding low
+		Shapes.tube(c, V(bear - 0.7, 6.75, -1.0), V(bear - 2.3, 7.35, -1.3), 0.85, dark, B)
+		c.dball(P(bear - 2.45, 7.4, -1.32), 0.95, dark, B)
+		Shapes.tube(c, V(bear - 0.8, 6.3, 1.0), V(bear - 2.1, 5.55, 1.25), 0.85, dark, B)
+		c.dball(P(bear - 2.25, 5.5, 1.27), 0.9, dark, B)
 		c.use(V(0, 2.5, -4.3))
 	end,
 })

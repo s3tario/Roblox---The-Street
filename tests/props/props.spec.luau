@@ -246,9 +246,38 @@ local function checkModel(t: any, id: string, m: Model, cf: CFrame, maxParts: nu
 	if mn.Y < -0.1 then
 		error(string.format("%s: lowest corner %.3f below the floor", name, mn.Y))
 	end
+	-- the same check literally in world space: every corner of every part vs the floor height cf.Y
+	-- (placements in these tests only yaw, so the floor is the horizontal plane through cf)
+	for _, p in list do
+		if p ~= root then
+			local s = p.Size / 2
+			for ix = -1, 1, 2 do
+				for iy = -1, 1, 2 do
+					for iz = -1, 1, 2 do
+						local corner = p.CFrame * Vector3.new(s.X * ix, s.Y * iy, s.Z * iz)
+						if corner.Y < cf.Y - 0.1 then
+							error(string.format("%s: %s dips %.3f below cf.Y", name, p.Name, cf.Y - corner.Y))
+						end
+					end
+				end
+			end
+		end
+	end
 	local use = root:FindFirstChild("Use")
 	if use == nil or not use:IsA("Attachment") then
 		error(name .. ": missing Use attachment")
+	end
+	-- the Use point (where a ProximityPrompt goes) must not sit inside a visible, queryable part of the
+	-- prop, or a line-of-sight prompt would be hidden by the prop itself
+	local useWorld = root.CFrame * (use :: Attachment).Position
+	for _, p in list do
+		if p ~= root and p.CanQuery and p.Transparency < 1 then
+			local lp = p.CFrame:PointToObjectSpace(useWorld)
+			local s = p.Size / 2
+			if math.abs(lp.X) < s.X and math.abs(lp.Y) < s.Y and math.abs(lp.Z) < s.Z then
+				error(string.format("%s: Use point is inside %s", name, p.Name))
+			end
+		end
 	end
 end
 
@@ -438,6 +467,24 @@ return function(t)
 				.toBe(true)
 		end)
 
+		t.it("firmBrand = true exposes the reception name plate for per-player re-skins", function()
+			local function brandLabels(m: Instance): number
+				local n = 0
+				for _, d in m:GetDescendants() do
+					if d:IsA("BasePart") and d:HasTag("FirmBrand") then
+						for _, g in d:GetDescendants() do
+							if g:IsA("TextLabel") and g.Name == "BrandText" then
+								n += 1
+							end
+						end
+					end
+				end
+				return n
+			end
+			t.expect(brandLabels(Props.build("reception_desk", nil, CF, { firmBrand = true }))).toBe(1)
+			t.expect(brandLabels(Props.build("reception_desk", nil, CF))).toBe(0)
+		end)
+
 		t.it("seat = true creates real Seats on chairs", function()
 			local seats = 0
 			for _, d in Props.build("chair_task", nil, CF, { seat = true }):GetDescendants() do
@@ -446,6 +493,44 @@ return function(t)
 				end
 			end
 			t.expect(seats).toBeGreaterThan(0)
+		end)
+
+		t.it("every seat-tagged prop gets touchable Seats that nothing solid covers", function()
+			for _, info in Props.list() do
+				local m = Props.build(info.id, nil, CF, { seed = 9, seat = true })
+				local seats: { Seat } = {}
+				local solids: { BasePart } = {}
+				for _, d in m:GetDescendants() do
+					if d:IsA("Seat") then
+						table.insert(seats, d)
+					elseif d:IsA("BasePart") and d.CanCollide then
+						table.insert(solids, d)
+					end
+				end
+				if table.find(info.tags, "seat") and #seats == 0 then
+					error(info.id .. ": tagged seat but builds no Seat with opts.seat")
+				end
+				for _, s in seats do
+					if s.Disabled or not s.CanTouch or not s.CanCollide or not s.Anchored then
+						error(info.id .. ": Seat " .. s.Name .. " cannot be sat on")
+					end
+					-- just above the middle of the sitting surface must be open (no solid cushion over it)
+					local probe = s.CFrame * Vector3.new(0, s.Size.Y / 2 + 0.005, 0)
+					for _, p in solids do
+						local lp = p.CFrame:PointToObjectSpace(probe)
+						local h = p.Size / 2
+						if math.abs(lp.X) < h.X and math.abs(lp.Y) < h.Y and math.abs(lp.Z) < h.Z then
+							error(info.id .. ": Seat " .. s.Name .. " is covered by solid part " .. p.Name)
+						end
+					end
+				end
+				-- without opts.seat there are no Seats at all (decor must not grab passing players)
+				for _, d in Props.build(info.id, nil, CF, { seed = 9 }):GetDescendants() do
+					if d:IsA("Seat") then
+						error(info.id .. ": built a Seat without opts.seat")
+					end
+				end
+			end
 		end)
 	end)
 

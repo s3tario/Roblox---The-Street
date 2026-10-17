@@ -35,8 +35,40 @@ return function(t)
 				if type(item.price) ~= "number" or item.price < 0 or item.price ~= math.floor(item.price) then
 					fail("bad price")
 				end
-				if item.currency ~= "cash" and item.currency ~= "pass" then
+				if not Catalog.CURRENCIES[item.currency] then
 					fail("bad currency")
+				end
+				local brand = Catalog.brand(item.brand)
+				if not brand then
+					fail("unknown brand " .. tostring(item.brand))
+				end
+				if not Catalog.RARITY[item.rarity] then
+					fail("bad rarity " .. tostring(item.rarity))
+				end
+				if (brand :: any).roll then
+					if item.currency ~= "roll" or item.rarity ~= (brand :: any).rarity then
+						fail("roll-brand items must be currency roll with the brand's rarity")
+					end
+				elseif item.currency == "roll" then
+					fail("roll items must use a roll brand")
+				end
+				if
+					Catalog.EXCLUSIVE[item.currency] and (item.price ~= 0 or item.pass ~= nil or item.minRank ~= nil)
+				then
+					fail("exclusive items are never sold or gated")
+				end
+				if item.finish ~= nil and not Catalog.FINISHES[item.finish] then
+					fail("bad finish " .. tostring(item.finish))
+				end
+				if item.details ~= nil then
+					for _, d in item.details do
+						if not Wardrobe.Details.has(d) then
+							fail("unknown detail " .. tostring(d))
+						end
+					end
+				end
+				if item.colors.trim ~= nil and not isHex(item.colors.trim) then
+					fail("bad trim colour")
 				end
 				if not isHex(item.colors.primary) then
 					fail("bad primary colour")
@@ -101,12 +133,18 @@ return function(t)
 			end
 		end)
 
-		t.it("has a full catalogue: about 60-100 visible items, every slot stocked", function()
-			local visible = Catalog.list()
-			t.expect(#visible).toBeBetween(60, 100)
-			t.expect(#Catalog.list(true)).toBeGreaterThan(#visible)
+		t.it("has a full catalogue: about 60-100 shop items, every slot stocked", function()
+			local shop = Catalog.shopItems()
+			t.expect(#shop).toBeBetween(60, 100)
+			t.expect(#Catalog.list(true)).toBeGreaterThan(#Catalog.list())
 			for _, slot in Catalog.SLOTS do
-				t.expect(#Catalog.bySlot(slot)).toBeGreaterThanOrEqual(3)
+				local n = 0
+				for _, item in shop do
+					if item.slot == slot then
+						n += 1
+					end
+				end
+				t.expect(n).toBeGreaterThanOrEqual(3)
 			end
 			for slot, id in Catalog.REQUIRED do
 				local item = Catalog.get(id)
@@ -168,6 +206,181 @@ return function(t)
 					t.expect(item.hidden).toBeNil()
 				end
 			end
+		end)
+	end)
+
+	t.describe("Brands, rarity and Life Roll pools", function()
+		t.it("every brand has a valid rarity, a name and a blurb", function()
+			t.expect(#Catalog.RARITIES).toBe(5)
+			for i, r in Catalog.RARITIES do
+				local def = Catalog.RARITY[r]
+				t.expect(def ~= nil).toBeTruthy()
+				t.expect(def.order).toBe(i)
+				t.expect(isHex(def.color)).toBeTruthy()
+			end
+			t.expect(isHex(Catalog.RARITY.mythic.color2)).toBeTruthy()
+			local count = 0
+			for id, b in Catalog.brands do
+				count += 1
+				t.expect(b.id).toBe(id)
+				if not Catalog.RARITY[b.rarity] then
+					error(id .. " has bad rarity " .. tostring(b.rarity))
+				end
+				t.expect(#b.name).toBeGreaterThan(2)
+				t.expect(#b.blurb).toBeGreaterThan(8)
+				t.expect(#b.signature).toBeGreaterThan(8)
+			end
+			t.expect(count).toBe(#Catalog.brandList)
+		end)
+
+		t.it("puts the owner's roll brands in the right tiers", function()
+			local expected = {
+				common = { "kevin_kroos", "old_harbor", "gapline", "hanesworth" },
+				uncommon = { "j_crewson", "plantain_republic", "tommy_hillford" },
+				rare = { "ralph_lorenzo", "brooks_brethren", "vineyard_wines", "patagonio" },
+				legendary = { "tom_fordham", "zegnatti", "bruno_cucina" },
+				mythic = { "william_kingsley" },
+			}
+			local rollBrands = 0
+			for _, b in Catalog.brands do
+				if b.roll then
+					rollBrands += 1
+				end
+			end
+			local total = 0
+			for rarity, ids in expected do
+				for _, id in ids do
+					total += 1
+					local b = Catalog.brand(id)
+					if not b or not b.roll or b.rarity ~= rarity then
+						error(id .. " should be a " .. rarity .. " roll brand")
+					end
+				end
+			end
+			t.expect(rollBrands).toBe(total)
+			t.expect(Catalog.brand("william_kingsley").name).toBe("William Kingsley")
+		end)
+
+		t.it("roll pools have the spec sizes and mythic has exactly one look", function()
+			local sizes = { common = 12, uncommon = 7, rare = 5, legendary = 3, mythic = 1 }
+			for rarity, n in sizes do
+				local pool = Catalog.rollPools[rarity]
+				t.expect(pool ~= nil).toBeTruthy()
+				t.expect(#pool).toBe(n)
+			end
+			-- every roll brand appears in its tier's pool
+			for id, b in Catalog.brands do
+				if b.roll then
+					local found = false
+					for _, look in Catalog.rollPools[b.rarity] do
+						if look.brand == id then
+							found = true
+						end
+					end
+					if not found then
+						error(id .. " has no look in the " .. b.rarity .. " pool")
+					end
+				end
+			end
+			t.expect(Catalog.rollPools.mythic[1].brand).toBe("william_kingsley")
+		end)
+
+		t.it("every pool item exists with the look's brand and rarity, and every look is complete", function()
+			local seenLook = {}
+			local usedItems = {}
+			for rarity, pool in Catalog.rollPools do
+				for _, look in pool do
+					t.expect(seenLook[look.id]).toBeNil()
+					seenLook[look.id] = true
+					t.expect(look.rarity).toBe(rarity)
+					t.expect(#look.name).toBeGreaterThan(3)
+					local slots = {}
+					for _, id in look.itemIds do
+						local item = Catalog.get(id)
+						if not item then
+							error(look.id .. " references unknown item " .. id)
+						end
+						if item.brand ~= look.brand or item.rarity ~= rarity then
+							error(
+								("%s: %s is %s/%s, look is %s/%s"):format(
+									look.id,
+									id,
+									item.brand,
+									item.rarity,
+									look.brand,
+									rarity
+								)
+							)
+						end
+						t.expect(item.currency).toBe("roll")
+						if slots[item.slot] then
+							error(look.id .. " has two " .. item.slot .. " pieces")
+						end
+						slots[item.slot] = id
+						usedItems[id] = true
+					end
+					for _, need in { "top", "bottom", "shoes" } do
+						if not slots[need] then
+							error(look.id .. " has no " .. need)
+						end
+					end
+				end
+			end
+			-- no orphan roll pieces
+			for id, item in Catalog.items do
+				if item.currency == "roll" and not usedItems[id] then
+					error(id .. " is a roll item in no look")
+				end
+			end
+		end)
+
+		t.it("pickLook maps [0, 1) across the pool and lookOf finds a piece's look", function()
+			t.expect(Catalog.pickLook("mythic", 0.99).id).toBe("wk_signature")
+			t.expect(Catalog.pickLook("common", 0).id).toBe(Catalog.rollPools.common[1].id)
+			t.expect(Catalog.pickLook("common", 0.9999).id).toBe(Catalog.rollPools.common[12].id)
+			t.expect(Catalog.pickLook("common", 1.5).id).toBe(Catalog.rollPools.common[12].id)
+			t.expect(Catalog.pickLook("common", -1).id).toBe(Catalog.rollPools.common[1].id)
+			t.expect(Catalog.pickLook("nope", 0.5)).toBeNil()
+			t.expect((Catalog.lookOf("wk_tie") :: any).id).toBe("wk_signature")
+			t.expect(Catalog.lookOf("oxford_white")).toBeNil()
+		end)
+
+		t.it("has the three family heirlooms with the right rarities", function()
+			local want = {
+				heirloom_signet_ring = "rare",
+				heirloom_family_watch = "legendary",
+				heirloom_vanderfeller_crest_blazer = "mythic",
+			}
+			for id, rarity in want do
+				local item = Catalog.get(id)
+				if not item then
+					error("missing heirloom " .. id)
+				end
+				t.expect(item.currency).toBe("heirloom")
+				t.expect(item.rarity).toBe(rarity)
+				t.expect(item.brand).toBe("family_heirloom")
+			end
+			t.expect(#Catalog.heirlooms()).toBe(3)
+			-- mythic is reserved for the Kingsley look and the Vanderfeller blazer
+			for id, item in Catalog.items do
+				if item.rarity == "mythic" then
+					t.expect(item.brand == "william_kingsley" or id == "heirloom_vanderfeller_crest_blazer")
+						.toBeTruthy()
+				end
+			end
+		end)
+
+		t.it("shop items carry a house brand and a rarity that follows their tier", function()
+			for _, item in Catalog.shopItems() do
+				local b = Catalog.brand(item.brand) :: any
+				t.expect(b.roll).toBe(false)
+				t.expect(item.rarity).toBe(Catalog.TIER_RARITY[item.tier])
+			end
+			t.expect(Catalog.get("suit_navy_2b").brand).toBe("hartwell")
+			t.expect(Catalog.get("watch_astra_moonphase").brand).toBe("vanta")
+			t.expect(Catalog.get("oxford_black").brand).toBe("strider")
+			t.expect(Catalog.get("co_velvet_dinner").brand).toBe("corner_office")
+			t.expect(Catalog.get("hoodie_maroon").brand).toBe("eastbridge")
 		end)
 	end)
 
@@ -285,6 +498,30 @@ return function(t)
 			local kept = Catalog.sanitizeEquipped({ outer = "co_velvet_dinner" }, member)
 			t.expect(kept.outer).toBe("co_velvet_dinner")
 			t.expect(count(Catalog.sanitizeEquipped("junk", student))).toBe(0)
+		end)
+
+		t.it("exclusive pieces are wearable only once granted, and listed only when owned", function()
+			local item = Catalog.get("wk_jacket") :: any
+			t.expect(Catalog.access(item, member)).toBe("roll")
+			local ok, err = Catalog.canWear(item, member)
+			t.expect(ok).toBeFalsy()
+			t.expect(err).toBe("roll")
+			local heir = Catalog.get("heirloom_signet_ring") :: any
+			t.expect(Catalog.access(heir, student)).toBe("heirloom")
+			local granted = { owned = { wk_jacket = true, heirloom_signet_ring = true }, rank = 0 }
+			t.expect(Catalog.access(item, granted)).toBe("owned")
+			t.expect((Catalog.checkEquip("outer", "wk_jacket", granted))).toBeTruthy()
+			t.expect((Catalog.checkEquip("wrist", "heirloom_signet_ring", granted))).toBeTruthy()
+			t.expect(Catalog.isShopItem(item)).toBeFalsy()
+			t.expect(Catalog.isExclusive(item)).toBeTruthy()
+			-- the wardrobe lists owned exclusives first, never unowned ones
+			local outer = Catalog.visibleFor("outer", granted)
+			t.expect(outer[1].id).toBe("wk_jacket")
+			for _, it in Catalog.visibleFor("outer", student) do
+				t.expect(Catalog.isExclusive(it)).toBeFalsy()
+				t.expect(it.hidden).toBeNil()
+			end
+			t.expect(#Catalog.visibleFor("outer", granted)).toBe(#Catalog.visibleFor("outer", student) + 1)
 		end)
 
 		t.it("preset slots and names", function()

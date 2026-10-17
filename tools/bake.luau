@@ -105,6 +105,76 @@ for _, entry in World.builders do
 	print(("%s  %-16s %6d parts  %5.2fs%s"):format(status, entry.module, parts, os.clock() - t0, note))
 end
 
+-- Office floor templates -> build/Templates.rbxm (ServerStorage.FirmTemplates). Each template is built at the
+-- origin and must stay within +/- TEMPLATE_HALF (XZ) and y in [-10, TEMPLATE_HEIGHT].
+local templatesFolder = roblox.Instance.new("Folder")
+templatesFolder.Name = "FirmTemplates"
+local H = World.TEMPLATE_HALF
+local TH = World.TEMPLATE_HEIGHT
+for _, entry in World.templates do
+	if filtered and not only[entry.module] then
+		continue
+	end
+	local moduleProxy = builders:FindFirstChild(entry.module)
+	if not moduleProxy then
+		print(("SKIP  %-16s (src/world/%s.luau not written yet)"):format(entry.module, entry.module))
+		continue
+	end
+	for _, templateId in entry.templates do
+		local t0 = os.clock()
+		local ok, result = pcall(function()
+			local builder = V.require(moduleProxy)
+			assert(
+				type(builder) == "table" and type(builder.build) == "function",
+				"builder must export build(templateId, parent)"
+			)
+			return builder.build(templateId, templatesFolder)
+		end)
+		local label = entry.module .. ":" .. templateId
+		if not ok or typeof(result) ~= "Instance" then
+			problems += 1
+			print(("FAIL  %-22s error: %s"):format(label, tostring(result)))
+			continue
+		end
+		result.Name = templateId
+		local parts, outside = 0, 0
+		local firstOutside = nil
+		for _, d in result:GetDescendants() do
+			if d:IsA("BasePart") then
+				parts += 1
+				local p = d.Position
+				if
+					math.abs(p.X) > H + MARGIN
+					or math.abs(p.Z) > H + MARGIN
+					or p.Y < -10 - MARGIN
+					or p.Y > TH + MARGIN
+				then
+					outside += 1
+					firstOutside = firstOutside or (d:GetFullName() .. " @ " .. tostring(p))
+				end
+			end
+		end
+		total += parts
+		local status, note = "OK  ", ""
+		if parts > entry.budget then
+			status = "FAIL"
+			problems += 1
+			note = (" over budget (%d > %d)"):format(parts, entry.budget)
+		end
+		if outside > 0 then
+			status = "FAIL"
+			problems += 1
+			note ..= (" %d parts outside template bounds, e.g. %s"):format(outside, tostring(firstOutside))
+		end
+		print(("%s  %-22s %6d parts  %5.2fs%s"):format(status, label, parts, os.clock() - t0, note))
+	end
+end
+local templatesOut = if filtered
+	then "build/bake-templates-" .. table.concat(process.args, "-") .. ".rbxm"
+	else "build/Templates.rbxm"
+fs.writeDir("build")
+fs.writeFile(templatesOut, roblox.serializeModel({ templatesFolder }))
+
 -- A filtered bake never overwrites the full World.rbxm (concurrent agents bake their own modules).
 local outPath = if filtered then "build/bake-" .. table.concat(process.args, "-") .. ".rbxm" else "build/World.rbxm"
 fs.writeDir("build")

@@ -10,6 +10,8 @@ return function(t)
 				if door.ride then
 					t.expect(World.anchors[door.ride.via] ~= nil).toBeTruthy()
 					t.expect(World.anchors[door.ride.to] ~= nil).toBeTruthy()
+				elseif door.company or door.picker then
+					t.expect(World.anchors[door.frontAnchor] ~= nil).toBeTruthy()
 				else
 					if World.anchors[door.target] == nil then
 						error("door " .. id .. " targets unknown anchor " .. tostring(door.target))
@@ -30,8 +32,8 @@ return function(t)
 					covered[z] = b.module
 				end
 			end
-			for zoneId in World.zones do
-				if covered[zoneId] == nil then
+			for zoneId, z in World.zones do
+				if z.kind ~= "office" and covered[zoneId] == nil then
 					error("zone " .. zoneId .. " has no builder")
 				end
 			end
@@ -49,6 +51,40 @@ return function(t)
 				end
 			end
 		end)
+		t.it("towers have unique ids, doors and anchors; every department has a template", function()
+			local seen = {}
+			for _, tw in World.towers do
+				t.expect(seen[tw.id]).toBeNil()
+				seen[tw.id] = true
+				t.expect(World.doors[tw.door] ~= nil).toBeTruthy()
+				t.expect(World.anchors[tw.anchor] ~= nil).toBeTruthy()
+				t.expect(tw.company ~= nil or tw.picker ~= nil).toBeTruthy()
+			end
+			local templ = {}
+			for _, b in World.templates do
+				for _, id in b.templates do
+					t.expect(templ[id]).toBeNil()
+					templ[id] = true
+				end
+			end
+			t.expect(templ.lobby).toBe(true)
+			for _, d in World.departments do
+				if not templ[d] then
+					error("department " .. d .. " has no floor template")
+				end
+			end
+		end)
+		t.it("office instances never overlap venues or regions", function()
+			local o = World.offices
+			local last = World.officeOrigin(o.maxInstances, o.maxFloors - 1)
+			for id in World.interiors do
+				local _, mx = World.interiorBounds(id)
+				t.expect(World.offices.origin.X - World.TEMPLATE_HALF > mx.X).toBeTruthy()
+			end
+			t.expect(last.X > World.offices.origin.X).toBeTruthy()
+			t.expect(o.floorSpacing > World.TEMPLATE_HALF * 2).toBeTruthy()
+			t.expect(o.instanceSpacing > World.TEMPLATE_HALF * 2).toBeTruthy()
+		end)
 		t.it("interior slots never overlap regions or each other", function()
 			local seenSlots = {}
 			for id, def in World.interiors do
@@ -63,7 +99,11 @@ return function(t)
 		t.it("zoneAt resolves exterior and interior positions", function()
 			t.expect(World.zoneAt(Vector3.new(-1400, 0, 0))).toBe("campus")
 			t.expect(World.zoneAt(Vector3.new(0, 10, 0))).toBe("street")
-			t.expect(World.zoneAt(World.slotOrigin(World.interiors.hq_lobby.slot))).toBe("hq_lobby")
+			t.expect(World.zoneAt(World.slotOrigin(World.interiors.career_services.slot))).toBe("career_services")
+			t.expect(World.zoneAt(World.officeOrigin(3, 2) + Vector3.new(50, 5, -40))).toBe("offices")
+			local i, f = World.officeAt(World.officeOrigin(5, 4))
+			t.expect(i).toBe(5)
+			t.expect(f).toBe(4)
 			t.expect(World.zoneAt(Vector3.new(100000, 0, 0))).toBeNil()
 		end)
 	end)

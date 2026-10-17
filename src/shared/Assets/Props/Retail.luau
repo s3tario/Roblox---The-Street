@@ -272,8 +272,9 @@ add({
 		local gui = Gui.Core.surface(screen, Enum.NormalId.Front, { glow = true, pps = 80, maxDistance = 30 })
 		Gui.Core.bg(gui, hex("#F7F8FA"))
 		Gui.Core.frame(gui, 0, 0, 1, 0.2, S.navy)
-		Gui.Core.label(gui, Words.posTotal, 0.06, 0.3, 0.4, 0.25, hex("#4A5260"), { font = Enum.Font.GothamBold })
-		Gui.Core.label(gui, string.format("$%d.00", c.rng:int(120, 4800)), 0.4, 0.28, 0.55, 0.3, S.navy, {
+		-- separate boxes (TextScaled fills each box, so overlapping boxes would run the words together)
+		Gui.Core.label(gui, Words.posTotal, 0.06, 0.32, 0.28, 0.22, hex("#4A5260"), { font = Enum.Font.GothamBold })
+		Gui.Core.label(gui, string.format("$%d.00", c.rng:int(120, 4800)), 0.38, 0.28, 0.56, 0.3, S.navy, {
 			font = Enum.Font.RobotoMono,
 			align = Enum.TextXAlignment.Right,
 		})

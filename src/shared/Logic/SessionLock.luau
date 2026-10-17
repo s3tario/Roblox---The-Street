@@ -10,6 +10,10 @@
 --     otherwise -> wait and retry with retryDelay().
 --   * write():   on every save. Only the lock holder whose writeId chain is intact may write. Each write
 --     refreshes `lockedAt` (the heartbeat) and bumps `writeId`; `release = true` clears the session.
+-- `sid` (optional everywhere) is a per-session id stamped into the lock. A server re-acquires its own job's
+-- lock at once when the same user rejoins it, so the job id alone can't tell an old session of that user from
+-- the new one; with sids, the old session's writes are refused as "conflict" even when its own last attempt
+-- was uncertain (see checkWrite).
 
 local TableUtil = require(script.Parent.Parent.Util.TableUtil)
 
@@ -19,7 +23,7 @@ SessionLock.STALE_AFTER = 600 -- seconds without a heartbeat before another serv
 SessionLock.BACKOFF = { 1, 2, 3, 5, 8 } -- waits between lock attempts: 6 attempts over ~19 s
 SessionLock.MAX_ATTEMPTS = #SessionLock.BACKOFF + 1
 
-export type Session = { jobId: string, placeId: number, lockedAt: number }
+export type Session = { jobId: string, placeId: number, lockedAt: number, sid: string? }
 export type Record = { data: any?, session: Session?, writeId: number }
 export type Decision = "acquire" | "steal" | "wait"
 export type WriteStatus = "ok" | "missing" | "stolen" | "conflict"
@@ -90,7 +94,8 @@ function SessionLock.acquire(
 	now: number,
 	myJobId: string,
 	placeId: number,
-	stealPrefix: string?
+	stealPrefix: string?,
+	sid: string?
 ): (Decision, string, Record?)
 	local decision: Decision, reason: string = SessionLock.decide(record, now, myJobId, stealPrefix)
 	if decision == "wait" then
@@ -99,7 +104,7 @@ function SessionLock.acquire(
 	local rec = SessionLock.normalize(record)
 	local out: Record = {
 		data = if rec then rec.data else nil,
-		session = { jobId = myJobId, placeId = placeId, lockedAt = math.floor(now) },
+		session = { jobId = myJobId, placeId = placeId, lockedAt = math.floor(now), sid = sid },
 		writeId = (if rec then rec.writeId else 0) + 1,
 	}
 	return decision, reason, out
@@ -108,11 +113,18 @@ end
 -- May the holder of `expectedWriteId` write this record?
 --   "missing"  the key was removed (e.g. a data-erasure request): never recreate it
 --   "stolen"   another server holds the lock, or it was released by someone else
---   "conflict" someone wrote without going through our session (writeId chain broken), e.g. a newer
---              session of the same user on the same server
+--   "conflict" someone wrote without going through our session (writeId chain broken, or the lock carries
+--              another session's sid), e.g. a newer session of the same user on the same server
 -- With `uncertain` (one of our earlier write attempts errored, so it may have committed anyway)
--- `expectedWriteId + 1` is accepted too: that is our own write.
-function SessionLock.checkWrite(record: any, myJobId: string, expectedWriteId: number, uncertain: boolean?): WriteStatus
+-- `expectedWriteId + 1` is accepted too: that is our own write. Pass `sid` so that this allowance can never
+-- let an older session write over a newer session that re-acquired the lock on the same server.
+function SessionLock.checkWrite(
+	record: any,
+	myJobId: string,
+	expectedWriteId: number,
+	uncertain: boolean?,
+	sid: string?
+): WriteStatus
 	local rec = SessionLock.normalize(record)
 	if rec == nil then
 		return "missing" :: WriteStatus
@@ -121,6 +133,9 @@ function SessionLock.checkWrite(record: any, myJobId: string, expectedWriteId: n
 	if s == nil or s.jobId ~= myJobId then
 		return "stolen" :: WriteStatus
 	end
+	if sid ~= nil and type(s.sid) == "string" and s.sid ~= sid then
+		return "conflict" :: WriteStatus
+	end
 	if rec.writeId ~= expectedWriteId and not (uncertain and rec.writeId == expectedWriteId + 1) then
 		return "conflict" :: WriteStatus
 	end
@@ -128,7 +143,7 @@ function SessionLock.checkWrite(record: any, myJobId: string, expectedWriteId: n
 end
 
 -- UpdateAsync transform for saving. `payload` nil keeps the stored data (heartbeat or release only).
--- `uncertain` as in checkWrite.
+-- `uncertain` and `sid` as in checkWrite.
 -- Returns the status and the record to store (nil unless status is "ok").
 function SessionLock.write(
 	record: any,
@@ -138,16 +153,19 @@ function SessionLock.write(
 	expectedWriteId: number,
 	payload: any?,
 	release: boolean?,
-	uncertain: boolean?
+	uncertain: boolean?,
+	sid: string?
 ): (WriteStatus, Record?)
-	local status: WriteStatus = SessionLock.checkWrite(record, myJobId, expectedWriteId, uncertain)
+	local status: WriteStatus = SessionLock.checkWrite(record, myJobId, expectedWriteId, uncertain, sid)
 	if status ~= "ok" then
 		return status, nil
 	end
 	local rec = SessionLock.normalize(record) :: Record
 	local out: Record = {
 		data = if payload ~= nil then payload else rec.data,
-		session = if release then nil else { jobId = myJobId, placeId = placeId, lockedAt = math.floor(now) },
+		session = if release
+			then nil
+			else { jobId = myJobId, placeId = placeId, lockedAt = math.floor(now), sid = sid },
 		writeId = expectedWriteId + 1,
 	}
 	return "ok" :: WriteStatus, out
@@ -160,7 +178,7 @@ function SessionLock.heldElsewhere(record: any, now: number, myJobId: string, st
 end
 
 -- UpdateAsync transform for a support restore. Refused ("held") while another server's live session holds
--- the lock. The restored copy keeps the CURRENT save's backup rotation (meta.backupDay/backupSlot) so restoring
+-- the lock (`stealPrefix` as in decide). The restored copy keeps the CURRENT save's backup rotation (meta.backupDay/backupSlot) so restoring
 -- an old copy never rewinds it, gets `note` appended to its audit ring, and is written with the lock released.
 function SessionLock.restore(
 	record: any,
@@ -168,9 +186,10 @@ function SessionLock.restore(
 	myJobId: string,
 	restored: { [string]: any },
 	note: any?,
-	ringMax: number?
+	ringMax: number?,
+	stealPrefix: string?
 ): ("ok" | "held", Record?)
-	if SessionLock.heldElsewhere(record, now, myJobId) then
+	if SessionLock.heldElsewhere(record, now, myJobId, stealPrefix) then
 		return "held", nil
 	end
 	local rec = SessionLock.normalize(record)

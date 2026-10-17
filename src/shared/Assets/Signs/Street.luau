@@ -120,11 +120,24 @@ local function directoryFace(
 		align = Enum.TextXAlignment.Center,
 	})
 	local rowH = 0.6 / math.max(#entries, 1)
+	-- one text size for every entry, so the list reads as a set instead of each line scaling itself to a
+	-- different size. Sized so the longest entry fits on at most two wrapped lines of its row.
+	local texts: { string } = {}
+	local perLine = 1
+	for i, e in entries do
+		local text = if ARROWS[string.sub(e, 1, 1)] then string.gsub(string.sub(e, 2), "^%s+", "") else e
+		texts[i] = text
+		perLine = math.max(perLine, math.ceil(#text / 2) + 2)
+		for word in string.gmatch(text, "%S+") do
+			perLine = math.max(perLine, #word)
+		end
+	end
+	local sideBox = rowH * 0.7 * Hpx / Wpx
+	local textPx = math.floor(math.clamp(math.min(rowH * Hpx * 0.42, (0.85 - sideBox) * Wpx / (perLine * 0.7)), 6, 100))
 	for i, e in entries do
 		local y = 0.14 + (i - 1) * rowH
-		local first = string.sub(e, 1, 1)
-		local arrow = ARROWS[first]
-		local text = if arrow then string.gsub(string.sub(e, 2), "^%s+", "") else e
+		local arrow = ARROWS[string.sub(e, 1, 1)]
+		local text = texts[i]
 		local side = rowH * 0.7 * Hpx -- square arrow box, in pixels
 		local boxW = side / Wpx
 		local box = Gui.Core.frame(gui, 0.05, y + rowH * 0.15, boxW, rowH * 0.7, gold)
@@ -141,6 +154,8 @@ local function directoryFace(
 		end
 		Gui.Core.label(gui, text, 0.08 + boxW, y + rowH * 0.12, 0.85 - boxW, rowH * 0.76, S.white, {
 			font = Enum.Font.GothamBold,
+			scaled = false,
+			size = textPx,
 		})
 		if i < #entries then
 			Gui.Core.frame(gui, 0.05, y + rowH - 0.002, 0.9, 0.004, gold, 0.6)
@@ -212,13 +227,13 @@ function SignsStreet.billboard(parent: Instance?, cf: CFrame, opts: Opts?): Mode
 	c.part(P(0, mid, 0.4), V(W + 0.6, H + 0.6, 0.6), frameC, M.Metal)
 	local face = c.detail(P(0, mid, 0.06), V(W, H, 0.05), S.white, M.SmoothPlastic)
 	face.Name = "Advert"
-	local gui = Gui.Core.surface(face, Enum.NormalId.Front, {
+	local gui, gw, gh = Gui.Core.surface(face, Enum.NormalId.Front, {
 		glow = false,
 		pps = math.clamp(1600 / W, 8, 40),
 		maxDistance = 0,
 		name = "Advert",
 	})
-	Gui.Art.ad(gui, brand, slogan, c.rng)
+	Gui.Art.ad(gui, brand, slogan, c.rng, gw, gh)
 	if legH >= 2 then
 		c.part(P(0, legH + 0.08, -0.7), V(W, 0.15, 1.4), steel, M.DiamondPlate)
 		Shapes.rail(

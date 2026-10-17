@@ -5,6 +5,7 @@
 -- matching collar inside its V. Bake-safe.
 
 local Fit = require(script.Parent.Fit)
+local Details = require(script.Parent.Details)
 
 type Ctx = Fit.Ctx
 
@@ -14,6 +15,11 @@ local FABRIC = Enum.Material.Fabric
 
 local function isTie(item: any): boolean
 	return type(item) == "table" and (item.builder == "tie" or item.builder == "bowtie")
+end
+
+-- Brand emblems (Details.luau) replace the default chest logo.
+local function hasEmblem(item: any): boolean
+	return Details.lists(item, "emblem_")
 end
 
 -- Shared: torso dimensions and the starting front depth.
@@ -210,15 +216,17 @@ local function polo(ctx: Ctx)
 		for i = 0, 1 do
 			Fit.button(ctx, "UpperTorso", 0, top - 0.36 - i * 0.16, front - 0.014, 0.05, Color3.fromRGB(240, 240, 236))
 		end
-		Fit.box(
-			ctx,
-			"UpperTorso",
-			CFrame.new(-W * 0.27, top - 0.42, front - 0.006),
-			Vector3.new(0.12, 0.1, 0.012),
-			col.accent,
-			SMOOTH,
-			"top_Logo"
-		)
+		if not hasEmblem(ctx.item) then
+			Fit.box(
+				ctx,
+				"UpperTorso",
+				CFrame.new(-W * 0.27, top - 0.42, front - 0.006),
+				Vector3.new(0.12, 0.1, 0.012),
+				col.accent,
+				SMOOTH,
+				"top_Logo"
+			)
+		end
 	end
 	sleeveHems(ctx, col.secondary)
 end

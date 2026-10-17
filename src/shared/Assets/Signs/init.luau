@@ -14,7 +14,8 @@
 --            streetName, wayfinding, billboard (on a roof)
 --
 -- Signs.buildingName(parent, cf, {text, width?, height?, style = "brass"|"neon"|"stone"|"paint"|"lightbox",
---                                 color?, accent?, font?, lit?, flicker?})
+--                                 color?, accent?, font?, lit?, flicker?, firmBrand?})
+--     firmBrand = true names the main label "BrandText" and tags its part "FirmBrand" (contracts §11).
 -- Signs.plaque(parent, cf, {title?, text?, width?, height?, color?, accent?})
 -- Signs.streetName(parent, cf, {text?, text2? (false = one blade), height?, color?, accent?})
 -- Signs.wayfinding(parent, cf, {title?, entries? = {string}, width?, height?, color?, accent?, lit?})

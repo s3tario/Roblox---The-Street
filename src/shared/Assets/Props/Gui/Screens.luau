@@ -123,37 +123,42 @@ local function screenSheet(gui: Instance, _W: number, _H: number, rng: Rng.Rng)
 	label(gui, "Model_v" .. rng:int(3, 41) .. ".xlsx", 0.03, 0.01, 0.6, 0.08, hex("#FFFFFF"), {
 		font = Enum.Font.Gotham,
 	})
+	-- column header strip, then one label per cell so every value sits on its own grid row
+	local top, rowH = 0.18, 0.115
 	frame(gui, 0, 0.1, 1, 0.08, hex("#E6E6E6"))
 	local grid = hex("#D0D4D9")
 	for i = 1, 4 do
 		frame(gui, i * 0.2, 0.1, 0.004, 0.9, grid)
 	end
 	for i = 1, 7 do
-		frame(gui, 0, 0.18 + i * 0.115, 1, 0.004, grid)
+		frame(gui, 0, top + i * rowH, 1, 0.004, grid)
 	end
-	label(gui, table.concat(Words.sheetRows, "\n"), 0.02, 0.19, 0.18, 0.8, hex("#1A1D21"), {
-		font = Enum.Font.Gotham,
-		yAlign = Enum.TextYAlignment.Top,
-	})
-	for col = 1, 4 do
-		local vals = {}
-		local base = rng:range(200, 900)
-		for row = 1, 7 do
-			if row == 3 then
-				table.insert(vals, string.format("%.1f%%", rng:range(12, 38)))
-			elseif row >= 6 then
-				table.insert(vals, string.format("%.1fx", rng:range(6, 14)))
-			else
-				table.insert(vals, string.format("%.0f", base * (1 + col * 0.07) / row))
-			end
-		end
-		label(gui, table.concat(vals, "\n"), 0.2 * col + 0.015, 0.19, 0.17, 0.8, hex("#0B3D91"), {
+	local ink, num = hex("#1A1D21"), hex("#0B3D91")
+	for col, head in Words.sheetCols do
+		label(gui, head, 0.2 * col + 0.015, 0.11, 0.17, 0.06, hex("#4A5260"), {
 			font = MONO,
-			yAlign = Enum.TextYAlignment.Top,
 			align = Enum.TextXAlignment.Right,
 		})
 	end
-	local sel = frame(gui, 0.6, 0.18 + 0.115 * rng:int(1, 6), 0.2, 0.115, hex("#FFFFFF"), 1)
+	for row, name in Words.sheetRows do
+		label(gui, name, 0.015, top + (row - 1) * rowH + rowH * 0.18, 0.18, rowH * 0.64, ink, {
+			font = Enum.Font.Gotham,
+		})
+	end
+	for col = 1, 4 do
+		local base = rng:range(200, 900)
+		for row = 1, 7 do
+			local v = if row == 3
+				then string.format("%.1f%%", rng:range(12, 38))
+				elseif row >= 6 then string.format("%.1fx", rng:range(6, 14))
+				else string.format("%.0f", base * (1 + col * 0.07) / row)
+			label(gui, v, 0.2 * col + 0.015, top + (row - 1) * rowH + rowH * 0.18, 0.17, rowH * 0.64, num, {
+				font = MONO,
+				align = Enum.TextXAlignment.Right,
+			})
+		end
+	end
+	local sel = frame(gui, 0.6, top + rowH * rng:int(0, 6), 0.2, rowH, hex("#FFFFFF"), 1)
 	Core.stroke(sel, hex("#1E7145"), 2)
 end
 
@@ -247,6 +252,8 @@ function Screens.ticker(part: BasePart, rng: Rng.Rng, o: TickerOpts?): TextLabel
 		wrap = false,
 	})
 	text.TextTruncate = Enum.TextTruncate.None
+	-- grow to the full line width so scrolling never relies on text overflowing the label's box
+	text.AutomaticSize = Enum.AutomaticSize.X
 	gui:SetAttribute("TickerPx", text.TextSize)
 	return text
 end

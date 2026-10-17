@@ -43,7 +43,7 @@ Fit.SHELL = 0.06 -- jacket/coat shell stands this far off the torso
 Fit.T = 0.03 -- default plate thickness
 Fit.E = 0.012 -- tiny lift that keeps coplanar plates from z-fighting
 
-export type Colors = { primary: Color3, secondary: Color3, accent: Color3 }
+export type Colors = { primary: Color3, secondary: Color3, accent: Color3, trim: Color3 }
 
 export type Ctx = {
 	character: Model,
@@ -97,10 +97,12 @@ end
 function Fit.colorsOf(item: any): Colors
 	local c = if type(item) == "table" and type(item.colors) == "table" then item.colors else {}
 	local primary = Fit.color(c.primary)
+	local accent = Fit.color(c.accent, Fit.shade(primary, 0.35))
 	return {
 		primary = primary,
 		secondary = Fit.color(c.secondary, Fit.shade(primary, -0.2)),
-		accent = Fit.color(c.accent, Fit.shade(primary, 0.35)),
+		accent = accent,
+		trim = Fit.color(c.trim, accent), -- signature details (emblems, monograms, pocket squares)
 	}
 end
 

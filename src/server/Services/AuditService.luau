@@ -16,7 +16,7 @@ local DataUtil = require(Shared.Logic.DataUtil)
 
 local Registry = require(script.Parent.Parent.Registry)
 
-export type Entry = { t: number, kind: string, d: any }
+export type Entry = DataUtil.AuditEntry
 
 local AuditService = { Name = "AuditService", Priority = 2 }
 
@@ -175,13 +175,13 @@ end
 -- Public API
 ---------------------------------------------------------------------------------------------------
 -- Record an audit entry for a player (or a userId, online or not). `details` is copied in a bounded,
--- saveable form. Never yields.
+-- saveable form (at most ~2 KB of JSON per entry). Never yields.
 function AuditService:Record(target: Player | number, kind: string, details: { [string]: any }?)
-	if type(kind) ~= "string" or kind == "" then
+	local entry: Entry? = DataUtil.auditEntry(Time.now(), kind, details)
+	if entry == nil then
 		return
 	end
-	local k = string.sub(kind, 1, 32)
-	local entry: Entry = { t = math.floor(Time.now()), kind = k, d = DataUtil.compact(details) }
+	local k = entry.kind
 	local player: Player? = nil
 	local userId: number? = nil
 	if typeof(target) == "number" then
@@ -201,7 +201,7 @@ function AuditService:Record(target: Player | number, kind: string, details: { [
 		appendToProfile(player, entry)
 	end
 	if AuditService.SEVERE[k] then
-		enqueue(userId, table.clone(entry))
+		enqueue(userId, table.clone(entry :: Entry))
 	end
 end
 

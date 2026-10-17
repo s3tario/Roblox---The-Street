@@ -33,7 +33,7 @@ end
 add({
 	id = "parking_meter",
 	category = "street",
-	footprint = V(1.7, 4.9, 0.7),
+	footprint = V(1.65, 5.05, 0.62),
 	maxParts = 10,
 	tags = { "street" },
 	build = function(c: Ctx)
@@ -63,7 +63,7 @@ add({
 add({
 	id = "street_clock",
 	category = "street",
-	footprint = V(2.6, 15.6, 2.6),
+	footprint = V(3.1, 15.6, 2.6),
 	maxParts = 18,
 	tags = { "street", "clock", "landmark" },
 	build = function(c: Ctx)
@@ -142,7 +142,14 @@ add({
 		Gui.Core.dot(gui, 40, 40, 30, col.soil)
 		for k = 0, 3 do
 			local a = k * 90 + 45
-			Shapes.strut(c, (P(0, 0, 0) * R(0, a, 0) * P(0.75, 0.06, 0)).Position, (R(0, a, 0) * P(0.75, 3.0, 0)).Position, 0.08, iron, M.Metal)
+			Shapes.strut(
+				c,
+				(P(0, 0, 0) * R(0, a, 0) * P(0.75, 0.06, 0)).Position,
+				(R(0, a, 0) * P(0.75, 3.0, 0)).Position,
+				0.08,
+				iron,
+				M.Metal
+			)
 		end
 		c.dcyl(P(0, 2.9, 0), 0.08, 1.6, iron, M.Metal)
 		c.dcyl(P(0, 1.5, 0), 0.08, 1.6, iron, M.Metal)

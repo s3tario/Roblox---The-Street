@@ -1,6 +1,6 @@
 --!strict
 -- NpcRig.spawn (RUNTIME ONLY, server): builds a real Roblox R15 character with
--- Players:CreateHumanoidModelFromDescription (skin colour, default blocky body parts, no clothing), adds
+-- Players:CreateHumanoidModelFromDescriptionAsync (skin colour, default blocky body parts, no clothing), adds
 -- part-built hair welded to the head and dresses it with Wardrobe.apply. Not bake-safe: never require this
 -- from a builder (Rig.luau requires it lazily inside NpcRig.spawn).
 --
@@ -64,9 +64,16 @@ function Spawn.spawn(opts: Rig.BuildOpts): Model?
 	assert(RunService:IsServer(), "NpcRig.spawn is server-only")
 	local r = Rig.resolve(opts)
 	local desc = describe(r.skin, r.scale)
+	-- CreateHumanoidModelFromDescriptionAsync (current API), falling back to the older name
+	local players: any = Players
 	local ok, result = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+		return players:CreateHumanoidModelFromDescriptionAsync(desc, Enum.HumanoidRigType.R15)
 	end)
+	if not ok and string.find(tostring(result), "not a valid member", 1, true) then
+		ok, result = pcall(function()
+			return players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+		end)
+	end
 	desc:Destroy()
 	if not ok or typeof(result) ~= "Instance" then
 		warn("[NpcRig] CreateHumanoidModelFromDescription failed, using a part-built rig: " .. tostring(result))

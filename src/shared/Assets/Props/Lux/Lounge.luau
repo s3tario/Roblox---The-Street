@@ -288,7 +288,8 @@ add({
 		end
 		c.detail(P(0, 1.15, -2.3), V(0.5, 1.7, 0.15), black, M.SmoothPlastic)
 		c.detail(P(0, 0.3, -2.45), V(0.9, 0.06, 0.3), gold, M.Metal)
-		c.seat(P(0, 1.65, -4.6), V(2.8, 0.3, 1.1), black, M.Leather)
+		-- the pianist faces the keyboard (+Z), so the bench Seat is turned round
+		c.seat(P(0, 1.65, -4.6) * R(0, 180, 0), V(2.8, 0.3, 1.1), black, M.Leather)
 		for _, sx in { -1, 1 } do
 			c.detail(P(sx * 1.2, 0.75, -4.6), V(0.2, 1.5, 0.9), black, M.SmoothPlastic)
 		end

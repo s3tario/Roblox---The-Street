@@ -55,7 +55,8 @@ add({
 add({
 	id = "photo_frame",
 	category = "decor",
-	footprint = V(0.9, 0.7, 0.4),
+	footprint = V(0.9, 0.7, 0.35),
+	offset = V(0, 0, 0.08),
 	maxParts = 4,
 	tags = { "desk_item", "photo" },
 	mount = "desk",
@@ -75,8 +76,8 @@ add({
 add({
 	id = "globe",
 	category = "decor",
-	footprint = V(1.0, 1.3, 0.85),
-	maxParts = 14,
+	footprint = V(0.9, 1.3, 0.8),
+	maxParts = 16,
 	tags = { "desk_item" },
 	mount = "desk",
 	build = function(c: Ctx)
@@ -87,14 +88,15 @@ add({
 		local cy, r = 0.75, 0.48
 		c.dball(P(0, cy, 0), 0.8, c.color("color", hex("#2E5E8C")), M.SmoothPlastic)
 		-- continents: low bumps on the sphere (all fictional shapes)
-		for _ = 1, 4 do
+		for _ = 1, 5 do
 			local yaw = math.rad(c.rng:range(0, 360))
 			local pitch = math.rad(c.rng:range(-50, 50))
 			local dir = V(math.cos(pitch) * math.cos(yaw), math.sin(pitch), math.cos(pitch) * math.sin(yaw))
-			local p = V(0, cy, 0) + dir * 0.28
+			-- sunk into the sphere so only a low cap shows above the ocean
+			local p = V(0, cy, 0) + dir * 0.265
 			c.dball(
 				P(p.X, p.Y, p.Z),
-				c.rng:range(0.26, 0.36),
+				c.rng:range(0.24, 0.32),
 				c.rng:pick({ hex("#C9B27A"), hex("#6E8B4A") }),
 				M.SmoothPlastic
 			)
@@ -164,7 +166,8 @@ add({
 add({
 	id = "coffee_mug",
 	category = "decor",
-	footprint = V(0.48, 0.4, 0.32),
+	footprint = V(0.45, 0.4, 0.32),
+	offset = V(0.04, 0, 0),
 	maxParts = 6,
 	tags = { "desk_item" },
 	mount = "desk",

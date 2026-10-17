@@ -3,6 +3,7 @@
 -- visible), open overshirts (flannel, denim jacket) and the barista's bib apron. Bake-safe.
 
 local Fit = require(script.Parent.Parent.Fit)
+local Details = require(script.Parent.Parent.Details)
 
 type Ctx = Fit.Ctx
 
@@ -78,15 +79,17 @@ local function vest(ctx: Ctx)
 			METAL,
 			"outer_ZipPull"
 		)
-		Fit.box(
-			ctx,
-			"UpperTorso",
-			CFrame.new(-W * 0.27, top - 0.5, front - 0.006),
-			Vector3.new(0.16, 0.1, 0.012),
-			Fit.shade(col.primary, 0.25),
-			FABRIC,
-			"outer_Logo"
-		)
+		if not Details.lists(ctx.item, "emblem_") then
+			Fit.box(
+				ctx,
+				"UpperTorso",
+				CFrame.new(-W * 0.27, top - 0.5, front - 0.006),
+				Vector3.new(0.16, 0.1, 0.012),
+				Fit.shade(col.primary, 0.25),
+				FABRIC,
+				"outer_Logo"
+			)
+		end
 		local l = Fit.size(ctx, "LowerTorso")
 		if l then
 			Fit.box(

@@ -1,6 +1,7 @@
 --!strict
--- Shoe layer builders (slot "shoes"): oxfords (cap-toe, derby, wholecut), loafers (penny, horsebit),
--- sneakers (leather court, canvas) and heels (block heel, pump). Each shoe paints the foot in the upper
+-- Shoe layer builders (slot "shoes"): oxfords (cap-toe, derby, wholecut), loafers (penny, horsebit, tassel,
+-- boat shoe), sneakers (leather court, canvas) and heels (block heel, pump). item.finish "suede" or "patent"
+-- changes the upper's surface. Each shoe paints the foot in the upper
 -- colour, then adds a sole band at the bottom of the foot, a toe box that runs past the front of the foot
 -- (a wedge sloping down to the tip), a heel and the style details on the top of the foot. Nothing goes
 -- below the foot, so shoes never sink a character into the floor. Bake-safe.
@@ -46,6 +47,15 @@ export type ShoeSpec = {
 local function base(ctx: Ctx, f: Foot, spec: ShoeSpec): (number, number)
 	local s = f.s
 	local bottom = -s.Y / 2
+	-- item finish overrides the leather: suede is matte nap, patent a mirror shine
+	local finish = ctx.item.finish
+	if finish == "suede" then
+		spec.upperMaterial = FABRIC
+		spec.shine = nil
+	elseif finish == "patent" then
+		spec.upperMaterial = SMOOTH
+		spec.shine = 0.28
+	end
 	Fit.paint(ctx, f.name, spec.upper, spec.upperMaterial)
 	-- sole: a band at the bottom of the foot, running slightly past the toe and heel
 	local soleLen = s.Z + spec.toeLength + 0.04
@@ -166,13 +176,16 @@ end
 ---------------------------------------------------------------------------------------------------
 local function loafer(ctx: Ctx)
 	local col = ctx.colors
-	local bit = ctx.item.style == "bit"
+	local style = ctx.item.style
+	local bit = style == "bit"
+	local boat = style == "boat"
+	local tassel = style == "tassel"
 	for _, f in feet(ctx) do
 		base(ctx, f, {
 			upper = col.primary,
 			upperMaterial = LEATHER,
 			sole = col.secondary,
-			soleHeight = 0.05,
+			soleHeight = if boat then 0.07 else 0.05,
 			toeLength = 0.18,
 			toeHeight = 0.7,
 			toeWidth = 0,
@@ -184,7 +197,25 @@ local function loafer(ctx: Ctx)
 		local seam = Fit.shade(col.primary, -0.3)
 		-- moc-toe apron seam across the front of the vamp
 		topStrip(ctx, f, 0, -s.Z * 0.36, s.X * 0.66, 0.03, seam)
-		if bit then
+		if boat then
+			-- rawhide lace threaded round the collar, tied in a bow over the two eyelets
+			Fit.band(ctx, f.name, s.Y / 2 - 0.025, 0.03, 0.018, col.accent, LEATHER, "shoes_CollarLace")
+			laces(ctx, f, Fit.shade(col.primary, 0.06), col.accent, true)
+		elseif tassel then
+			-- thin strap with a pair of tassels on the vamp
+			topStrip(ctx, f, 0, s.Z * 0.04, s.X + 0.02, 0.05, Fit.shade(col.primary, -0.12))
+			for _, sx in { -1, 1 } do
+				Fit.ball(
+					ctx,
+					f.name,
+					CFrame.new(sx * s.X * 0.12, s.Y / 2 + 0.03, -s.Z * 0.06),
+					0.075,
+					col.accent,
+					FABRIC,
+					"shoes_Tassel"
+				)
+			end
+		elseif bit then
 			-- gold horsebit across the instep
 			Fit.box(
 				ctx,

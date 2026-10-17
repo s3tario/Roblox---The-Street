@@ -1,5 +1,5 @@
 --!strict
--- Bottom layer builders (slot "bottom"): tailored trousers (suit, wide-leg, evening), chinos, jeans,
+-- Bottom layer builders (slot "bottom"): tailored trousers (suit, wide-leg, evening), joggers, chinos, jeans,
 -- cargo pants, pencil and A-line skirts. Trousers paint the hips and legs, then add a belt and buckle
 -- (hidden under jackets and sweaters), a pressed crease, turn-ups or a break, and fabric details.
 -- Skirts paint the hips and thighs (so the moving legs read as fabric) and add a shell over the hips
@@ -71,11 +71,56 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Tailored trousers (suit / plain / wide-leg / evening)
 ---------------------------------------------------------------------------------------------------
+-- Joggers: elastic waist with a drawstring, no crease, ribbed ankle cuffs.
+local function joggers(ctx: Ctx)
+	local col = ctx.colors
+	local l = Fit.size(ctx, "LowerTorso")
+	if l and not Fit.covered(ctx, "waist") then
+		local y = l.Y / 2 - 0.07
+		Fit.band(ctx, "LowerTorso", y, 0.13, 0.025, col.secondary, FABRIC, "bottom_Waistband")
+		for _, sx in { -1, 1 } do
+			Fit.box(
+				ctx,
+				"LowerTorso",
+				CFrame.new(sx * 0.07, y - 0.1, -l.Z / 2 - 0.04),
+				Vector3.new(0.035, 0.24, 0.02),
+				col.accent,
+				SMOOTH,
+				"bottom_Drawstring"
+			)
+		end
+	end
+	each(ctx, "LowerLeg", function(name, s)
+		Fit.band(ctx, name, -s.Y / 2 + 0.07, 0.14, 0.02, col.secondary, FABRIC, "bottom_Rib")
+	end)
+	-- a soft seam down the outside of each leg
+	for _, seg in { "UpperLeg", "LowerLeg" } do
+		if seg == "UpperLeg" and Fit.covered(ctx, "thighs") then
+			continue
+		end
+		each(ctx, seg, function(name, s, sx)
+			Fit.box(
+				ctx,
+				name,
+				CFrame.new(sx * (s.X / 2 + 0.005), 0, 0),
+				Vector3.new(0.01, s.Y - 0.04, 0.05),
+				Fit.shade(col.primary, -0.18),
+				FABRIC,
+				"bottom_Seam"
+			)
+		end)
+	end
+end
+
 local function trousers(ctx: Ctx)
 	local col = ctx.colors
 	local style = ctx.item.style
 	Fit.paint(ctx, "LowerTorso", col.primary)
 	Fit.paintLegs(ctx, col.primary, true)
+	if style == "jogger" then
+		joggers(ctx)
+		return
+	end
 	if style ~= "evening" then
 		belt(ctx, col.secondary, col.accent)
 	end

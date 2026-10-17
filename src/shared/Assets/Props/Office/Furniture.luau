@@ -237,7 +237,7 @@ add({
 add({
 	id = "plant_floor",
 	category = "office",
-	footprint = V(2.4, 5.9, 2.3),
+	footprint = V(2.6, 6.0, 2.4),
 	maxParts = 18,
 	tags = { "plant", "floor" },
 	build = function(c: Ctx)
@@ -258,7 +258,7 @@ add({
 add({
 	id = "plant_desk",
 	category = "office",
-	footprint = V(0.65, 0.9, 0.65),
+	footprint = V(0.65, 0.85, 0.65),
 	maxParts = 10,
 	tags = { "plant", "desk_item" },
 	mount = "desk",

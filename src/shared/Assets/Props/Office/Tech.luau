@@ -134,9 +134,10 @@ add({
 		local glass = c.dcylX(P(0, 1.03, 0), 1.05, 0.38, glassC, M.Glass)
 		glass.Transparency = 0.1
 		glass.Reflectance = 0.15
+		-- opal glow strip just under the shade's lower lip (inside the green glass it would be hidden)
 		local bulb = if lit
-			then c.glow(P(0, 0.87, 0), V(0.8, 0.03, 0.18), col.warmBulb, 0.1)
-			else c.detail(P(0, 0.87, 0), V(0.8, 0.03, 0.18), shade(col.warmBulb, -0.2), M.SmoothPlastic)
+			then c.glow(P(0, 0.83, 0), V(0.86, 0.02, 0.22), col.warmBulb, 0.1)
+			else c.detail(P(0, 0.83, 0), V(0.86, 0.02, 0.22), shade(col.warmBulb, -0.2), M.SmoothPlastic)
 		c.detail(P(0.22, 0.74, -0.12), V(0.02, 0.24, 0.02), brass, M.Metal)
 		if lit then
 			c.light(bulb, "spot", {

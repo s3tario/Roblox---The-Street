@@ -30,6 +30,8 @@ export type Spec = {
 	lapelColor: Color3?,
 	lapelMaterial: Enum.Material?,
 	peak: boolean?, -- peak lapels instead of notch
+	shawl: boolean?, -- rounded shawl collar: no notch or peak, the lapel runs unbroken round the neck
+	lapelEdge: Color3?, -- piping along the lapel's roll line (default: a darker shade of the jacket)
 	hem: number, -- how far the jacket drops below the hips
 	structured: boolean?, -- shoulder pads
 	buttons: string, -- "one" | "two" | "three" | "double"
@@ -63,7 +65,7 @@ local function lapel(ctx: Ctx, side: number, vW: number, top: number, apexY: num
 	-- lapels catch the light: a touch lighter than the body of the jacket so they read at a distance
 	local color = spec.lapelColor or Fit.shade(ctx.colors.primary, 0.07)
 	local mat = spec.lapelMaterial or FABRIC
-	local edge = Fit.shade(ctx.colors.primary, -0.3)
+	local edge = spec.lapelEdge or Fit.shade(ctx.colors.primary, -0.3)
 	-- tuck 0.02 over the V edge so no seam shows
 	local tuck = -side * 0.02
 	Fit.tri(
@@ -78,7 +80,21 @@ local function lapel(ctx: Ctx, side: number, vW: number, top: number, apexY: num
 		mat,
 		"outer_Lapel"
 	)
-	if spec.peak then
+	if spec.shawl then
+		-- shawl: no break at the gorge; a rounded roll carries the lapel up round the neck
+		Fit.tri(
+			ctx,
+			"UpperTorso",
+			place(Vector3.new(side * (w - 0.06), L + 0.03, -0.002)),
+			0.12,
+			0.06,
+			0.05,
+			if side < 0 then "tl" else "tr",
+			color,
+			mat,
+			"outer_ShawlRoll"
+		)
+	elseif spec.peak then
 		-- peak: a point rising from the outer end of the gorge line
 		Fit.tri(
 			ctx,
@@ -325,6 +341,8 @@ local function tailored(ctx: Ctx, spec: Spec)
 	lapel(ctx, -1, vW, top, apexY, spec.lapel, lz, spec)
 	lapel(ctx, 1, vW, top, apexY, spec.lapel, lz, spec)
 	ctx.state.chestFront = zf - 0.075
+	-- the lapel line, for details that sit on a lapel (Details.lapel_pin): front = lapel front face
+	ctx.state.lapelV = { width = vW, topY = top, apexY = apexY, lapel = spec.lapel, front = lz - 0.025 }
 
 	buttons(ctx, spec, apexY, zf, bottom)
 
@@ -395,6 +413,25 @@ local function tailored(ctx: Ctx, spec: Spec)
 			0.16,
 			0.012,
 			"tl",
+			spec.crest,
+			METAL,
+			"outer_Crest"
+		)
+		-- the shield's chief (top band) and a coronet bar above it
+		Fit.box(
+			ctx,
+			"UpperTorso",
+			CFrame.new(px, py - 0.01, zf - 0.026),
+			Vector3.new(0.24, 0.035, 0.012),
+			Fit.shade(spec.crest, -0.2),
+			METAL,
+			"outer_Crest"
+		)
+		Fit.box(
+			ctx,
+			"UpperTorso",
+			CFrame.new(px, py + 0.03, zf - 0.024),
+			Vector3.new(0.14, 0.03, 0.012),
 			spec.crest,
 			METAL,
 			"outer_Crest"

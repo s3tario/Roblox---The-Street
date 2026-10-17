@@ -2,14 +2,24 @@
 -- Wearables catalog (owned by `wardrobe`, docs/contracts.md §9). Every item is built in-house as fitted
 -- 3D layers (Shared/Assets/Wardrobe) and, optionally, a generated 2D Shirt/Pants template
 -- (tools/clothing). Pure data plus pure helpers: safe on server, client and in Lune.
--- Item definitions live in Casual.luau, Formal.luau and Premium.luau; NPC outfits in Presets.luau; UI text
--- in Strings.luau.
+-- Item definitions live in Casual.luau, Formal.luau, Premium.luau and Rolls.luau (Life Roll looks and family
+-- heirlooms); brands and rarity tiers in Brands.luau; NPC outfits in Presets.luau; UI text in Strings.luau.
 --
---   Catalog.items[itemId] = { id, name, slot, category, price, currency = "cash" | "pass", pass?, minRank?,
---                             colors = { primary, secondary?, accent? } ("#RRGGBB"), builder, tier (1-5),
---                             desc, tags, style?, pattern?, text?, hidden? }
+--   Catalog.items[itemId] = { id, name, slot, category, price, currency = "cash" | "pass" | "roll" | "heirloom",
+--                             pass?, minRank?, colors = { primary, secondary?, accent?, trim? } ("#RRGGBB"),
+--                             builder, tier (1-5), brand, rarity, desc, tags, style?, pattern?, finish?,
+--                             details?, text?, hidden? }
+--       currency "roll"      Life Roll pieces (granted by career through WardrobeService:Grant, never sold)
+--       currency "heirloom"  family heirlooms (granted by the family roll, never sold)
+--       finish               "suede" | "patent" | "velvet" (surface of the main fabric/leather)
+--       details              signature details drawn on top of the garment (Assets/Wardrobe/Details.luau)
+--   Catalog.brands[brandId] = { id, name, rarity, blurb, roll, signature }   Catalog.brand(id) -> Brand?
+--   Catalog.RARITIES / Catalog.RARITY[rarity] = { id, order, name, color, color2? }
+--   Catalog.rollPools[rarity] = { { id, brand, name, itemIds = { ... } }, ... }   (mythic has exactly one)
+--   Catalog.pickLook(rarity, u) -> look?   u in [0, 1) picks an entry (Logic/LifeRoll supplies u)
 --   Catalog.get(id) -> Item?               Catalog.bySlot(slot, includeHidden?) -> { Item } (tier, price order)
---   Catalog.list(includeHidden?) -> { Item }
+--   Catalog.list(includeHidden?) -> { Item }   Catalog.shopItems() -> { Item }   Catalog.isShopItem(item)
+--   Catalog.visibleFor(slot, viewer) -> { Item }   what the wardrobe lists: shop items + owned exclusives
 --   Catalog.starter[stage] = { [slot] = itemId }  free default outfit per career stage
 --   Catalog.starterFor(rank) -> outfit       Catalog.starterItems(rank) -> { itemId }  (every stage <= rank)
 --   Catalog.presets[npcRole] = { equipped, hairStyle, hairColor, skin, pose? }   NPC outfits
@@ -24,26 +34,32 @@
 -- pass and cost 0 cash. minRank gates prestige pieces (ranks: student 0 ... md 6, partner 10).
 
 export type Slot = "top" | "outer" | "bottom" | "shoes" | "neck" | "wrist" | "eyes" | "head" | "bag"
-export type Colors = { primary: string, secondary: string?, accent: string? }
+export type Colors = { primary: string, secondary: string?, accent: string?, trim: string? }
+export type Currency = "cash" | "pass" | "roll" | "heirloom"
 export type Item = {
 	id: string,
 	name: string,
 	slot: Slot,
 	category: string,
 	price: number,
-	currency: "cash" | "pass",
+	currency: Currency,
 	pass: string?,
 	minRank: number?,
 	colors: Colors,
 	builder: string,
 	tier: number,
+	brand: string,
+	rarity: string,
 	desc: string,
 	tags: { string },
 	style: string?,
 	pattern: string?,
+	finish: string?,
+	details: { string }?,
 	text: string?,
 	hidden: boolean?,
 }
+export type Look = { id: string, brand: string, name: string, rarity: string, itemIds: { string } }
 export type Viewer = {
 	owned: { [string]: any }?,
 	rank: number?,
@@ -56,6 +72,8 @@ export type Preset = {
 	skin: string?,
 	pose: string?,
 }
+
+local Brands = require(script.Brands)
 
 local Catalog = {}
 
@@ -70,8 +88,43 @@ Catalog.TAB_ORDER = { "top", "outer", "bottom", "shoes", "neck", "wrist", "eyes"
 -- Slots that are never left empty (Wardrobe falls back to a plain base item).
 Catalog.REQUIRED = { top = "base_tee", bottom = "base_trousers", shoes = "base_shoes" } :: { [string]: string }
 
-Catalog.CATEGORIES = { "campus", "business", "womens", "suits", "shoes", "accessories", "watches", "premium", "npc" }
+Catalog.CATEGORIES = {
+	"campus",
+	"business",
+	"womens",
+	"suits",
+	"shoes",
+	"accessories",
+	"watches",
+	"premium",
+	"roll",
+	"heirloom",
+	"npc",
+}
 Catalog.PASSES = { CornerOffice = true, ExecutiveClub = true } :: { [string]: boolean }
+Catalog.CURRENCIES = { cash = true, pass = true, roll = true, heirloom = true } :: { [string]: boolean }
+-- Exclusive currencies: owned only through a grant (never bought).
+Catalog.EXCLUSIVE = { roll = true, heirloom = true } :: { [string]: boolean }
+Catalog.FINISHES = { suede = true, patent = true, velvet = true } :: { [string]: boolean }
+
+-- Brands and rarity tiers (Catalog/Brands.luau).
+Catalog.brands = Brands.brands
+Catalog.brandList = Brands.list
+Catalog.RARITIES = Brands.RARITIES
+Catalog.RARITY = Brands.RARITY
+Catalog.TIER_RARITY = Brands.TIER_RARITY
+
+function Catalog.brand(id: any): Brands.Brand?
+	if type(id) ~= "string" then
+		return nil
+	end
+	return Brands.brands[id]
+end
+
+function Catalog.rarityOrder(rarity: any): number
+	local def = if type(rarity) == "string" then Brands.RARITY[rarity] else nil
+	return if def then def.order else 0
+end
 
 -- Spec §11 price anchors per category (cash items with a price above 0).
 Catalog.PRICE_RANGES = {
@@ -94,9 +147,36 @@ Catalog.PRESET_SLOTS = { free = 2, max = 5, pass = "ExecutiveClub", nameMax = 24
 local items: { [string]: Item } = {}
 local order: { string } = {}
 
+-- House label for shop items that don't name a brand.
+local function defaultBrand(def: { [string]: any }): string
+	if def.pass == "CornerOffice" then
+		return "corner_office"
+	elseif def.pass == "ExecutiveClub" then
+		return "executive_club"
+	elseif def.category == "npc" then
+		return "staff"
+	elseif def.builder == "lanyard" then
+		return "standard_issue"
+	elseif def.slot == "shoes" then
+		return "strider"
+	elseif def.category == "watches" then
+		return "vanta"
+	elseif def.category == "campus" then
+		return "eastbridge"
+	end
+	return "hartwell"
+end
+
 local function add(def: { [string]: any })
 	local id = def.id :: string
 	assert(items[id] == nil, "Catalog: duplicate item " .. id)
+	local brandId = def.brand or defaultBrand(def)
+	local brand = Brands.brands[brandId]
+	assert(brand ~= nil, ("Catalog: %s has unknown brand %s"):format(id, tostring(brandId)))
+	local tier = def.tier or 1
+	local rarity = def.rarity
+		or (if brand.roll then brand.rarity else nil)
+		or Brands.TIER_RARITY[math.clamp(tier, 1, 5)]
 	local item: Item = {
 		id = id,
 		name = def.name,
@@ -108,11 +188,15 @@ local function add(def: { [string]: any })
 		minRank = def.minRank,
 		colors = def.colors,
 		builder = def.builder,
-		tier = def.tier or 1,
+		tier = tier,
+		brand = brandId,
+		rarity = rarity,
 		desc = def.desc or "",
 		tags = def.tags or {},
 		style = def.style,
 		pattern = def.pattern,
+		finish = def.finish,
+		details = def.details,
 		text = def.text,
 		hidden = def.hidden,
 	}
@@ -121,7 +205,8 @@ local function add(def: { [string]: any })
 end
 
 -- Item lists live in sibling modules so each file stays focused (and under ~600 lines).
-for _, list in { require(script.Casual), require(script.Formal), require(script.Premium) } do
+local Rolls = require(script.Rolls) :: any
+for _, list in { require(script.Casual), require(script.Formal), require(script.Premium), Rolls.items } do
 	for _, def in list do
 		add(def)
 	end
@@ -129,6 +214,64 @@ end
 
 Catalog.items = items
 Catalog.order = order
+
+---------------------------------------------------------------------------------------------------
+-- Life Roll starting-outfit pools (Catalog/Rolls.luau)
+---------------------------------------------------------------------------------------------------
+local rollPools: { [string]: { Look } } = {}
+local looks: { [string]: Look } = {}
+for _, r in Brands.RARITIES do
+	rollPools[r] = {}
+end
+for _, def in Rolls.looks do
+	local brand = Brands.brands[def.brand]
+	assert(brand ~= nil and brand.roll, "Catalog: look " .. def.id .. " has a non-roll brand")
+	assert(looks[def.id] == nil, "Catalog: duplicate look " .. def.id)
+	local entry: Look = {
+		id = def.id,
+		brand = def.brand,
+		name = def.name,
+		rarity = brand.rarity,
+		itemIds = table.clone(def.itemIds),
+	}
+	looks[def.id] = entry
+	table.insert(rollPools[brand.rarity], entry)
+end
+Catalog.rollPools = rollPools
+Catalog.looks = looks
+
+-- The pool entry for a uniform number u in [0, 1) (nil for an unknown rarity).
+function Catalog.pickLook(rarity: any, u: number): Look?
+	local pool = if type(rarity) == "string" then rollPools[rarity] else nil
+	if not pool or #pool == 0 then
+		return nil
+	end
+	local x = if type(u) == "number" and u == u then u else 0
+	local i = math.clamp(math.floor(x * #pool) + 1, 1, #pool)
+	return pool[i]
+end
+
+-- The look (if any) whose pieces include itemId.
+function Catalog.lookOf(itemId: string): Look?
+	for _, r in Brands.RARITIES do
+		for _, entry in rollPools[r] do
+			if table.find(entry.itemIds, itemId) then
+				return entry
+			end
+		end
+	end
+	return nil
+end
+
+function Catalog.heirlooms(): { Item }
+	local out: { Item } = {}
+	for _, id in order do
+		if items[id].currency == "heirloom" then
+			table.insert(out, items[id])
+		end
+	end
+	return out
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Starter outfits (free, granted when a player reaches the stage)
@@ -240,6 +383,38 @@ function Catalog.bySlot(slot: string, includeHidden: boolean?): { Item }
 	return out
 end
 
+-- What the wardrobe lists for a slot: every shop item, plus the exclusive pieces (Life Roll, heirlooms) the
+-- viewer owns, which come first (rarest first).
+function Catalog.visibleFor(slot: string, viewer: Viewer): { Item }
+	local owned = viewer.owned or {}
+	local exclusive: { Item } = {}
+	local shop: { Item } = {}
+	for _, id in order do
+		local it = items[id]
+		if it.slot == slot and not it.hidden then
+			if Catalog.EXCLUSIVE[it.currency] then
+				if owned[it.id] then
+					table.insert(exclusive, it)
+				end
+			else
+				table.insert(shop, it)
+			end
+		end
+	end
+	table.sort(exclusive, function(a, b)
+		local ra, rb = Catalog.rarityOrder(a.rarity), Catalog.rarityOrder(b.rarity)
+		if ra ~= rb then
+			return ra > rb
+		end
+		return a.id < b.id
+	end)
+	sortItems(shop)
+	for _, it in shop do
+		table.insert(exclusive, it)
+	end
+	return exclusive
+end
+
 function Catalog.list(includeHidden: boolean?): { Item }
 	local out: { Item } = {}
 	for _, id in order do
@@ -256,15 +431,39 @@ function Catalog.isFree(item: Item): boolean
 	return item.currency == "cash" and item.price == 0
 end
 
+-- Sold or unlocked in the shops (cash or game pass, not an NPC piece).
+function Catalog.isShopItem(item: Item): boolean
+	return not item.hidden and (item.currency == "cash" or item.currency == "pass")
+end
+
+-- Only obtainable through a grant (Life Roll pieces and family heirlooms).
+function Catalog.isExclusive(item: Item): boolean
+	return Catalog.EXCLUSIVE[item.currency] == true
+end
+
+function Catalog.shopItems(): { Item }
+	local out: { Item } = {}
+	for _, id in order do
+		if Catalog.isShopItem(items[id]) then
+			table.insert(out, items[id])
+		end
+	end
+	return out
+end
+
 -- What a viewer can do with an item (pure; used by WardrobeService and the Wardrobe screen):
 --   "owned"  in inventory.owned (or a starter piece for their stage)
 --   "free"   costs nothing (and has no requirement)
 --   "pass"   needs a game pass the viewer lacks
 --   "rank"   needs a higher career rank
 --   "buy"    can be bought with cash
+--   "roll" / "heirloom"   exclusive pieces the viewer hasn't been granted
 function Catalog.access(item: Item, viewer: Viewer): string
 	local owned = viewer.owned or {}
 	local rank = rankNumber(viewer.rank)
+	if Catalog.EXCLUSIVE[item.currency] then
+		return if owned[item.id] then "owned" else item.currency
+	end
 	if item.currency == "pass" then
 		local passes = viewer.passes or {}
 		if item.pass and passes[item.pass] then
@@ -292,6 +491,9 @@ function Catalog.canWear(item: Item, viewer: Viewer): (boolean, string?)
 	local state = Catalog.access(item, viewer)
 	if state == "pass" then
 		return false, "pass"
+	end
+	if state == "roll" or state == "heirloom" then
+		return false, state
 	end
 	if item.minRank and rankNumber(viewer.rank) < item.minRank then
 		return false, "rank"

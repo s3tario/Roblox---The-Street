@@ -73,15 +73,19 @@ local function seedFor(id: string, cf: CFrame, o: Opts): number
 	return Hash.u32("prop", id, math.floor(p.X * 4 + 0.5), math.floor(p.Y * 4 + 0.5), math.floor(p.Z * 4 + 0.5))
 end
 
+-- Where the "Use" attachment goes when a builder doesn't pick a spot: just in front of the prop's front
+-- face (never inside its collidable body, where a line-of-sight ProximityPrompt would be blocked).
 local function defaultUse(def: Common.Def): Vector3
 	local fp = def.footprint
+	local off = def.offset or Vector3.zero
 	local mount = def.mount or "floor"
 	if mount == "wall" then
-		return Vector3.new(0, math.clamp(fp.Y * 0.5, 0.5, 4), -fp.Z - 0.5)
+		return Vector3.new(off.X, math.clamp(fp.Y * 0.5, 0.5, 4), -fp.Z - 0.5)
 	elseif mount == "ceiling" then
-		return Vector3.zero
+		return Vector3.new(off.X, -0.5, off.Z)
 	end
-	return Vector3.new(0, math.clamp(fp.Y * 0.6, 0.3, 4), 0)
+	local gap = if mount == "desk" then 0.2 else 0.5
+	return Vector3.new(off.X, math.clamp(fp.Y * 0.6, 0.3, 4), off.Z - fp.Z / 2 - gap)
 end
 
 local subBuild: Common.SubBuilder

@@ -91,7 +91,7 @@ add({
 add({
 	id = "trash_can",
 	category = "campus",
-	footprint = V(2.4, 3.3, 2.4),
+	footprint = V(2.1, 3.4, 2.1),
 	maxParts = 12,
 	tags = { "street", "gritty", "trash" },
 	build = function(c: Ctx)
@@ -197,9 +197,9 @@ add({
 			end
 		end
 		local side = c.part(P(-4.8, 4.4, 0), V(0.12, 6.4, 3.7), C.charcoal, M.Metal)
-		local adGui = Gui.Core.surface(side, Enum.NormalId.Left, { glow = true, pps = 16, maxDistance = 120 })
+		local adGui, adW, adH = Gui.Core.surface(side, Enum.NormalId.Left, { glow = true, pps = 16, maxDistance = 120 })
 		local ad = c.rng:pick(Words.ads)
-		Gui.Art.ad(adGui, ad[1], ad[2], c.rng)
+		Gui.Art.ad(adGui, ad[1], ad[2], c.rng, adW, adH)
 		c.seat(P(0, 1.7, 1.4), V(6, 0.2, 1.0), C.woodWorn, M.WoodPlanks)
 		for _, sx in { -1, 1 } do
 			c.detail(P(sx * 2.6, 0.95, 1.4), V(0.2, 1.5, 0.8), frame, M.CorrodedMetal)
@@ -265,7 +265,8 @@ add({
 add({
 	id = "fire_hydrant",
 	category = "campus",
-	footprint = V(1.5, 2.5, 1.1),
+	footprint = V(1.5, 2.5, 1.3),
+	offset = V(0, 0, -0.1),
 	maxParts = 12,
 	tags = { "street", "gritty" },
 	build = function(c: Ctx)
@@ -388,7 +389,9 @@ add({
 			end
 		end
 		for _, sz in { -1, 1 } do
-			c.seat(P(0, 1.5, sz * 1.9), V(6, 0.15, 0.8), shade(wood, c.rng:range(-0.12, 0.04)), M.WoodPlanks)
+			-- both benches face the table (the -Z bench turns round)
+			local face = if sz < 0 then R(0, 180, 0) else CFrame.identity
+			c.seat(P(0, 1.5, sz * 1.9) * face, V(6, 0.15, 0.8), shade(wood, c.rng:range(-0.12, 0.04)), M.WoodPlanks)
 		end
 		local legC = shade(wood, -0.25)
 		for _, sx in { -1, 1 } do
@@ -441,15 +444,25 @@ add({
 	id = "traffic_cone",
 	category = "campus",
 	footprint = V(1.1, 1.92, 1.1),
-	maxParts = 6,
+	maxParts = 9,
 	tags = { "street", "gritty" },
 	build = function(c: Ctx)
 		local orange = shade(c.color("color", hex("#E8641E")), c.rng:range(-0.2, 0))
 		c.detail(P(0, 0.06, 0), V(1.1, 0.12, 1.1), shade(orange, -0.25), M.Rubber)
-		c.dcyl(P(0, 0.47, 0), 0.7, 0.75, orange, M.Plastic)
-		c.dcyl(P(0, 1.0, 0), 0.4, 0.55, hex("#E8E8E8"), M.SmoothPlastic)
-		c.dcyl(P(0, 1.45, 0), 0.5, 0.42, orange, M.Plastic)
-		c.dcyl(P(0, 1.81, 0), 0.22, 0.26, orange, M.Plastic)
+		-- seven short tiers tapering evenly read as a cone; the fifth is the reflective collar
+		local tiers, y0, h = 7, 0.12, 1.8
+		local th = h / tiers
+		for i = 1, tiers do
+			local d = 0.84 - (i - 1) * (0.84 - 0.2) / (tiers - 1)
+			local white = i == 5
+			c.dcyl(
+				P(0, y0 + th * (i - 0.5), 0),
+				th + 0.01,
+				d,
+				if white then hex("#E8E8E8") else orange,
+				if white then M.SmoothPlastic else M.Plastic
+			)
+		end
 	end,
 })
 

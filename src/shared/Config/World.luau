@@ -1,26 +1,35 @@
 --!strict
--- World layout: the authoritative map of regions, interiors, zones, anchors, doors, interaction ids and
--- event spots. World builders place geometry ONLY inside their bounds and create the anchors/doors listed
--- for their zones. Services read this to wire doors, teleports, lighting and spawns.
--- Bake-safe (pure data + Vector3).
+-- World layout (design v3): the authoritative map of regions, venue interiors, the office-instance system,
+-- anchors, doors, interaction ids, NPC spots and event spots. World builders place geometry ONLY inside their
+-- bounds and create the markers listed for their zones. Services read this to wire doors, teleports, lighting
+-- and spawns. Bake-safe (pure data + Vector3).
 
 local World = {}
 
 export type Bounds = { min: Vector3, max: Vector3 }
 export type InteriorDef = { slot: number, builder: string, lighting: string, theme: string }
 export type ZoneDef = { kind: string, lighting: string, theme: string, label: string }
+export type TowerDef = {
+	id: string,
+	label: string,
+	style: string,
+	company: string?,
+	picker: { string }?,
+	door: string?,
+	anchor: string?,
+}
 
 ---------------------------------------------------------------------------------------------------
--- Regions (exterior) and interior slots
+-- Exterior regions (ground level y = 0)
 ---------------------------------------------------------------------------------------------------
--- Exterior regions. Ground level is y = 0 in every region.
 World.regions = {
 	campus = { min = Vector3.new(-1800, -40, -400), max = Vector3.new(-1000, 300, 400) },
 	street = { min = Vector3.new(-450, -40, -450), max = Vector3.new(450, 700, 450) },
 } :: { [string]: Bounds }
 
--- Interiors are pocket spaces far from the exterior regions, reached by doors.
--- Slot i occupies origin +/- (HALF, *, HALF) with floor at origin.Y.
+---------------------------------------------------------------------------------------------------
+-- Venue interiors: shared pocket spaces reached by doors. Slot i occupies origin +/- HALF.
+---------------------------------------------------------------------------------------------------
 World.INTERIOR_HALF = 300
 World.INTERIOR_HEIGHT = 260
 
@@ -30,27 +39,16 @@ function World.slotOrigin(i: number): Vector3
 	return Vector3.new(3000 + col * 700, 0, 3000 + row * 700)
 end
 
--- id -> { slot, builder (module owning it), lighting preset, theme }
 World.interiors = {
 	career_center = { slot = 1, builder = "CampusInteriors", lighting = "campus_interior", theme = "campus" },
 	lecture = { slot = 2, builder = "CampusInteriors", lighting = "campus_interior", theme = "campus" },
 	dorm = { slot = 3, builder = "CampusInteriors", lighting = "campus_interior", theme = "campus" },
 	subway = { slot = 4, builder = "CampusInteriors", lighting = "subway", theme = "campus" },
-	hq_lobby = { slot = 5, builder = "HQ", lighting = "office_interior", theme = "street" },
-	hq_office = { slot = 6, builder = "HQ", lighting = "office_interior", theme = "street" },
-	hq_trading = { slot = 7, builder = "HQ", lighting = "trading_floor", theme = "street" },
-	hq_exec = { slot = 8, builder = "HQ", lighting = "luxury_interior", theme = "street" },
-	career_services = { slot = 9, builder = "CareerServices", lighting = "office_interior", theme = "street" },
-	exec_club = { slot = 10, builder = "ExecClub", lighting = "luxury_interior", theme = "street" },
-	rooftop = { slot = 11, builder = "Rooftop", lighting = "rooftop", theme = "street" },
-	realm_pe = { slot = 12, builder = "RealmOffices", lighting = "office_interior", theme = "street" },
-	realm_hf = { slot = 13, builder = "RealmOffices", lighting = "trading_floor", theme = "street" },
-	realm_vc = { slot = 14, builder = "RealmOffices", lighting = "office_interior", theme = "street" },
-	realm_re = { slot = 15, builder = "RealmOffices", lighting = "office_interior", theme = "street" },
-	realm_cd = { slot = 16, builder = "RealmOffices", lighting = "office_interior", theme = "street" },
-	partner_firm = { slot = 17, builder = "PartnerFirm", lighting = "luxury_interior", theme = "street" },
-	apartments = { slot = 18, builder = "Apartments", lighting = "luxury_interior", theme = "street" },
-	galleria = { slot = 19, builder = "Galleria", lighting = "luxury_interior", theme = "street" },
+	career_services = { slot = 5, builder = "CareerServices", lighting = "office_interior", theme = "street" },
+	exec_club = { slot = 6, builder = "ExecClub", lighting = "luxury_interior", theme = "street" },
+	rooftop = { slot = 7, builder = "Rooftop", lighting = "rooftop", theme = "street" },
+	apartments = { slot = 8, builder = "Apartments", lighting = "luxury_interior", theme = "street" },
+	galleria = { slot = 9, builder = "Galleria", lighting = "luxury_interior", theme = "street" },
 } :: { [string]: InteriorDef }
 
 function World.interiorBounds(id: string): (Vector3, Vector3)
@@ -62,17 +60,87 @@ function World.interiorBounds(id: string): (Vector3, Vector3)
 end
 
 ---------------------------------------------------------------------------------------------------
--- Zones: what the client uses to pick lighting + ambience. Exterior regions and every interior.
+-- Company offices (spec v3 §14). Each company present on a server gets an INSTANCE: a lobby plus one floor
+-- per department, cloned at runtime from baked templates in ServerStorage.FirmTemplates.
+-- Instance i (1-based), floor index f (0 = lobby) sits at officeOrigin(i, f). Templates are built around the
+-- origin within +/- TEMPLATE_HALF (XZ) and y in [-10, TEMPLATE_HEIGHT].
+---------------------------------------------------------------------------------------------------
+World.offices = {
+	origin = Vector3.new(8000, 0, 0),
+	instanceSpacing = 900,
+	floorSpacing = 500,
+	maxInstances = 24,
+	maxFloors = 8,
+}
+World.TEMPLATE_HALF = 220
+World.TEMPLATE_HEIGHT = 140
+
+function World.officeOrigin(instanceIndex: number, floorIndex: number): Vector3
+	local o = World.offices
+	return o.origin + Vector3.new((instanceIndex - 1) * o.instanceSpacing, 0, floorIndex * o.floorSpacing)
+end
+
+-- Department ids (= career track ids). Each has a floor template with the same id.
+World.departments = { "ib", "st", "pe", "credit", "wm", "am", "er", "corpbank", "vc", "re", "corp" }
+
+-- Template builders (src/world/<module>.luau export build(templateId, parent) -> Model at the origin).
+-- Budgets are per template (part count).
+World.templates = {
+	{ module = "OfficeLobby", templates = { "lobby" }, budget = 1600, owner = "officesA" },
+	{ module = "OfficeFloorsA", templates = { "ib", "st", "er", "corpbank" }, budget = 1500, owner = "officesA" },
+	{ module = "OfficeFloorsB", templates = { "pe", "credit", "wm", "am" }, budget = 1500, owner = "officesB" },
+	{ module = "OfficeFloorsC", templates = { "vc", "re", "corp" }, budget = 1500, owner = "officesB" },
+}
+
+-- Markers inside templates (attribute on a Kit marker part; the name of the attribute is the key):
+World.templateMarkers = {
+	OfficeAnchor = {
+		"entry", -- lobby: arrival from the street (lobby only)
+		"elevators", -- lobby: arrival from floors (lobby only)
+		"floor_entry", -- floor: arrival from the elevator (floors only)
+		"boss_chair", -- floor: boss NPC stands/sits here (floors only)
+		"review_spot", -- floor: where the player stands for the weekly review (floors only)
+		"rival_desk", -- floor: rival NPC spot (floors only)
+		"receptionist", -- lobby: receptionist NPC spot (lobby only)
+	},
+	OfficeDoor = {
+		"exit", -- lobby -> back to the street (WorldService: return to the entry door's exterior anchor)
+		"to_lobby", -- floor -> lobby elevators
+	},
+}
+
+-- Housing/plaque slots inside every FLOOR template (exact counts, tests enforce them).
+World.floorSlots = { desks = 24, offices = 8, plaquesPerDesk = 3, plaquesPerShelf = 24 }
+
+---------------------------------------------------------------------------------------------------
+-- Zones (client lighting + ambience)
 ---------------------------------------------------------------------------------------------------
 World.zones = {
 	campus = { kind = "region", lighting = "campus_exterior", theme = "campus", label = "Eastbridge" },
 	street = { kind = "region", lighting = "street_exterior", theme = "street", label = "Wall Street" },
+	offices = { kind = "office", lighting = "office_interior", theme = "street", label = "Office" },
 } :: { [string]: ZoneDef }
 for id, def in World.interiors do
 	World.zones[id] = { kind = "interior", lighting = def.lighting, theme = def.theme, label = id }
 end
 
--- Returns zoneId containing position (or nil).
+-- Office instance/floor at a position (or nil). Floor models also carry a "LightingPreset" attribute.
+function World.officeAt(pos: Vector3): (number?, number?)
+	local o = World.offices
+	local dx = pos.X - o.origin.X
+	local dz = pos.Z - o.origin.Z
+	local i = math.floor(dx / o.instanceSpacing + 0.5) + 1
+	local f = math.floor(dz / o.floorSpacing + 0.5)
+	if i < 1 or i > o.maxInstances or f < 0 or f >= o.maxFloors then
+		return nil, nil
+	end
+	local c = World.officeOrigin(i, f)
+	if math.abs(pos.X - c.X) > World.TEMPLATE_HALF + 20 or math.abs(pos.Z - c.Z) > World.TEMPLATE_HALF + 20 then
+		return nil, nil
+	end
+	return i, f
+end
+
 function World.zoneAt(pos: Vector3): string?
 	for id, r in World.regions do
 		if pos.X >= r.min.X and pos.X <= r.max.X and pos.Z >= r.min.Z and pos.Z <= r.max.Z then
@@ -85,10 +153,12 @@ function World.zoneAt(pos: Vector3): string?
 			return id
 		end
 	end
+	if World.officeAt(pos) then
+		return "offices"
+	end
 	return nil
 end
 
--- Lighting presets referenced by zones (applied by EnvironmentController; weather layers on top).
 World.lightingPresets = {
 	"campus_exterior",
 	"street_exterior",
@@ -101,8 +171,7 @@ World.lightingPresets = {
 }
 
 ---------------------------------------------------------------------------------------------------
--- Builders baked into Workspace.World (order matters only for readability). Budgets are part counts.
--- Each builder module lives at src/world/<module>.luau (or <module>/init.luau) and exports build(parent).
+-- Builders baked into Workspace.World. Budgets are part counts.
 ---------------------------------------------------------------------------------------------------
 World.builders = {
 	{ module = "Campus", zones = { "campus" }, budget = 9000, owner = "campus" },
@@ -113,39 +182,66 @@ World.builders = {
 		owner = "campus",
 	},
 	{ module = "Street", zones = { "street" }, budget = 17000, owner = "street" },
-	{
-		module = "HQ",
-		zones = { "hq_lobby", "hq_office", "hq_trading", "hq_exec" },
-		budget = 5500,
-		owner = "interiorsA",
-	},
-	{ module = "CareerServices", zones = { "career_services" }, budget = 700, owner = "interiorsA" },
-	{ module = "ExecClub", zones = { "exec_club" }, budget = 900, owner = "interiorsA" },
-	{ module = "Rooftop", zones = { "rooftop" }, budget = 700, owner = "interiorsA" },
-	{
-		module = "RealmOffices",
-		zones = { "realm_pe", "realm_hf", "realm_vc", "realm_re", "realm_cd" },
-		budget = 4500,
-		owner = "interiorsB",
-	},
-	{ module = "PartnerFirm", zones = { "partner_firm" }, budget = 900, owner = "interiorsB" },
-	{ module = "Apartments", zones = { "apartments" }, budget = 2600, owner = "interiorsB" },
-	{ module = "Galleria", zones = { "galleria" }, budget = 1400, owner = "interiorsB" },
+	{ module = "CareerServices", zones = { "career_services" }, budget = 700, owner = "venues" },
+	{ module = "ExecClub", zones = { "exec_club" }, budget = 900, owner = "venues" },
+	{ module = "Rooftop", zones = { "rooftop" }, budget = 700, owner = "venues" },
+	{ module = "Apartments", zones = { "apartments" }, budget = 2600, owner = "venues" },
+	{ module = "Galleria", zones = { "galleria" }, budget = 1400, owner = "venues" },
 }
 
--- SpawnLocations each exterior builder must create (Neutral = true). WorldService sets RespawnLocation.
 World.spawns = {
 	Spawn_campus = { zone = "campus", anchor = "campus_spawn" },
 	Spawn_street = { zone = "street", anchor = "street_station_platform" },
 }
 
 ---------------------------------------------------------------------------------------------------
--- Anchors: named CFrame markers. `zone` says which builder must create it.
+-- Company towers on the Street (spec v3 §14). `company` doors open that company's lobby instance;
+-- `picker` doors (multi-tenant towers) open a tenant picker. Company ids must exist in Config/Companies.
+-- The street builder creates every tower's door (Kit.door with its id) and front anchor.
+---------------------------------------------------------------------------------------------------
+World.towers = {
+	-- Bank Row (each its own tower)
+	{ id = "mg_freeman", label = "MG Freeman", style = "bulge", company = "mg_freeman" },
+	{ id = "goldfield_saxe", label = "Goldfield Saxe", style = "bulge", company = "goldfield_saxe" },
+	{ id = "morrow_stanton", label = "Morrow Stanton", style = "bulge", company = "morrow_stanton" },
+	{ id = "merriweather_lynch", label = "Merriweather Lynch", style = "bulge", company = "merriweather_lynch" },
+	{ id = "evermoor", label = "Evermoor Partners", style = "elite", company = "evermoor" },
+	{ id = "lazaro_freres", label = "Lazaro Frères", style = "elite", company = "lazaro_freres" },
+	{ id = "centerline", label = "Centerline Partners", style = "elite", company = "centerline" },
+	{ id = "sterling_vance", label = "Sterling & Vance", style = "regional", company = "sterling_vance" },
+	{ id = "anaeio", label = "Anaeio", style = "modern", company = "anaeio" },
+	{ id = "applewood", label = "Applewood Industries", style = "corporate", company = "applewood" },
+	-- Multi-tenant towers
+	{
+		id = "middle_market",
+		label = "Middle Market Plaza",
+		style = "glass",
+		picker = { "harrow_williams", "blairmont", "houlton_lockey", "eastbridge_capital" },
+	},
+	{ id = "pe_tower", label = "Private Equity Tower", style = "stone", picker = { "bluestone", "krk", "ironclad" } },
+	{
+		id = "funds_tower",
+		label = "Funds & Credit Tower",
+		style = "dark_glass",
+		picker = { "bridgecrest", "citrine", "quantum_ridge", "aresmont", "gray_heron" },
+	},
+	{ id = "wealth_house", label = "Wealth House", style = "townhouse", picker = { "lotus_wealth" } },
+	{ id = "venture_row", label = "Venture Row", style = "loft", picker = { "sequel", "a17z", "seedline" } },
+	{
+		id = "property_exchange",
+		label = "Property Exchange",
+		style = "brick",
+		picker = { "brookfold", "keystone", "northwind" },
+	},
+} :: { TowerDef }
+
+---------------------------------------------------------------------------------------------------
+-- Anchors (named CFrame markers) for the exterior regions and venues. Office anchors live in templates.
 ---------------------------------------------------------------------------------------------------
 World.anchors = {
 	-- campus exterior
-	campus_spawn = { zone = "campus" }, -- bus depot arrival
-	campus_station_platform = { zone = "campus" }, -- subway arrival from the Street
+	campus_spawn = { zone = "campus" },
+	campus_station_platform = { zone = "campus" },
 	campus_career_center_front = { zone = "campus" },
 	campus_lecture_front = { zone = "campus" },
 	campus_dorm_front = { zone = "campus" },
@@ -154,57 +250,33 @@ World.anchors = {
 	career_center_entry = { zone = "career_center" },
 	lecture_entry = { zone = "lecture" },
 	dorm_entry = { zone = "dorm" },
-	subway_car_to_street = { zone = "subway" }, -- inside the moving car, heading downtown
-	subway_car_to_campus = { zone = "subway" }, -- inside the car, heading uptown
+	subway_car_to_street = { zone = "subway" },
+	subway_car_to_campus = { zone = "subway" },
 	-- street exterior
 	street_station_platform = { zone = "street" },
-	street_hq_front = { zone = "street" },
 	street_galleria_front = { zone = "street" },
 	street_apartments_front = { zone = "street" },
 	street_career_services_front = { zone = "street" },
-	street_realm_pe_front = { zone = "street" },
-	street_realm_hf_front = { zone = "street" },
-	street_realm_vc_front = { zone = "street" },
-	street_realm_re_front = { zone = "street" },
-	street_realm_cd_front = { zone = "street" },
-	street_partner_front = { zone = "street" },
+	street_club_front = { zone = "street" },
+	street_rooftop_front = { zone = "street" },
 	street_plaza = { zone = "street" },
-	-- HQ
-	hq_lobby_entry = { zone = "hq_lobby" },
-	hq_lobby_elevators = { zone = "hq_lobby" },
-	hq_office_entry = { zone = "hq_office" },
-	hq_trading_entry = { zone = "hq_trading" },
-	hq_exec_entry = { zone = "hq_exec" },
+	-- venues
 	career_services_entry = { zone = "career_services" },
 	exec_club_entry = { zone = "exec_club" },
 	rooftop_entry = { zone = "rooftop" },
-	-- realms & others
-	realm_pe_entry = { zone = "realm_pe" },
-	realm_hf_entry = { zone = "realm_hf" },
-	realm_vc_entry = { zone = "realm_vc" },
-	realm_re_entry = { zone = "realm_re" },
-	realm_cd_entry = { zone = "realm_cd" },
-	partner_entry = { zone = "partner_firm" },
 	apartments_entry = { zone = "apartments" },
 	galleria_entry = { zone = "galleria" },
 }
 
 ---------------------------------------------------------------------------------------------------
--- Doors. The builder of `zone` creates the Door part. WorldService teleports to `target` when the
--- requirement passes. `ride` = a timed transit through an intermediate anchor.
--- Requirement fields (all optional, all must pass):
+-- Doors. Requirement fields (all optional, all must pass):
 --   minRank = n            CareerService:GetRank(player) >= n
 --   employed = true        CareerService:IsEmployed(player)
---   flag = "campus.offer"  data.campus.offer == true (dot path into player data)
---   orMinRank = n          alternative: passes if rank >= n even when `flag` fails
---   realm = "pe"           data.career.track == realm (or rank >= realmVisitRank)
---   realmVisitRank = n
+--   flag = "campus.offer"  dot path into player data must be truthy
+--   orMinRank = n          passes if rank >= n even when `flag` fails
 --   pass = "ExecutiveClub" MonetizationService:OwnsPass
---   elevator = true        blocked while event "elevator_outage" is active
---   stairs = true          only usable while "elevator_outage" is active (10 s climb)
---   firm = "mg_freeman"    data.career.firmId must match (badge access to your own firm's tower)
--- Door flag `returnToEntry = true`: send the player back to the exterior anchor of the door they came in through
--- (WorldService remembers it per player); `target` is the fallback.
+-- Door kinds: `target` (anchor id), `ride` (timed transit), `company` (open that company's lobby instance),
+-- `picker` (choose a tenant company). Office-internal doors are template markers (OfficeDoor).
 ---------------------------------------------------------------------------------------------------
 World.doors = {
 	-- campus exterior
@@ -216,7 +288,7 @@ World.doors = {
 		label = "Subway: Downtown",
 		ride = { via = "subway_car_to_street", seconds = 8, to = "street_station_platform" },
 		requires = { flag = "campus.offer", orMinRank = 1 },
-		lockedText = "You need an internship offer before heading downtown.",
+		lockedText = "You need a job offer before heading downtown.",
 	},
 	-- campus interiors
 	door_career_center_exit = { zone = "career_center", target = "campus_career_center_front", label = "Exit" },
@@ -228,13 +300,6 @@ World.doors = {
 		label = "Subway: Eastbridge",
 		ride = { via = "subway_car_to_campus", seconds = 8, to = "campus_station_platform" },
 	},
-	door_street_hq = {
-		zone = "street",
-		target = "hq_lobby_entry",
-		label = "Sterling & Vance",
-		requires = { firm = "sterling_vance" },
-		lockedText = "Badge access only: Sterling & Vance employees.",
-	},
 	door_street_galleria = { zone = "street", target = "galleria_entry", label = "The Galleria" },
 	door_street_apartments = {
 		zone = "street",
@@ -244,191 +309,80 @@ World.doors = {
 		lockedText = "Residents only. Land a job on the Street first.",
 	},
 	door_street_career_services = { zone = "street", target = "career_services_entry", label = "Career Services" },
-	door_street_realm_pe = {
+	door_street_club = {
 		zone = "street",
-		target = "realm_pe_entry",
-		label = "Private Equity Tower",
-		requires = { realm = "pe", realmVisitRank = 6 },
-	},
-	door_street_realm_hf = {
-		zone = "street",
-		target = "realm_hf_entry",
-		label = "Asset Management Tower",
-		requires = { realm = "hf", realmVisitRank = 6 },
-	},
-	door_street_realm_vc = {
-		zone = "street",
-		target = "realm_vc_entry",
-		label = "Venture Row",
-		requires = { realm = "vc", realmVisitRank = 6 },
-	},
-	door_street_realm_re = {
-		zone = "street",
-		target = "realm_re_entry",
-		label = "Real Estate Exchange",
-		requires = { realm = "re", realmVisitRank = 6 },
-	},
-	door_street_realm_cd = {
-		zone = "street",
-		target = "realm_cd_entry",
-		label = "Corporate Plaza",
-		requires = { realm = "cd", realmVisitRank = 6 },
-	},
-	door_street_partner = {
-		zone = "street",
-		target = "partner_entry",
-		label = "Your Firm",
-		requires = { minRank = 10 },
-		lockedText = "Make Partner to open your own firm.",
-	},
-	-- HQ lobby
-	door_hq_lobby_exit = {
-		zone = "hq_lobby",
-		target = "street_hq_front",
-		label = "Exit to Street",
-		returnToEntry = true,
-	},
-	elev_office = {
-		zone = "hq_lobby",
-		target = "hq_office_entry",
-		label = "Floor 22: Investment Banking",
-		requires = { minRank = 1, elevator = true },
-	},
-	elev_trading = {
-		zone = "hq_lobby",
-		target = "hq_trading_entry",
-		label = "Floor 9: Trading",
-		requires = { minRank = 1, elevator = true },
-	},
-	elev_exec = {
-		zone = "hq_lobby",
-		target = "hq_exec_entry",
-		label = "Floor 40: Executive",
-		requires = { minRank = 1, elevator = true },
-	},
-	elev_club = {
-		zone = "hq_lobby",
 		target = "exec_club_entry",
-		label = "Floor 51: Executive Club",
-		requires = { pass = "ExecutiveClub", elevator = true },
+		label = "The Executive Club",
+		requires = { pass = "ExecutiveClub" },
 		lockedText = "Executive Club members only.",
 	},
-	elev_rooftop = {
-		zone = "hq_lobby",
+	door_street_rooftop = {
+		zone = "street",
 		target = "rooftop_entry",
-		label = "Roof Terrace",
-		requires = { minRank = 1, elevator = true },
+		label = "Skyline Rooftop",
+		requires = { employed = true },
 	},
-	door_hq_stairs = {
-		zone = "hq_lobby",
-		target = "hq_office_entry",
-		label = "Stairs (Floor 22)",
-		requires = { minRank = 1, stairs = true },
-	},
-	-- HQ floors back to lobby
-	door_hq_office_elev = { zone = "hq_office", target = "hq_lobby_elevators", label = "Elevators" },
-	door_hq_trading_elev = { zone = "hq_trading", target = "hq_lobby_elevators", label = "Elevators" },
-	door_hq_exec_elev = { zone = "hq_exec", target = "hq_lobby_elevators", label = "Elevators" },
-	door_exec_club_elev = { zone = "exec_club", target = "hq_lobby_elevators", label = "Elevators" },
-	door_rooftop_elev = { zone = "rooftop", target = "hq_lobby_elevators", label = "Elevators" },
-	-- other interiors back to the Street
+	-- venues back to the Street
 	door_career_services_exit = { zone = "career_services", target = "street_career_services_front", label = "Exit" },
-	door_realm_pe_exit = { zone = "realm_pe", target = "street_realm_pe_front", label = "Exit" },
-	door_realm_hf_exit = { zone = "realm_hf", target = "street_realm_hf_front", label = "Exit" },
-	door_realm_vc_exit = { zone = "realm_vc", target = "street_realm_vc_front", label = "Exit" },
-	door_realm_re_exit = { zone = "realm_re", target = "street_realm_re_front", label = "Exit" },
-	door_realm_cd_exit = { zone = "realm_cd", target = "street_realm_cd_front", label = "Exit" },
-	door_partner_exit = { zone = "partner_firm", target = "street_partner_front", label = "Exit" },
+	door_exec_club_exit = { zone = "exec_club", target = "street_club_front", label = "Exit" },
+	door_rooftop_exit = { zone = "rooftop", target = "street_rooftop_front", label = "Exit" },
 	door_apartments_exit = { zone = "apartments", target = "street_apartments_front", label = "Exit" },
 	door_galleria_exit = { zone = "galleria", target = "street_galleria_front", label = "Exit" },
 }
 
----------------------------------------------------------------------------------------------------
--- Bank Row: one branded tower per investment-banking firm (spec §4b). Each tower's door leads into the
--- shared HQ interior, where the client re-skins FirmBrand signage. Sterling & Vance uses door_street_hq.
--- Firm ids must exist in Config/Firms (career feature).
----------------------------------------------------------------------------------------------------
-World.firmTowers = {
-	{ id = "mg_freeman", label = "MG Freeman", tier = "bulge" },
-	{ id = "goldfield_saxe", label = "Goldfield Saxe", tier = "bulge" },
-	{ id = "morrow_stanton", label = "Morrow Stanton", tier = "bulge" },
-	{ id = "merriweather_lynch", label = "Merriweather Lynch", tier = "bulge" },
-	{ id = "evermoor", label = "Evermoor Partners", tier = "elite" },
-	{ id = "lazaro_freres", label = "Lazaro Frères", tier = "elite" },
-	{ id = "centerline", label = "Centerline Partners", tier = "elite" },
-	{ id = "harrow_williams", label = "Harrow Williams", tier = "middle" },
-	{ id = "blairmont", label = "Blairmont & Co.", tier = "middle" },
-	{ id = "houlton_lockey", label = "Houlton Lockey", tier = "middle" },
-	{ id = "eastbridge_capital", label = "Eastbridge Capital Advisors", tier = "regional" },
-	{
-		id = "sterling_vance",
-		label = "Sterling & Vance",
-		tier = "regional",
-		door = "door_street_hq",
-		anchor = "street_hq_front",
-	},
-}
-for _, t in World.firmTowers do
-	if not t.door then
-		local doorId = "door_street_firm_" .. t.id
-		local anchorId = "street_firm_" .. t.id .. "_front"
-		World.doors[doorId] = {
-			zone = "street",
-			target = "hq_lobby_entry",
-			label = t.label,
-			requires = { firm = t.id },
-			lockedText = "Badge access only: " .. t.label .. " employees.",
-		}
-		World.anchors[anchorId] = { zone = "street" }
-		t.door = doorId
-		t.anchor = anchorId
-	end
+-- Generate tower doors + front anchors.
+for _, t in World.towers do
+	local doorId = "door_street_tower_" .. t.id
+	local anchorId = "street_tower_" .. t.id .. "_front"
+	World.doors[doorId] = {
+		zone = "street",
+		label = t.label,
+		company = t.company,
+		picker = t.picker,
+		frontAnchor = anchorId,
+	}
+	World.anchors[anchorId] = { zone = "street" }
+	t.door = doorId
+	t.anchor = anchorId
 end
 
 ---------------------------------------------------------------------------------------------------
--- Interaction ids (Kit.interact). The owner feature wires ProximityPrompts at runtime via the
--- "Interact" tag. Builders may add attributes listed in `attrs`.
+-- Interaction ids (Kit.interact). The owner feature wires ProximityPrompts at runtime via the "Interact"
+-- tag. Inside office instances, parts also carry CompanyId (set by OfficeService on clone); owners must
+-- refuse non-employees ("Employees only").
 ---------------------------------------------------------------------------------------------------
 World.interactIds = {
 	terminal = { owner = "market", prompt = "Open Terminal" },
 	work_desk = { owner = "work", prompt = "Work" },
-	project_desk = { owner = "realmsA", prompt = "Projects", attrs = { "Realm" } }, -- Realm = "ib"|"pe"|...|"partner"
-	profile_builder = { owner = "career", prompt = "Build Profile" },
-	career_services = { owner = "career", prompt = "Career Services" },
+	project_desk = { owner = "projects", prompt = "Deals & Projects" },
+	profile_builder = { owner = "careerCore", prompt = "Life Roll" },
+	career_services = { owner = "careerPath", prompt = "Career Services" },
+	boss_review = { owner = "careerPath", prompt = "Weekly Review" },
+	elevator_panel = { owner = "offices", prompt = "Elevator" },
+	company_directory = { owner = "offices", prompt = "Company Directory" },
 	wardrobe = { owner = "wardrobe", prompt = "Wardrobe" },
 	shop = { owner = "shop", prompt = "Shop", attrs = { "Shop" } }, -- Shop = "tailor"|"watch"|"shoes"|"decor"|"campus_store"
-	housing_panel = { owner = "shop", prompt = "Customize", attrs = { "Context" } }, -- Context = "dorm"|"apartment"|"desk"|"office"|"firm"
+	housing_panel = { owner = "shop", prompt = "Customize", attrs = { "Context" } }, -- Context = "dorm"|"apartment"|"desk"|"office"
 	leaderboard = { owner = "leaderboards", prompt = "Rankings", attrs = { "BoardId" } },
 	npc = { owner = "tutorial", prompt = "Talk", attrs = { "NpcId" } },
 	store_kiosk = { owner = "monetization", prompt = "Store & Season Pass" },
-	bulletin = { owner = "tutorial", prompt = "Read Board" },
+	bulletin = { owner = "tutorial", prompt = "Recruiting Board" },
 	news_stand = { owner = "market", prompt = "Market News" },
 }
 
--- NPC ids that world builders place via Kit.interact(part, "npc", {NpcId = id}). Part = standing spot
--- (2x1x2 marker on the floor, front face = facing direction).
 World.npcSpots = {
 	campus = { "npc_alum", "npc_barista", "npc_bus_driver" },
-	career_center = { "npc_advisor", "npc_recruiter_sv" },
+	career_center = { "npc_advisor", "npc_recruiter" },
 	lecture = { "npc_professor", "npc_club_president" },
 	dorm = { "npc_roommate" },
 	street = { "npc_newsie", "npc_doorman_street" },
-	hq_lobby = { "npc_hq_receptionist" },
-	hq_office = { "npc_mentor" },
-	hq_trading = { "npc_trader" },
-	hq_exec = { "npc_md" },
 	career_services = { "npc_career_counselor" },
 	exec_club = { "npc_club_host" },
-	realm_pe = { "npc_realm_pe_head" },
-	realm_hf = { "npc_realm_hf_head" },
-	realm_vc = { "npc_realm_vc_head" },
-	realm_re = { "npc_realm_re_head" },
-	realm_cd = { "npc_realm_cd_head" },
+	rooftop = { "npc_mixer_host" },
 	apartments = { "npc_concierge" },
 	galleria = { "npc_tailor", "npc_watchmaker", "npc_shoe_clerk", "npc_decorator" },
 }
 
--- Event spots (Kit.eventSpot). Builders of the listed zone must create them.
 World.eventSpots = {
 	campus = { "muster_campus", "recruiting_booths", "pigeon_area_campus", "briefcase_c1", "briefcase_c2" },
 	street = {
@@ -441,19 +395,16 @@ World.eventSpots = {
 		"briefcase_s4",
 	},
 	career_center = { "pizza_table_campus" },
-	hq_lobby = { "briefcase_h1" },
-	hq_office = { "ceo_path_1", "ceo_path_2", "ceo_path_3", "ceo_path_4", "pizza_table_1", "fire_alarm_office" },
-	hq_trading = { "ceo_path_5", "ceo_path_6", "pizza_table_2", "fire_alarm_trading", "briefcase_h2" },
 	rooftop = { "mixer_area" },
 }
+-- Every office FLOOR template contains these EventSpot markers too:
+World.templateEventSpots =
+	{ "pizza_table", "ceo_path_1", "ceo_path_2", "ceo_path_3", "ceo_path_4", "fire_alarm", "briefcase_office" }
 
--- Housing slot counts (interiors builders must create exactly these many slot models).
 World.housing = {
 	dorm = { attr = "UnitSlot", count = 24, zone = "dorm" },
 	apartment = { attr = "UnitSlot", count = 24, zone = "apartments" },
-	desk = { attr = "DeskSlot", count = 24, zone = "hq_office" },
-	office = { attr = "OfficeSlot", count = 8, zone = "hq_exec" },
-	firm = { attr = "FirmSlot", count = 6, zone = "partner_firm" }, -- one suite per partner on the server
+	-- desk/office slots live in office floor templates (World.floorSlots)
 }
 
 World.MAX_PLAYERS = 24

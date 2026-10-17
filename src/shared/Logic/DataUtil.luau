@@ -48,6 +48,16 @@ function DataUtil.getPath(data: any, path: string): any
 	return node
 end
 
+-- Key to create for a segment that doesn't exist yet. Writing inside an array (or starting one) keeps
+-- numeric keys so the array stays an array; everything else uses the string.
+local function newKey(node: { [any]: any }, seg: string): any
+	local n = tonumber(seg)
+	if n ~= nil and n == math.floor(n) and n >= 1 and (TableUtil.isArray(node) or (next(node) == nil and n == 1)) then
+		return n
+	end
+	return seg
+end
+
 -- Set a value at a dotted path, creating missing intermediate tables. Returns (ok, topLevelKey) so the
 -- caller knows which key to replicate. Fails (false) on an empty path or a non-table intermediate.
 function DataUtil.setPath(data: { [any]: any }, path: string, value: any): (boolean, string?)
@@ -62,7 +72,7 @@ function DataUtil.setPath(data: { [any]: any }, path: string, value: any): (bool
 		local child = if k ~= nil then node[k] else nil
 		if child == nil then
 			child = {}
-			node[seg] = child
+			node[newKey(node, seg)] = child
 		elseif type(child) ~= "table" then
 			return false, nil
 		end
@@ -71,18 +81,7 @@ function DataUtil.setPath(data: { [any]: any }, path: string, value: any): (bool
 	local last = segs[#segs]
 	local k = keyFor(node, last)
 	if k == nil then
-		local n = tonumber(last)
-		-- Appending to / writing inside an array keeps numeric keys so the array stays an array.
-		if
-			n ~= nil
-			and n == math.floor(n)
-			and n >= 1
-			and (TableUtil.isArray(node) or (next(node) == nil and n == 1))
-		then
-			k = n
-		else
-			k = last
-		end
+		k = newKey(node, last)
 	end
 	node[k] = value
 	return true, segs[1]
@@ -312,7 +311,8 @@ function DataUtil.pushRing(list: { any }, entry: any, max: number): { any }
 	return list
 end
 
-local function truncate(s: string, maxLen: number): string
+-- At most maxLen bytes of `s`, cut on a UTF-8 character boundary.
+local function utf8Cut(s: string, maxLen: number): string
 	if #s <= maxLen then
 		return s
 	end
@@ -320,7 +320,14 @@ local function truncate(s: string, maxLen: number): string
 	while #cut > 0 and utf8.len(cut) == nil do
 		cut = string.sub(cut, 1, #cut - 1)
 	end
-	return cut .. "..."
+	return cut
+end
+
+local function truncate(s: string, maxLen: number): string
+	if #s <= maxLen then
+		return s
+	end
+	return utf8Cut(s, maxLen) .. "..."
 end
 
 -- Small, saveable copy of arbitrary details for audit entries: depth, key count and string length are
@@ -370,6 +377,33 @@ function DataUtil.compact(value: any, maxDepth: number?, maxKeys: number?, maxSt
 		return truncate(tostring(v), strLimit)
 	end
 	return visit(value, 0)
+end
+
+DataUtil.AUDIT_KIND_MAX = 32 -- bytes
+DataUtil.AUDIT_ENTRY_BYTES = 2048 -- JSON budget for one entry's details
+
+export type AuditEntry = { t: number, kind: string, d: any }
+
+-- One audit ring entry { t, kind, d }. `details` is compacted, and if its JSON would still exceed `maxBytes`
+-- it is compacted harder, then replaced by a stub, so a caller passing a huge table can never bloat the
+-- profile (100 entries) or the Audit_v1 log (200 entries) toward the DataStore size limit.
+-- Returns nil when `kind` is not a non-empty string.
+function DataUtil.auditEntry(now: number, kind: any, details: any, maxBytes: number?): AuditEntry?
+	if type(kind) ~= "string" or kind == "" then
+		return nil
+	end
+	local k = if utf8.len(kind) == nil then "invalid_kind" else utf8Cut(kind, DataUtil.AUDIT_KIND_MAX)
+	local limit = maxBytes or DataUtil.AUDIT_ENTRY_BYTES
+	local d = DataUtil.compact(details)
+	local size = DataUtil.estimateSize(d)
+	if size > limit then
+		d = DataUtil.compact(details, 2, 8, 64)
+		local smaller = DataUtil.estimateSize(d)
+		if smaller > limit then
+			d = { truncated = true, bytes = size }
+		end
+	end
+	return { t = math.floor(now), kind = k, d = d }
 end
 
 ---------------------------------------------------------------------------------------------------

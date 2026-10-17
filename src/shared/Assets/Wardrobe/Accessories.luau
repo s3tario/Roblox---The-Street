@@ -3,6 +3,7 @@
 --   wrist: "watch" (strap or bracelet, case and bezel, dial with hands; tier details: chronograph
 --          sub-dials and pushers, gold indices, a platinum moonphase; opts.glint adds a sparkle) and
 --          "band" (fitness band). Worn on the left wrist, face turned outward, standing proud of any cuff.
+--          "ring" (family signet ring) sits on the right hand instead.
 --   eyes:  "glasses" (round wire, black rectangles, gold aviators, tortoiseshell). The lens rims are drawn
 --          crisply with a SurfaceGui (UICorner + UIStroke) on a clear plate in front of the face; bridge
 --          hinges and temples are thin parts running back along the head.
@@ -197,6 +198,53 @@ local function band(ctx: Ctx)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Signet ring (family heirloom): a gold band across the back of the right hand with a flat crest face
+---------------------------------------------------------------------------------------------------
+local RING_HAND = "RightHand"
+
+local function ring(ctx: Ctx)
+	local s = Fit.size(ctx, RING_HAND)
+	if not s then
+		return
+	end
+	local col = ctx.colors
+	-- the outer side of the right hand is +X; the band wraps the knuckle edge just below the wrist
+	local y = -s.Y * 0.1
+	local bandH = math.min(0.07, s.Y * 0.32)
+	Fit.box(
+		ctx,
+		RING_HAND,
+		CFrame.new(s.X / 2 + 0.012, y, -s.Z * 0.18),
+		Vector3.new(0.024, bandH, s.Z * 0.42),
+		col.primary,
+		METAL,
+		"wrist_RingBand"
+	)
+	-- bezel face and the engraved crest
+	local face = CFrame.Angles(0, 0, rad(90)) -- cylinder axis along X, facing out from the hand
+	Fit.cyl(
+		ctx,
+		RING_HAND,
+		CFrame.new(s.X / 2 + 0.034, y, -s.Z * 0.18) * face,
+		0.03,
+		math.max(0.1, bandH * 1.7),
+		col.secondary,
+		METAL,
+		"wrist_RingFace"
+	)
+	Fit.cyl(
+		ctx,
+		RING_HAND,
+		CFrame.new(s.X / 2 + 0.052, y, -s.Z * 0.18) * face,
+		0.008,
+		math.max(0.05, bandH * 0.9),
+		col.accent,
+		SMOOTH,
+		"wrist_RingCrest"
+	)
+end
+
+---------------------------------------------------------------------------------------------------
 -- Glasses
 ---------------------------------------------------------------------------------------------------
 type LensStyle = {
@@ -383,5 +431,6 @@ end
 return {
 	watch = { build = watch, covers = {} },
 	band = { build = band, covers = {} },
+	ring = { build = ring, covers = {} },
 	glasses = { build = glasses, covers = {} },
 }

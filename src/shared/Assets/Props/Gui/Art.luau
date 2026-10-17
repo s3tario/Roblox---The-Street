@@ -156,17 +156,17 @@ function Art.whiteboard(gui: Instance, W: number, H: number, rng: Rng.Rng)
 	local black = hex("#202124")
 	local marker = Enum.Font.PermanentMarker
 	label(gui, Words.whiteboard[1], 0.04, 0.04, 0.4, 0.13, blue, { font = marker })
-	-- flow of boxes with arrows
+	-- flow of boxes with arrows (kept left of the chart, which starts at 0.62)
 	local names = { "COMPS", "DCF", "LBO" }
-	local bw, bh = 0.17, 0.14
+	local bw, bh = 0.14, 0.14
 	for i, n in names do
-		local x = 0.05 + (i - 1) * 0.24
+		local x = 0.04 + (i - 1) * 0.195
 		local box = frame(gui, x, 0.27, bw, bh, hex("#FFFFFF"), 1)
 		Core.stroke(box, black, 2)
 		label(box, n, 0.08, 0.1, 0.84, 0.8, black, { font = marker, align = Enum.TextXAlignment.Center })
 		if i < #names then
-			local x1 = (x + bw + 0.01) * W
-			Core.arrow(gui, x1, 0.34 * H, x1 + 0.05 * W, 0.34 * H, 2, black)
+			local x1 = (x + bw + 0.008) * W
+			Core.arrow(gui, x1, 0.34 * H, x1 + 0.038 * W, 0.34 * H, 2, black)
 		end
 	end
 	label(gui, Words.whiteboard[2], 0.05, 0.5, 0.4, 0.12, black, { font = marker })
@@ -278,7 +278,9 @@ function Art.poster(gui: Instance, title: string, body: string, colors: { Color3
 end
 
 -- Billboard / bus-shelter advert for a fictional brand.
-function Art.ad(gui: Instance, brand: string, slogan: string, rng: Rng.Rng)
+-- W, H (canvas pixels, optional) pick the layout: landscape billboards and bus sides put the product disc
+-- beside the copy; portrait panels (bus-shelter sides, posters) stack the copy above the disc.
+function Art.ad(gui: Instance, brand: string, slogan: string, rng: Rng.Rng, W: number?, H: number?)
 	local schemes: { { Color3 } } = {
 		{ hex("#0B1F3A"), hex("#C9A54C"), hex("#FFFFFF") },
 		{ hex("#7A1F24"), hex("#F2C230"), hex("#FFFFFF") },
@@ -289,14 +291,41 @@ function Art.ad(gui: Instance, brand: string, slogan: string, rng: Rng.Rng)
 	local s = schemes[rng:int(1, #schemes)]
 	local root = Core.bg(gui, s[1])
 	Core.gradient(root, s[1], s[1]:Lerp(Color3.new(0, 0, 0), 0.35), rng:range(20, 70))
+	local portrait = W ~= nil and H ~= nil and H > W * 1.1
 	-- product silhouette: a big disc (watch face, bottle cap, globe ...) and a swoosh band
 	local band = frame(gui, -0.1, rng:range(0.55, 0.7), 1.2, 0.12, s[2], 0.1)
 	band.Rotation = rng:range(-8, -3)
-	local d = frame(gui, 0.66, 0.16, 0.26, 0.26 * 2.4, s[2], 0)
-	d.SizeConstraint = Enum.SizeConstraint.RelativeYY
-	d.Size = UDim2.fromScale(0.62, 0.62)
+	local d = frame(gui, 0, 0, 0, 0, s[2], 0)
+	if portrait then
+		-- disc sized from the width, centred in the lower half
+		d.SizeConstraint = Enum.SizeConstraint.RelativeXX
+		d.Size = UDim2.fromScale(0.6, 0.6)
+		d.AnchorPoint = Vector2.new(0.5, 0.5)
+		d.Position = UDim2.fromScale(0.5, 0.62)
+	else
+		d.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		d.Size = UDim2.fromScale(0.62, 0.62)
+		d.Position = UDim2.fromScale(0.66, 0.16)
+	end
 	Core.round(d, 0.5)
 	Core.stroke(d, s[3], 4, 0.2)
+	if portrait then
+		label(gui, brand, 0.08, 0.05, 0.84, 0.17, s[3], {
+			font = Enum.Font.GothamBlack,
+			align = Enum.TextXAlignment.Center,
+		})
+		label(gui, slogan, 0.08, 0.23, 0.84, 0.1, s[2], {
+			font = Enum.Font.Gotham,
+			italic = true,
+			align = Enum.TextXAlignment.Center,
+		})
+		label(gui, Words.adFooter, 0.1, 0.9, 0.8, 0.05, s[3], {
+			font = Enum.Font.Gotham,
+			transparency = 0.3,
+			align = Enum.TextXAlignment.Center,
+		})
+		return
+	end
 	label(gui, brand, 0.05, 0.12, 0.6, 0.3, s[3], { font = Enum.Font.GothamBlack })
 	label(gui, slogan, 0.05, 0.44, 0.58, 0.14, s[2], { font = Enum.Font.Gotham, italic = true })
 	label(gui, Words.adFooter, 0.05, 0.84, 0.5, 0.08, s[3], { font = Enum.Font.Gotham, transparency = 0.3 })
