@@ -15,6 +15,8 @@
 --       parent, anchored (default true), humanoid (default true), face (default true),
 --       expression,                    -- smile | neutral | grin | focused (default picked by name)
 --       glint, strict,                 -- passed to Wardrobe.apply
+--       companyLogo, companyMonogram,  -- passed to Wardrobe.apply: office NPCs (and the wardrobe preview) in a
+--                                      -- vest or quarter-zip wear their company's logo (v3 §16)
 --     }
 --     The model has the standard R15 part names, a HumanoidRootPart (PrimaryPart), a Humanoid, Motor6Ds
 --     matching the pose, a SurfaceGui face, hair (Folder "Hair") and the Career Look (Folder "CareerLook").
@@ -58,6 +60,8 @@ export type BuildOpts = {
 	expression: string?,
 	glint: boolean?,
 	strict: boolean?,
+	companyLogo: string?,
+	companyMonogram: string?,
 	anchorRoot: boolean?, -- spawn only
 	seed: any?,
 }
@@ -245,7 +249,14 @@ function NpcRig.build(opts: BuildOpts?): Model
 		})
 	end
 
-	Wardrobe.apply(model, r.equipped, { anchored = anchored, glint = o.glint, skin = r.skin, strict = o.strict })
+	Wardrobe.apply(model, r.equipped, {
+		anchored = anchored,
+		glint = o.glint,
+		skin = r.skin,
+		strict = o.strict,
+		companyLogo = o.companyLogo,
+		companyMonogram = o.companyMonogram,
+	})
 
 	model.PrimaryPart = parts.HumanoidRootPart
 	model:SetAttribute("NpcRig", true)

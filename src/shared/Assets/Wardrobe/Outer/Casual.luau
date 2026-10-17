@@ -79,7 +79,8 @@ local function vest(ctx: Ctx)
 			METAL,
 			"outer_ZipPull"
 		)
-		if not Details.lists(ctx.item, "emblem_") then
+		-- the house logo patch, unless a brand emblem or the company logo (Wardrobe.apply) takes the chest
+		if not Details.lists(ctx.item, "emblem_") and ctx.state.logoSlot ~= ctx.slot then
 			Fit.box(
 				ctx,
 				"UpperTorso",

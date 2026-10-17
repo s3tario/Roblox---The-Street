@@ -3,13 +3,16 @@
 -- Every function works on the player's `inventory` table (Config/DataTemplate/Inventory) and a Catalog viewer
 -- { owned, rank, passes } that the service builds from live state.
 --
---   Inventory.normalize(inv) -> inv                    repairs a loaded table (types, unknown items, bad slots)
+--   Inventory.normalize(inv) -> inv                    repairs a loaded table (types, unknown items, bad slots,
+--                                                      renamed ids -> Catalog.canonical)
 --   Inventory.viewer(inv, rank, passes) -> Viewer
 --   Inventory.equip(inv, slot, itemId?, viewer) -> ok, errKey?
 --   Inventory.wearable(inv, viewer) -> equipped, droppedSlots   what to put on the character right now
 --   Inventory.grant(inv, itemId) -> isNew, errKey?
 --   Inventory.grantStarters(inv, rank) -> newItemIds, newStages, equippedStarter
 --   Inventory.wearLook(inv, itemIds, viewer) -> changedSlots      put a granted look on (Life Roll)
+--   Inventory.profilePieces(profile) -> itemIds, lookId?   the Life Roll outfit + family heirloom a profile earned
+--   Inventory.reconcile(inv, profile) -> newItemIds         grants those pieces if missing (never equips)
 --   Inventory.savePreset(inv, index, name, viewer) -> ok, errKey?
 --   Inventory.loadPreset(inv, index, viewer) -> ok, errKey?, droppedSlots?
 --   Inventory.presetKey(index) -> "1".."5"
@@ -40,7 +43,7 @@ local function cleanEquippedMap(raw: any): { [string]: string }
 		return out
 	end
 	for slot, id in raw do
-		local item = Catalog.get(id)
+		local item = Catalog.get(Catalog.canonical(id))
 		if type(slot) == "string" and Catalog.SLOT_SET[slot] and item and item.slot == slot and not item.hidden then
 			out[slot] = item.id
 		end
@@ -55,8 +58,9 @@ function Inventory.normalize(raw: any): Inv
 	local owned: { [string]: boolean } = {}
 	if type(inv.owned) == "table" then
 		for id, v in inv.owned do
-			if v and type(id) == "string" and Catalog.get(id) ~= nil then
-				owned[id] = true
+			local current = Catalog.canonical(id)
+			if v and type(current) == "string" and Catalog.get(current) ~= nil then
+				owned[current] = true
 			end
 		end
 	end
@@ -119,7 +123,7 @@ function Inventory.wearable(inv: Inv, viewer: Viewer): ({ [string]: string }, { 
 end
 
 function Inventory.grant(inv: Inv, itemId: any): (boolean, string?)
-	local item = Catalog.get(itemId)
+	local item = Catalog.get(Catalog.canonical(itemId))
 	if not item or item.hidden then
 		return false, "unknown_item"
 	end
@@ -170,7 +174,7 @@ function Inventory.wearLook(inv: Inv, itemIds: { string }, viewer: Viewer): { st
 	local changed: { string } = {}
 	local covered: { [string]: boolean } = {}
 	for _, id in itemIds do
-		local item = Catalog.get(id)
+		local item = Catalog.get(Catalog.canonical(id))
 		if item and Catalog.canWear(item, viewer) then
 			covered[item.slot] = true
 			if inv.equipped[item.slot] ~= item.id then
@@ -185,6 +189,64 @@ function Inventory.wearLook(inv: Inv, itemIds: { string }, viewer: Viewer): { st
 	end
 	table.sort(changed)
 	return changed
+end
+
+-- The exclusive pieces a careerCore profile (contracts §3 `profile`) has earned: its starting-outfit roll
+-- (profile.outfitRoll.itemIds, or the look named by outfitRoll.lookId / .look) and the family heirloom for
+-- profile.family.rarity. Only Life Roll and heirloom catalog pieces count, so a profile can never hand out shop
+-- items. Returns canonical ids (sorted, unique) and the look id when one matched.
+function Inventory.profilePieces(profile: any): ({ string }, string?)
+	local out: { string } = {}
+	local seen: { [string]: boolean } = {}
+	local lookId: string? = nil
+	local function add(id: any)
+		local item = Catalog.get(Catalog.canonical(id))
+		if item and Catalog.isExclusive(item) and not seen[item.id] then
+			seen[item.id] = true
+			table.insert(out, item.id)
+		end
+	end
+	if type(profile) ~= "table" then
+		return out, nil
+	end
+	local roll = profile.outfitRoll
+	if type(roll) == "table" then
+		local named = Catalog.canonical(roll.lookId or roll.look)
+		local look = if type(named) == "string" then Catalog.looks[named] else nil
+		if look then
+			lookId = look.id
+			for _, id in look.itemIds do
+				add(id)
+			end
+		end
+		if type(roll.itemIds) == "table" then
+			for _, id in roll.itemIds do
+				add(id)
+			end
+			if not lookId then
+				local first = if type(roll.itemIds[1]) == "string"
+					then Catalog.lookOf(Catalog.canonical(roll.itemIds[1]))
+					else nil
+				lookId = if first then first.id else nil
+			end
+		end
+	end
+	local family = profile.family
+	if type(family) == "table" then
+		add(Catalog.heirloomFor(family.rarity))
+	end
+	table.sort(out)
+	return out, lookId
+end
+
+function Inventory.reconcile(inv: Inv, profile: any): { string }
+	local granted: { string } = {}
+	for _, id in (Inventory.profilePieces(profile)) do
+		if Inventory.grant(inv, id) then
+			table.insert(granted, id)
+		end
+	end
+	return granted
 end
 
 local function presetIndex(index: any, viewer: Viewer): (number?, string?)

@@ -323,7 +323,7 @@ local presets: { [string]: { [string]: any } } = {
 		skin = "#E6B98F",
 	},
 	intern = {
-		equipped = { top = "oxford_blue", bottom = "chinos_khaki", shoes = "loafer_cognac", neck = "lanyard_intern" },
+		equipped = { top = "oxford_blue", bottom = "chinos_khaki", shoes = "loafer_cognac", neck = "lanyard_staff" },
 		hairStyle = "short",
 		hairColor = "#3B2A1E",
 		skin = "#D19A6A",

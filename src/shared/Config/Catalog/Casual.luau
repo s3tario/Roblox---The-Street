@@ -224,17 +224,17 @@ add({
 	desc = "Your Eastbridge student ID. Opens the library and the dining hall.",
 })
 add({
-	id = "lanyard_intern",
-	name = "Intern ID Lanyard",
+	id = "lanyard_staff",
+	name = "Staff ID Lanyard",
 	slot = "neck",
 	category = "campus",
 	price = 0,
 	builder = "lanyard",
-	text = "INTERN",
+	text = "STAFF",
 	colors = c("#0B1F3A", "#F7F6F2", "#C9A54C"),
 	tier = 1,
 	tags = { "street", "starter" },
-	desc = "Sterling & Vance summer intern badge. Wear it with pride (you have to).",
+	desc = "Your first building pass on the Street. It opens the lobby turnstiles and nothing else.",
 })
 add({
 	id = "band_pulse",

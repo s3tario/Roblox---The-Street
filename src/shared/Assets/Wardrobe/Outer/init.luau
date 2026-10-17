@@ -63,8 +63,9 @@ local function jacket(ctx: Ctx)
 		spec.lapelEdge = Fit.shade(col.secondary, 0.12)
 		spec.buttonColor = col.secondary
 		spec.pockets = "jetted"
-	elseif style == "kingsley" then
-		-- William Kingsley Signature: chalk-stripe double-breasted, gold buttons, claret silk square
+	elseif style == "pan_miller" or style == "kingsley" then
+		-- Pan Miller Signature: chalk-stripe double-breasted, gold buttons, claret silk square (the windmill and
+		-- lapel pin are Details on the item)
 		spec.apex = 0.5
 		spec.lapel = 0.27
 		spec.peak = true

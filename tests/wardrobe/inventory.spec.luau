@@ -88,7 +88,7 @@ return function(t)
 			end
 			local again = Inventory.grantStarters(inv, 0)
 			t.expect(#again).toBe(0)
-			-- promoted to analyst: intern and analyst kits arrive, the current look stays on
+			-- promoted to Associate: the analyst and associate kits arrive, the current look stays on
 			local more, newStages, reequipped = Inventory.grantStarters(inv, 2)
 			t.expect(#newStages).toBe(2)
 			t.expect(reequipped).toBe(false)
@@ -113,7 +113,7 @@ return function(t)
 			inv.owned.watch_astra_moonphase = true
 			ok, err = Inventory.equip(inv, "wrist", "watch_astra_moonphase", student)
 			t.expect(err).toBe("rank")
-			t.expect((Inventory.equip(inv, "wrist", "watch_astra_moonphase", Inventory.viewer(inv, 6, {})))).toBe(true)
+			t.expect((Inventory.equip(inv, "wrist", "watch_astra_moonphase", Inventory.viewer(inv, 5, {})))).toBe(true)
 			-- unequip
 			t.expect((Inventory.equip(inv, "outer", nil, student))).toBe(true)
 			t.expect(inv.equipped.outer).toBeNil()
@@ -126,8 +126,8 @@ return function(t)
 
 		t.it("grant adds catalog items once and refuses unknown or NPC pieces", function()
 			local inv = fresh()
-			t.expect((Inventory.grant(inv, "wk_jacket"))).toBe(true)
-			local isNew, err = Inventory.grant(inv, "wk_jacket")
+			t.expect((Inventory.grant(inv, "pm_jacket"))).toBe(true)
+			local isNew, err = Inventory.grant(inv, "pm_jacket")
 			t.expect(isNew).toBe(false)
 			t.expect(err).toBeNil()
 			isNew, err = Inventory.grant(inv, "doorman_coat")
@@ -152,15 +152,15 @@ return function(t)
 			t.expect(inv.equipped.top).toBe("gl_hoodie_navy")
 			t.expect(inv.equipped.shoes).toBe("gl_sneaker_white")
 			-- a look with a jacket keeps it on; unowned pieces are skipped
-			local wk = Catalog.looks.wk_signature
-			local skipped = Inventory.wearLook(inv, wk.itemIds, Inventory.viewer(inv, 2, {}))
+			local pm = Catalog.looks.pm_signature
+			local skipped = Inventory.wearLook(inv, pm.itemIds, Inventory.viewer(inv, 2, {}))
 			t.expect(#skipped).toBe(0)
-			for _, id in wk.itemIds do
+			for _, id in pm.itemIds do
 				Inventory.grant(inv, id)
 			end
-			Inventory.wearLook(inv, wk.itemIds, Inventory.viewer(inv, 2, {}))
-			t.expect(inv.equipped.outer).toBe("wk_jacket")
-			t.expect(inv.equipped.wrist).toBe("wk_watch")
+			Inventory.wearLook(inv, pm.itemIds, Inventory.viewer(inv, 2, {}))
+			t.expect(inv.equipped.outer).toBe("pm_jacket")
+			t.expect(inv.equipped.wrist).toBe("pm_watch")
 		end)
 
 		t.it("saves and loads presets within the open slots", function()

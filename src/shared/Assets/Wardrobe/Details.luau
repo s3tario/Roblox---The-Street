@@ -8,10 +8,15 @@
 --   knit / weave    cable (centre braid), gingham (semi-transparent check), rugby_stripes (hoops)
 --   trims           tipping (sleeve hem stripes), buttondown (collar-point buttons), monogram_cuff (right cuff)
 --   tailoring       lapel_pin (crest pin on the wearer's left lapel; needs a tailored jacket)
+--   Emblems.luau    emblem_windmill (Pan Miller), pick_stitch (Briani), crest_c (Canalé)
+--
+-- When the company logo takes a garment's left chest (Wardrobe.apply, ctx.state.logoSlot), that garment's brand
+-- emblem moves to the right chest.
 --
 -- Tops draw chest details only where no outer layer covers the torso. Bake-safe (contracts §13).
 
 local Fit = require(script.Parent.Fit)
+local Emblems = require(script.Parent.Emblems)
 
 type Ctx = Fit.Ctx
 
@@ -40,9 +45,10 @@ local function armsVisible(ctx: Ctx): boolean
 	return ctx.slot ~= "top" or not Fit.covered(ctx, "arms")
 end
 
--- Wearer's left chest, where emblems sit.
-local function emblemSpot(s: Vector3): (number, number)
-	return -s.X * 0.27, s.Y / 2 - 0.45
+-- Wearer's left chest, where emblems sit (the right chest when the company logo is on this garment).
+local function emblemSpot(ctx: Ctx, s: Vector3): (number, number)
+	local side = if ctx.state.logoSlot == ctx.slot then 1 else -1
+	return side * s.X * 0.27, s.Y / 2 - 0.45
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -53,7 +59,7 @@ local function emblemPony(ctx: Ctx)
 	if not s or not chestVisible(ctx) then
 		return
 	end
-	local x, y = emblemSpot(s)
+	local x, y = emblemSpot(ctx, s)
 	local z = frontZ(ctx, s)
 	local trim = ctx.colors.trim
 	-- rider disc and the raised mallet
@@ -83,7 +89,7 @@ local function emblemWhale(ctx: Ctx)
 	if not s or not chestVisible(ctx) then
 		return
 	end
-	local x, y = emblemSpot(s)
+	local x, y = emblemSpot(ctx, s)
 	local z = frontZ(ctx, s)
 	local trim = ctx.colors.trim
 	Fit.box(
@@ -121,7 +127,7 @@ local function emblemFlag(ctx: Ctx)
 	if not s or not chestVisible(ctx) then
 		return
 	end
-	local x, y = emblemSpot(s)
+	local x, y = emblemSpot(ctx, s)
 	local z = frontZ(ctx, s)
 	local widths = { 0.055, 0.022, 0.055 }
 	local left = x - 0.066
@@ -144,7 +150,7 @@ local function emblemPeak(ctx: Ctx)
 	if not s or not chestVisible(ctx) then
 		return
 	end
-	local x, y = emblemSpot(s)
+	local x, y = emblemSpot(ctx, s)
 	local z = frontZ(ctx, s)
 	-- a dark label with a mountain ridge in the trim colour
 	Fit.box(
@@ -347,7 +353,16 @@ local function tipping(ctx: Ctx)
 	for _, side in Fit.SIDES do
 		local a = Fit.size(ctx, side .. "UpperArm")
 		if a then
-			Fit.band(ctx, side .. "UpperArm", -a.Y / 2 + 0.04, 0.035, 0.032, ctx.colors.trim, FABRIC, ctx.slot .. "_Tipping")
+			Fit.band(
+				ctx,
+				side .. "UpperArm",
+				-a.Y / 2 + 0.04,
+				0.035,
+				0.032,
+				ctx.colors.trim,
+				FABRIC,
+				ctx.slot .. "_Tipping"
+			)
 		end
 	end
 end
@@ -461,6 +476,10 @@ local builders: { [string]: (Ctx) -> () } = {
 	monogram_cuff = monogramCuff,
 	lapel_pin = lapelPin,
 }
+for id, fn in Emblems.builders do
+	assert(builders[id] == nil, "Details: duplicate detail " .. id)
+	builders[id] = fn
+end
 Details.builders = builders
 
 function Details.has(id: any): boolean

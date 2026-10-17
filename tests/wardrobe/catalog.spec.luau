@@ -133,9 +133,9 @@ return function(t)
 			end
 		end)
 
-		t.it("has a full catalogue: about 60-100 shop items, every slot stocked", function()
+		t.it("has a full catalogue: about 100-160 shop items, every slot stocked", function()
 			local shop = Catalog.shopItems()
-			t.expect(#shop).toBeBetween(60, 100)
+			t.expect(#shop).toBeBetween(100, 160)
 			t.expect(#Catalog.list(true)).toBeGreaterThan(#Catalog.list())
 			for _, slot in Catalog.SLOTS do
 				local n = 0
@@ -191,7 +191,7 @@ return function(t)
 			for tier = 1, 5 do
 				t.expect(tiers[tier] ~= nil).toBeTruthy()
 			end
-			t.expect(tiers[5].minRank).toBe(6) -- MD-only flagship
+			t.expect(tiers[5].minRank).toBe(5) -- MD-only flagship (v3 rank 5)
 			t.expect(tiers[5].price).toBe(80000)
 		end)
 
@@ -211,7 +211,8 @@ return function(t)
 
 	t.describe("Brands, rarity and Life Roll pools", function()
 		t.it("every brand has a valid rarity, a name and a blurb", function()
-			t.expect(#Catalog.RARITIES).toBe(5)
+			t.expect(#Catalog.RARITIES).toBe(6)
+			t.expect(Catalog.RARITIES).toEqual({ "common", "uncommon", "rare", "epic", "legendary", "mythic" })
 			for i, r in Catalog.RARITIES do
 				local def = Catalog.RARITY[r]
 				t.expect(def ~= nil).toBeTruthy()
@@ -229,6 +230,7 @@ return function(t)
 				t.expect(#b.name).toBeGreaterThan(2)
 				t.expect(#b.blurb).toBeGreaterThan(8)
 				t.expect(#b.signature).toBeGreaterThan(8)
+				t.expect(b.logo).toBe("brand_" .. id)
 			end
 			t.expect(count).toBe(#Catalog.brandList)
 		end)
@@ -238,8 +240,9 @@ return function(t)
 				common = { "kevin_kroos", "old_harbor", "gapline", "hanesworth" },
 				uncommon = { "j_crewson", "plantain_republic", "tommy_hillford" },
 				rare = { "ralph_lorenzo", "brooks_brethren", "vineyard_wines", "patagonio" },
+				epic = { "briani", "canale" },
 				legendary = { "tom_fordham", "zegnatti", "bruno_cucina" },
-				mythic = { "william_kingsley" },
+				mythic = { "pan_miller" },
 			}
 			local rollBrands = 0
 			for _, b in Catalog.brands do
@@ -258,11 +261,14 @@ return function(t)
 				end
 			end
 			t.expect(rollBrands).toBe(total)
-			t.expect(Catalog.brand("william_kingsley").name).toBe("William Kingsley")
+			t.expect(Catalog.brand("pan_miller").name).toBe("Pan Miller")
+			t.expect(Catalog.brand("pan_miller").logo).toBe("brand_pan_miller")
+			t.expect(Catalog.brand("william_kingsley")).toBeNil()
+			t.expect(Catalog.brand("canale").name).toBe("Canalé")
 		end)
 
 		t.it("roll pools have the spec sizes and mythic has exactly one look", function()
-			local sizes = { common = 12, uncommon = 7, rare = 5, legendary = 3, mythic = 1 }
+			local sizes = { common = 12, uncommon = 8, rare = 6, epic = 4, legendary = 3, mythic = 1 }
 			for rarity, n in sizes do
 				local pool = Catalog.rollPools[rarity]
 				t.expect(pool ~= nil).toBeTruthy()
@@ -282,7 +288,12 @@ return function(t)
 					end
 				end
 			end
-			t.expect(Catalog.rollPools.mythic[1].brand).toBe("william_kingsley")
+			t.expect(Catalog.rollPools.mythic[1].brand).toBe("pan_miller")
+			-- common pools hold the most options, each higher tier fewer (v3 §1)
+			for i = 2, #Catalog.RARITIES do
+				local lower, higher = Catalog.RARITIES[i - 1], Catalog.RARITIES[i]
+				t.expect(#Catalog.rollPools[higher]).toBeLessThan(#Catalog.rollPools[lower])
+			end
 		end)
 
 		t.it("every pool item exists with the look's brand and rarity, and every look is complete", function()
@@ -335,19 +346,22 @@ return function(t)
 		end)
 
 		t.it("pickLook maps [0, 1) across the pool and lookOf finds a piece's look", function()
-			t.expect(Catalog.pickLook("mythic", 0.99).id).toBe("wk_signature")
+			t.expect(Catalog.pickLook("mythic", 0.99).id).toBe("pm_signature")
+			t.expect(Catalog.pickLook("epic", 0).brand).toBe("briani")
+			t.expect(Catalog.pickLook("epic", 0.99).brand).toBe("canale")
 			t.expect(Catalog.pickLook("common", 0).id).toBe(Catalog.rollPools.common[1].id)
 			t.expect(Catalog.pickLook("common", 0.9999).id).toBe(Catalog.rollPools.common[12].id)
 			t.expect(Catalog.pickLook("common", 1.5).id).toBe(Catalog.rollPools.common[12].id)
 			t.expect(Catalog.pickLook("common", -1).id).toBe(Catalog.rollPools.common[1].id)
 			t.expect(Catalog.pickLook("nope", 0.5)).toBeNil()
-			t.expect((Catalog.lookOf("wk_tie") :: any).id).toBe("wk_signature")
+			t.expect((Catalog.lookOf("pm_tie") :: any).id).toBe("pm_signature")
 			t.expect(Catalog.lookOf("oxford_white")).toBeNil()
 		end)
 
-		t.it("has the three family heirlooms with the right rarities", function()
+		t.it("has a family heirloom for every rarity from Rare up", function()
 			local want = {
 				heirloom_signet_ring = "rare",
+				heirloom_family_scarf = "epic",
 				heirloom_family_watch = "legendary",
 				heirloom_vanderfeller_crest_blazer = "mythic",
 			}
@@ -360,12 +374,17 @@ return function(t)
 				t.expect(item.rarity).toBe(rarity)
 				t.expect(item.brand).toBe("family_heirloom")
 			end
-			t.expect(#Catalog.heirlooms()).toBe(3)
-			-- mythic is reserved for the Kingsley look and the Vanderfeller blazer
+			t.expect(#Catalog.heirlooms()).toBe(4)
+			for id, rarity in want do
+				t.expect(Catalog.heirloomFor(rarity)).toBe(id)
+			end
+			t.expect(Catalog.heirloomFor("common")).toBeNil()
+			t.expect(Catalog.heirloomFor("uncommon")).toBeNil()
+			t.expect(Catalog.heirloomFor(nil)).toBeNil()
+			-- mythic is reserved for the Pan Miller look and the Vanderfeller blazer
 			for id, item in Catalog.items do
 				if item.rarity == "mythic" then
-					t.expect(item.brand == "william_kingsley" or id == "heirloom_vanderfeller_crest_blazer")
-						.toBeTruthy()
+					t.expect(item.brand == "pan_miller" or id == "heirloom_vanderfeller_crest_blazer").toBeTruthy()
 				end
 			end
 		end)
@@ -398,9 +417,9 @@ return function(t)
 				end
 			end
 			t.expect(Catalog.stageFor(0)).toBe("student")
-			t.expect(Catalog.stageFor(1)).toBe("intern")
-			t.expect(Catalog.stageFor(9)).toBe("analyst")
-			t.expect(Catalog.starterFor(1).neck).toBe("lanyard_intern")
+			t.expect(Catalog.stageFor(1)).toBe("analyst")
+			t.expect(Catalog.stageFor(9)).toBe("associate")
+			t.expect(Catalog.starterFor(1).neck).toBe("lanyard_staff")
 			local items = Catalog.starterItems(2)
 			t.expect(items).toContain("hoodie_heather")
 			t.expect(items).toContain("oxford_white")
@@ -438,12 +457,12 @@ return function(t)
 
 	t.describe("Access rules", function()
 		local student = { owned = {}, rank = 0, passes = {} }
-		local vp = { owned = { suit_pinstripe_db = true }, rank = 4, passes = {} }
+		local vp = { owned = { suit_pinstripe_db = true }, rank = 3, passes = {} }
 		local member = { owned = {}, rank = 0, passes = { ExecutiveClub = true, CornerOffice = true } }
 
 		t.it("reports owned, free, buy, rank and pass states", function()
 			t.expect(Catalog.access(Catalog.get("hoodie_heather") :: any, student)).toBe("owned") -- starter piece
-			t.expect(Catalog.access(Catalog.get("lanyard_intern") :: any, student)).toBe("free")
+			t.expect(Catalog.access(Catalog.get("lanyard_staff") :: any, student)).toBe("free")
 			t.expect(Catalog.access(Catalog.get("hoodie_maroon") :: any, student)).toBe("buy")
 			t.expect(Catalog.access(Catalog.get("watch_astra_moonphase") :: any, vp)).toBe("rank")
 			t.expect(Catalog.access(Catalog.get("suit_pinstripe_db") :: any, vp)).toBe("owned")
@@ -501,22 +520,22 @@ return function(t)
 		end)
 
 		t.it("exclusive pieces are wearable only once granted, and listed only when owned", function()
-			local item = Catalog.get("wk_jacket") :: any
+			local item = Catalog.get("pm_jacket") :: any
 			t.expect(Catalog.access(item, member)).toBe("roll")
 			local ok, err = Catalog.canWear(item, member)
 			t.expect(ok).toBeFalsy()
 			t.expect(err).toBe("roll")
 			local heir = Catalog.get("heirloom_signet_ring") :: any
 			t.expect(Catalog.access(heir, student)).toBe("heirloom")
-			local granted = { owned = { wk_jacket = true, heirloom_signet_ring = true }, rank = 0 }
+			local granted = { owned = { pm_jacket = true, heirloom_signet_ring = true }, rank = 0 }
 			t.expect(Catalog.access(item, granted)).toBe("owned")
-			t.expect((Catalog.checkEquip("outer", "wk_jacket", granted))).toBeTruthy()
+			t.expect((Catalog.checkEquip("outer", "pm_jacket", granted))).toBeTruthy()
 			t.expect((Catalog.checkEquip("wrist", "heirloom_signet_ring", granted))).toBeTruthy()
 			t.expect(Catalog.isShopItem(item)).toBeFalsy()
 			t.expect(Catalog.isExclusive(item)).toBeTruthy()
 			-- the wardrobe lists owned exclusives first, never unowned ones
 			local outer = Catalog.visibleFor("outer", granted)
-			t.expect(outer[1].id).toBe("wk_jacket")
+			t.expect(outer[1].id).toBe("pm_jacket")
 			for _, it in Catalog.visibleFor("outer", student) do
 				t.expect(Catalog.isExclusive(it)).toBeFalsy()
 				t.expect(it.hidden).toBeNil()
@@ -538,8 +557,9 @@ return function(t)
 		t.it("text substitutes placeholders and falls back to the key", function()
 			t.expect(Catalog.text("buy", { price = "$120" })).toBe("Buy $120")
 			t.expect(Catalog.text("no_such_key")).toBe("no_such_key")
-			t.expect(Catalog.rankTitle(6)).toBe("Managing Director")
+			t.expect(Catalog.rankTitle(5)).toBe("Managing Director")
 			t.expect(Catalog.rankTitle(8)).toBe("Managing Director")
+			t.expect(Catalog.rankTitle(3)).toBe("Vice President")
 		end)
 	end)
 end

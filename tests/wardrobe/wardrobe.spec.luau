@@ -386,18 +386,18 @@ return function(t)
 				strict = true,
 			})
 			t.expect(named(covered, "top_Check")).toBe(0)
-			local kingsley = NpcRig.build({
-				equipped = { top = "wk_shirt", outer = "wk_jacket", neck = "wk_tie" },
+			local panMiller = NpcRig.build({
+				equipped = { top = "pm_shirt", outer = "pm_jacket", neck = "pm_tie" },
 				hairStyle = "none",
 				strict = true,
 			})
-			t.expect(named(kingsley, "top_Monogram")).toBe(2)
-			t.expect(named(kingsley, "outer_LapelPin")).toBe(1)
-			t.expect(named(kingsley, "outer_PocketSquare")).toBe(2)
+			t.expect(named(panMiller, "top_Monogram")).toBe(2)
+			t.expect(named(panMiller, "outer_LapelPin")).toBe(1)
+			t.expect(named(panMiller, "outer_PocketSquare")).toBe(2)
 			-- gold buttons
-			local gold = Fit.colorsOf(Catalog.get("wk_jacket")).accent
+			local gold = Fit.colorsOf(Catalog.get("pm_jacket")).accent
 			local buttons = 0
-			for _, p in layers(kingsley) do
+			for _, p in layers(panMiller) do
 				if p.Name == "outer_Button" then
 					buttons += 1
 					t.expect(p.Color).toEqual(gold)

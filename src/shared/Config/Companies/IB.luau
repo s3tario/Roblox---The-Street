@@ -1,0 +1,180 @@
+--!strict
+-- The Investment Banking firms (milestone 1). Fictional parodies; every name, boss and blurb is invented.
+-- Hiring eligibility follows design v2 §4b / v3 §4:
+--   bulge     Rare+ school (tier 3) or GPA >= 3.6
+--   elite     Epic+ school (tier 4), or Rare+ with GPA >= 3.7
+--   middle    Uncommon+ school (tier 2) or GPA >= 3.3
+--   regional  anyone (Sterling & Vance always offers a walk-on seat to anyone who reaches its Superday bar)
+
+local BULGE = { anyOf = { { schoolTier = 3 }, { gpa = 3.6 } }, baseOdds = 0.22, bar = 70 }
+local ELITE = { anyOf = { { schoolTier = 4 }, { schoolTier = 3, gpa = 3.7 } }, baseOdds = 0.16, bar = 75 }
+local MIDDLE = { anyOf = { { schoolTier = 2 }, { gpa = 3.3 } }, baseOdds = 0.38, bar = 60 }
+local REGIONAL = { anyOf = { {} }, baseOdds = 0.6, bar = 45 }
+
+return {
+	-- Bulge brackets -----------------------------------------------------------------------------------
+	{
+		id = "mg_freeman",
+		name = "MG Freeman",
+		short = "MGF",
+		type = "bulge",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "st", "wm", "er", "corpbank", "credit" },
+		colors = { primary = "#1B2A4A", accent = "#B8935A", text = "#FFFFFF" },
+		culture = "The biggest balance sheet on the Street. Huge deal flow, long nights and a brand that opens every door.",
+		tagline = "Capital, at scale.",
+		bossNames = { ib = "Catherine Ashby" },
+		hiring = { ib = BULGE },
+	},
+	{
+		id = "goldfield_saxe",
+		name = "Goldfield Saxe",
+		short = "GS",
+		type = "bulge",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "st", "wm", "er", "corpbank", "credit" },
+		colors = { primary = "#4F79B8", accent = "#E8EEF6", text = "#FFFFFF" },
+		culture = "Partnership culture with sharp elbows. The analysts are brilliant, the standards are brutal and the alumni run everything.",
+		tagline = "Excellence is the floor, not the ceiling.",
+		bossNames = { ib = "Marcus Okonkwo" },
+		hiring = { ib = BULGE },
+	},
+	{
+		id = "morrow_stanton",
+		name = "Morrow Stanton",
+		short = "MS",
+		type = "bulge",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "st", "wm", "er", "corpbank", "credit" },
+		colors = { primary = "#0E3B5B", accent = "#8FB8DE", text = "#FFFFFF" },
+		culture = "Tech and IPO powerhouse. Polished pitchbooks, global coverage and a floor that never quite sleeps.",
+		tagline = "Every great company goes public somewhere.",
+		bossNames = { ib = "Priya Raman" },
+		hiring = { ib = BULGE },
+	},
+	{
+		id = "merriweather_lynch",
+		name = "Merriweather Lynch",
+		short = "ML",
+		type = "bulge",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "st", "wm", "er", "corpbank", "credit" },
+		colors = { primary = "#23262B", accent = "#C2272D", text = "#FFFFFF" },
+		culture = "A huge retail network, an even bigger balance sheet and a famously competitive bullpen.",
+		tagline = "Charge ahead.",
+		bossNames = { ib = "Daniel Kowalski" },
+		hiring = { ib = BULGE },
+	},
+
+	-- Elite boutiques ----------------------------------------------------------------------------------
+	{
+		id = "evermoor",
+		name = "Evermoor Partners",
+		short = "Evermoor",
+		type = "elite",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "er" },
+		colors = { primary = "#1F4D3A", accent = "#D8C08A", text = "#FFFFFF" },
+		culture = "Advice only, no balance sheet. Small teams, senior exposure from day one and the highest pay on the Street.",
+		tagline = "Independent advice. Lasting relationships.",
+		bossNames = { ib = "Hiroshi Tanaka" },
+		hiring = { ib = ELITE },
+	},
+	{
+		id = "lazaro_freres",
+		name = "Lazaro Frères",
+		short = "Lazaro",
+		type = "elite",
+		departments = { "ib" },
+		plannedDepartments = { "ib" },
+		colors = { primary = "#141414", accent = "#C8A951", text = "#FFFFFF" },
+		culture = "Old-world restructuring royalty. Discreet, intellectual and allergic to sloppy work.",
+		tagline = "Counsel since before it was fashionable.",
+		bossNames = { ib = "Isabelle Moreau" },
+		hiring = { ib = ELITE },
+	},
+	{
+		id = "centerline",
+		name = "Centerline Partners",
+		short = "Centerline",
+		type = "elite",
+		departments = { "ib" },
+		plannedDepartments = { "ib" },
+		colors = { primary = "#3B4552", accent = "#C77D4A", text = "#FFFFFF" },
+		culture = "The boardroom whisperers. Mega-mergers, tiny teams and partners who answer their own phones.",
+		tagline = "Where the biggest deals are decided.",
+		bossNames = { ib = "Rafael Mendoza" },
+		hiring = { ib = ELITE },
+	},
+
+	-- Middle market ------------------------------------------------------------------------------------
+	{
+		id = "harrow_williams",
+		name = "Harrow Williams",
+		short = "HW",
+		type = "middle",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "er" },
+		colors = { primary = "#6B1E2E", accent = "#E3D3B5", text = "#FFFFFF" },
+		culture = "Founder-owned companies and family businesses. Real responsibility early and partners who know your name.",
+		tagline = "Middle market. Top-tier results.",
+		bossNames = { ib = "Grace Whitaker" },
+		hiring = { ib = MIDDLE },
+	},
+	{
+		id = "blairmont",
+		name = "Blairmont & Co.",
+		short = "Blairmont",
+		type = "middle",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "er" },
+		colors = { primary = "#0F5C5C", accent = "#F0B429", text = "#FFFFFF" },
+		culture = "Collegial and employee-owned. Growth companies, honest hours and a famously good pantry.",
+		tagline = "Growth, advised.",
+		bossNames = { ib = "Samuel Adeyemi" },
+		hiring = { ib = MIDDLE },
+	},
+	{
+		id = "houlton_lockey",
+		name = "Houlton Lockey",
+		short = "HL",
+		type = "middle",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "er" },
+		colors = { primary = "#4B2A63", accent = "#B9A2D4", text = "#FFFFFF" },
+		culture = "Restructuring specialists and the busiest M&A desk in the mid-cap world. Volume, volume, volume.",
+		tagline = "When it matters most.",
+		bossNames = { ib = "Mei-Lin Chen" },
+		hiring = { ib = MIDDLE },
+	},
+
+	-- Regional -----------------------------------------------------------------------------------------
+	{
+		id = "sterling_vance",
+		name = "Sterling & Vance",
+		short = "S&V",
+		type = "regional",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "corpbank", "wm" },
+		colors = { primary = "#2F3E55", accent = "#C0C6CF", text = "#FFFFFF" },
+		culture = "A proud regional desk with an open door. They hire hungry people from anywhere and teach them the trade.",
+		tagline = "Your first seat on the Street.",
+		bossNames = { ib = "Tom Brennan" },
+		hiring = {
+			ib = { anyOf = { {} }, baseOdds = 0.6, bar = 45, walkOn = { bar = 40 } },
+		},
+	},
+	{
+		id = "eastbridge_capital",
+		name = "Eastbridge Capital Advisors",
+		short = "Eastbridge",
+		type = "regional",
+		departments = { "ib" },
+		plannedDepartments = { "ib", "corpbank", "wm" },
+		colors = { primary = "#8A3B1F", accent = "#E8B04B", text = "#FFFFFF" },
+		culture = "Born in the college town and proud of it. Local companies, scrappy deals and a boss who remembers being you.",
+		tagline = "From Eastbridge to the Street.",
+		bossNames = { ib = "Rosa Delgado" },
+		hiring = { ib = REGIONAL },
+	},
+}

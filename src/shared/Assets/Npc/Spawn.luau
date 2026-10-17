@@ -98,7 +98,13 @@ function Spawn.spawn(opts: Rig.BuildOpts): Model?
 			hatted = r.equipped.head ~= nil,
 		})
 	end
-	Wardrobe.apply(model, r.equipped, { anchored = false, skin = r.skin, glint = opts.glint })
+	Wardrobe.apply(model, r.equipped, {
+		anchored = false,
+		skin = r.skin,
+		glint = opts.glint,
+		companyLogo = opts.companyLogo,
+		companyMonogram = opts.companyMonogram,
+	})
 	applyPose(model, r.pose)
 	model:SetAttribute("NpcRig", true)
 	model:SetAttribute("Pose", r.pose)

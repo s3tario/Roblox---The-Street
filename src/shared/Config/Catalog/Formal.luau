@@ -13,6 +13,9 @@ end
 
 -- Suits: three cuts (two-button, double-breasted, three-piece) x six colours, Hartwell Tailors -----------
 -- Jackets are "outer" items; the matching trousers are sold separately as "bottom" items.
+-- Clothing levels (v3 §5): two-button jackets are level 3 (about $1-2k), double-breasted and three-piece jackets
+-- level 4 (about $3-6k), the navy pinstripe line level 4 from Associate up. Level 5 suits are the Hartwell Bespoke
+-- line (Catalog/Luxury.luau). Nothing a dress code needs is rank-gated above what the next promotion requires.
 local SUITS = {
 	{ key = "navy", label = "Navy", primary = "#1D2A47", secondary = "#17213A", premium = 0, trousers = 900 },
 	{ key = "charcoal", label = "Charcoal", primary = "#3A3D44", secondary = "#2F3238", premium = 0, trousers = 900 },
@@ -23,10 +26,11 @@ local SUITS = {
 		label = "Navy Pinstripe",
 		primary = "#1B2742",
 		secondary = "#151F36",
-		premium = 1000,
-		trousers = 1400,
+		premium = 1600,
+		trousers = 1800,
 		pattern = "pinstripe",
-		minRank = 4,
+		minRank = 2,
+		tier = 4,
 	},
 	{ key = "camel", label = "Camel", primary = "#A9834F", secondary = "#8F6E41", premium = 400, trousers = 1000 },
 }
@@ -36,7 +40,7 @@ local CUTS = {
 		short = "2b",
 		label = "Two-Button Jacket",
 		text = "classic two-button",
-		price = 1600,
+		price = 1500,
 		tier = 3,
 	},
 	{
@@ -44,26 +48,21 @@ local CUTS = {
 		short = "db",
 		label = "Double-Breasted Jacket",
 		text = "double-breasted, peak-lapel",
-		price = 2400,
+		price = 3200,
 		tier = 4,
-		minRank = 3,
 	},
 	{
 		key = "three_piece",
 		short = "3p",
 		label = "Three-Piece Jacket",
 		text = "three-piece (waistcoat included)",
-		price = 2900,
+		price = 3800,
 		tier = 4,
-		minRank = 3,
 	},
 }
 for _, colour in SUITS do
 	for _, cut in CUTS do
-		local minRank: number? = cut.minRank
-		if colour.minRank and (minRank == nil or colour.minRank > minRank) then
-			minRank = colour.minRank
-		end
+		local minRank: number? = colour.minRank
 		add({
 			id = "suit_" .. colour.key .. "_" .. cut.short,
 			name = colour.label .. " " .. cut.label,
@@ -75,7 +74,7 @@ for _, colour in SUITS do
 			pattern = colour.pattern,
 			minRank = minRank,
 			colors = c(colour.primary, colour.secondary, "#F4F4F0"),
-			tier = if colour.pattern then 5 else cut.tier,
+			tier = math.max(cut.tier, colour.tier or 0),
 			tags = { "suits", "tailoring", cut.key, colour.key },
 			desc = "Hartwell Tailors "
 				.. string.lower(colour.label)
@@ -97,7 +96,7 @@ for _, s in SUITS do
 		pattern = s.pattern,
 		minRank = s.minRank,
 		colors = c(s.primary, "#1A1512", "#C0C4C8"),
-		tier = if s.pattern then 4 else 3,
+		tier = s.tier or 3,
 		tags = { "suits", "tailoring", s.key },
 		desc = "Flat-front " .. string.lower(s.label) .. " suit trousers with a pressed crease.",
 	})
@@ -107,9 +106,8 @@ add({
 	name = "Charcoal Overcoat",
 	slot = "outer",
 	category = "suits",
-	price = 1800,
+	price = 2200,
 	builder = "overcoat",
-	minRank = 2,
 	colors = c("#3C3E44", "#2F3136", "#1E1E21"),
 	tier = 4,
 	tags = { "suits", "outerwear", "winter" },
@@ -149,7 +147,7 @@ add({
 	price = 2500,
 	builder = "oxford",
 	style = "wholecut",
-	minRank = 4,
+	minRank = 3,
 	colors = c("#2A1A12", "#120C08", "#4A3020"),
 	tier = 5,
 	tags = { "shoes", "leather", "prestige" },
@@ -277,14 +275,14 @@ add({
 	category = "accessories",
 	price = 950,
 	builder = "briefcase",
-	minRank = 2,
 	colors = c("#4A2E1C", "#3A2416", "#C9A54C"),
 	tier = 4,
 	tags = { "bag", "leather", "prestige" },
 	desc = "Full-grain leather briefcase with brass clasps.",
 })
 
--- Watches: the status ladder (Vanta Watches) ------------------------------------------------------
+-- Watches: the status ladder (Vanta Watches). minRank uses career ranks (0 student, 1 entry, 2 Associate,
+-- 3 VP, 4 Director, 5 MD on the IB ladder) --------------------------------------------------------------
 add({
 	id = "watch_meridian_steel",
 	name = "Meridian Steel",
@@ -319,7 +317,7 @@ add({
 	price = 4500,
 	builder = "watch",
 	style = "steel",
-	minRank = 2,
+	minRank = 1,
 	colors = c("#D2D5D9", "#C0C4C8", "#1E2A4A"),
 	tier = 3,
 	tags = { "watch", "chronograph" },
@@ -333,7 +331,7 @@ add({
 	price = 18000,
 	builder = "watch",
 	style = "gold",
-	minRank = 4,
+	minRank = 3,
 	colors = c("#D4AF37", "#2A1A12", "#F4EEDC"),
 	tier = 4,
 	tags = { "watch", "prestige" },
@@ -347,7 +345,7 @@ add({
 	price = 80000,
 	builder = "watch",
 	style = "platinum",
-	minRank = 6,
+	minRank = 5,
 	colors = c("#E5E4E2", "#1B2233", "#0E1A33"),
 	tier = 5,
 	tags = { "watch", "prestige", "md" },

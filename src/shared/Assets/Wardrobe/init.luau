@@ -16,9 +16,16 @@
 --         skin: Color3?        -- skin tone for bare areas (default: the LeftHand/Head colour)
 --         fallbacks: boolean?  -- default true
 --         strict: boolean?     -- let builder errors propagate (tests); default: warn and skip the item
+--         companyLogo: string?      -- logo id (contracts §16) of the wearer's company: drawn as a small
+--                                   -- left-chest emblem ONLY when the visible torso piece is a vest or a
+--                                   -- quarter-zip (Catalog.logoEligible, v3 §16); never on suits, shirts, etc.
+--         companyMonogram: string?  -- fallback initials when Shared/Assets/Logos is missing (default: from the id)
+--         companyTint: Color3?      -- thread colour of the emblem (default: whatever reads on the garment)
 --       }
 --   Wardrobe.clear(character)  removes "CareerLook" and restores every recoloured body part.
 --   Wardrobe.resolve(equipped, fallbacks?) -> { [slot] = Item }    Wardrobe.isApplied(character) -> boolean
+--   Wardrobe.logoSlotFor(equipped) -> "outer" | "top" | nil         where a company logo would show
+--   Wardrobe.appliedLogo(character) -> logoId?                       the company logo currently drawn
 --   Wardrobe.bodyParts(character) -> { [name] = BasePart }         Wardrobe.builders / Wardrobe.hasBuilder(id)
 --   Wardrobe.Details.has(detailId)   signature details listed in item.details (Details.luau)
 --
@@ -28,12 +35,14 @@
 local Catalog = require(script.Parent.Parent.Config.Catalog)
 local Fit = require(script.Fit)
 local Details = require(script.Details)
+local Emblems = require(script.Emblems)
 
 export type Result = {
 	ok: boolean,
 	count: number, -- layer parts built
 	items: { [string]: string }, -- slot -> item id actually worn (fallbacks included)
 	failed: { string }, -- item ids whose builder errored (non-strict mode)
+	logoSlot: string?, -- slot that carries the company logo (nil when none was drawn)
 }
 export type ApplyOpts = {
 	anchored: boolean?,
@@ -41,6 +50,9 @@ export type ApplyOpts = {
 	skin: Color3?,
 	fallbacks: boolean?,
 	strict: boolean?,
+	companyLogo: string?,
+	companyMonogram: string?,
+	companyTint: Color3?,
 }
 type Builder = { build: (Fit.Ctx) -> (), covers: any }
 
@@ -50,6 +62,8 @@ Wardrobe.Details = Details
 Wardrobe.FOLDER = Fit.FOLDER
 Wardrobe.ATTR_PART = Fit.ATTR_PART
 Wardrobe.ATTR_EQUIPPED = "CareerLookItems" -- on the folder: "slot=id;slot=id" (sorted) for quick checks
+Wardrobe.ATTR_LOGO = "CareerLookLogo" -- on the folder: the company logo id drawn on the look (absent when none)
+Wardrobe.Emblems = Emblems
 
 local builders: { [string]: Builder } = {}
 for _, group in
@@ -123,6 +137,43 @@ local function coversOf(item: Catalog.Item): { [string]: boolean }
 		return if ok and type(result) == "table" then result else {}
 	end
 	return if type(c) == "table" then c else {}
+end
+
+-- The slot whose garment shows the company logo: an eligible outer layer (vest), else an eligible top
+-- (quarter-zip) that no other layer covers at the torso. Suits, shirts, blouses, hoodies and the rest never do.
+function Wardrobe.logoSlot(items: { [string]: Catalog.Item }, covers: { [string]: { [string]: boolean } }): string?
+	local outer = items.outer
+	if outer and Catalog.logoEligible(outer) then
+		return "outer"
+	end
+	local top = items.top
+	if top and Catalog.logoEligible(top) then
+		for slot, set in covers do
+			if slot ~= "top" and set.torso then
+				return nil
+			end
+		end
+		return "top"
+	end
+	return nil
+end
+
+function Wardrobe.logoSlotFor(equipped: any): string?
+	local items = Wardrobe.resolve(equipped)
+	local covers: { [string]: { [string]: boolean } } = {}
+	for slot, item in items do
+		covers[slot] = coversOf(item)
+	end
+	return Wardrobe.logoSlot(items, covers)
+end
+
+function Wardrobe.appliedLogo(character: Instance): string?
+	if typeof(character) ~= "Instance" then
+		return nil
+	end
+	local folder = character:FindFirstChild(Fit.FOLDER)
+	local logo = if folder then folder:GetAttribute(Wardrobe.ATTR_LOGO) else nil
+	return if type(logo) == "string" then logo else nil
 end
 
 local function signature(items: { [string]: string }): string
@@ -228,6 +279,9 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 		covers[slot] = coversOf(item)
 	end
 
+	local logoId = if type(o.companyLogo) == "string" and o.companyLogo ~= "" then o.companyLogo else nil
+	local logoSlot = if logoId then Wardrobe.logoSlot(items, covers) else nil
+
 	local ctx: Fit.Ctx = {
 		character = character :: any,
 		folder = folder,
@@ -240,10 +294,13 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 		item = nil,
 		slot = "",
 		colors = Fit.colorsOf(nil),
-		state = {},
+		state = { logoSlot = logoSlot },
 		count = 0,
 		painted = {},
 	}
+	local logo: Emblems.Logo? = if logoId
+		then { id = logoId, monogram = o.companyMonogram, tint = o.companyTint }
+		else nil
 
 	for _, slot in Catalog.SLOTS do
 		local item = items[slot]
@@ -254,13 +311,20 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 		ctx.item = item
 		ctx.slot = slot
 		ctx.colors = Fit.colorsOf(item)
+		local withLogo = logo ~= nil and slot == logoSlot
 		if o.strict then
 			b.build(ctx)
 			Details.apply(ctx)
+			if withLogo then
+				Emblems.company(ctx, logo :: Emblems.Logo)
+			end
 		else
 			local ok, err = pcall(function()
 				b.build(ctx)
 				Details.apply(ctx)
+				if withLogo then
+					Emblems.company(ctx, logo :: Emblems.Logo)
+				end
 			end)
 			if not ok then
 				table.insert(result.failed, item.id)
@@ -269,6 +333,9 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 			end
 		end
 		result.items[slot] = item.id
+		if withLogo then
+			result.logoSlot = slot
+		end
 	end
 
 	-- hands always show the skin
@@ -281,6 +348,9 @@ function Wardrobe.apply(character: Instance, equipped: { [string]: string }?, op
 	end
 
 	folder:SetAttribute(Wardrobe.ATTR_EQUIPPED, signature(result.items))
+	if result.logoSlot and logoId then
+		folder:SetAttribute(Wardrobe.ATTR_LOGO, logoId)
+	end
 	folder.Parent = character
 	result.ok = true
 	result.count = ctx.count
