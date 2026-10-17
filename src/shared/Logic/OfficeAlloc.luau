@@ -265,7 +265,7 @@ function OfficeAlloc.normalizeCompany(def: any, key: any?): Company?
 		short = str(def.short) or initials(resolvedName),
 		kind = kind,
 		tier = def.tier,
-		tierLabel = tierLabelOf(def.tier, kind),
+		tierLabel = str(def.typeName) or tierLabelOf(def.tier, kind),
 		departments = departments,
 		primary = toColor(colors.primary) or toColor(def.primary),
 		accent = toColor(colors.accent) or toColor(def.accent),
@@ -347,8 +347,8 @@ function OfficeAlloc.normalizeTracks(mod: any): { [string]: Track }
 		if type(def) == "table" then
 			local id = str(def.id) or (if type(key) == "string" then key else nil)
 			if id and (str(def.name) or type(def.ladder) == "table") then
-				local top: string? = nil
-				if type(def.ladder) == "table" and #def.ladder > 0 then
+				local top: string? = str(def.topTitle)
+				if top == nil and type(def.ladder) == "table" and #def.ladder > 0 then
 					local last = def.ladder[#def.ladder]
 					top = if type(last) == "table" then str(last.title) elseif type(last) == "string" then last else nil
 				end

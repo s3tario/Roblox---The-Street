@@ -22,34 +22,32 @@
 --   OfficeService:GetDirectory() -> { Entry }                what the Directory screen shows
 --   OfficeService:IsAvailable(companyId, floor?) -> boolean
 --   OfficeService:GetCompanyAt(instance) -> (companyId?, floor?)   for any part inside an office instance
+--   OfficeService:GetLocationAt(position) -> (companyId?, floor?)  the live floor at a world position
 --   OfficeService:GetAnchor(companyId, floor, name) -> BasePart?   OfficeAnchor marker on a live floor
 --   OfficeService:GetBossName(companyId, trackId) -> string   the name the boss NPC wears
 --   OfficeService:GetBossNpc(companyId, trackId) -> Model?
 --   OfficeService:ResolveExit(player, companyId) -> anchorId  where the lobby "exit" door leads this player
---   OfficeService:SetPickerContext(player, doorId, tenants, anchorId)   WorldService, when a tower picker opens
--- Remotes (RemoteFunctions, Guard-validated):
---   "Office.Enter"(companyId, floor?) -> ok, errKey?, message?      Directory screen / Phone
---   "Office.Elevator"(trackId | "lobby") -> ok, errKey?, message?   lobby elevator panel (visitors may ride)
---   "Office.Directory"() -> { Entry }                                companies with availability
--- Interacts owned here: `elevator_panel` (lobby) and `company_directory` (street kiosks) get ProximityPrompts
--- (attribute InteractId); OfficeController opens the Elevator / Directory screen when they trigger.
+--   OfficeService:SetPickerContext(player, doorId, tenants, anchorId?)   WorldService, when a tower picker opens
+--   OfficeService:EnterFromRemote(player, companyId, floor?) / :RideElevator(player, floor)   remote entry points
+-- Remotes: see OfficeService/Remotes ("Office.Enter", "Office.Elevator", "Office.Directory", "Office.OpenElevator",
+-- "Office.OpenDirectory"). Interacts owned here: `elevator_panel` (lobby) and `company_directory` (street kiosks),
+-- wired in OfficeService/Prompts.
 -- Player attributes set here: OfficeCompany, OfficeFloor (the office the player is standing in).
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
-local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Net = require(Shared.Net)
-local Guard = require(Shared.Guard)
 local Signal = require(Shared.Util.Signal)
 local Time = require(Shared.Util.Time)
 local World = require(Shared.Config.World)
 local OfficeAlloc = require(Shared.Logic.OfficeAlloc)
 local DoorRules = require(Shared.Logic.DoorRules)
 local Registry = require(script.Parent.Parent.Registry)
+local Catalog = require(script.Catalog)
 local Template = require(script.Template)
 local Npcs = require(script.Npcs)
+local Prompts = require(script.Prompts)
+local Remotes = require(script.Remotes)
 
 local Text = DoorRules.Text
 local LOBBY = OfficeAlloc.LOBBY
@@ -64,14 +62,15 @@ local OfficeService = {
 
 OfficeService.Template = Template
 OfficeService.Npcs = Npcs
+OfficeService.Catalog = Catalog
 
 local POLL_EVERY = 1
 local PICKER_TTL = 120
+local OPEN_COOLDOWN = 0.75
 local ROOT_NAME = "Offices"
-local PROMPT_NAME = "OfficesPrompt"
-local OWNED_INTERACTS = { elevator_panel = true, company_directory = true }
 local ARRIVE_LIFT = Vector3.new(0, 0.25, 0)
 local STAIRS_DELAY = 3
+local ARRIVAL_FALLBACKS = { "entry", "floor_entry", "elevators", "review_spot" }
 
 export type Location = { companyId: string, floor: string }
 export type EnterOpts = { source: string?, entryAnchor: string?, arrive: string? }
@@ -96,100 +95,9 @@ local floorsByKey: { [string]: FloorState } = {}
 local locations: { [Player]: Location } = {}
 local memory: { [Player]: DoorRules.Memory } = {}
 local pickers: { [Player]: Picker } = {}
+local lastOpen: { [Player]: number } = {}
 local rootFolder: Folder? = nil
-local warnedTemplates: { [string]: boolean } = {}
-
----------------------------------------------------------------------------------------------------
--- Catalog: companies, tracks, templates (loaded once)
----------------------------------------------------------------------------------------------------
-type Catalog = {
-	loaded: boolean,
-	byId: { [string]: OfficeAlloc.Company },
-	list: { OfficeAlloc.Company },
-	tracks: { [string]: OfficeAlloc.Track },
-	templates: { [string]: boolean },
-	directory: { OfficeAlloc.Entry },
-}
-local catalog: Catalog = { loaded = false, byId = {}, list = {}, tracks = {}, templates = {}, directory = {} }
-
-local function optionalModule(parent: Instance?, name: string): any
-	local mod = if parent then parent:FindFirstChild(name) else nil
-	if not (mod and mod:IsA("ModuleScript")) then
-		return nil
-	end
-	local ok, result = pcall(function()
-		return (require :: any)(mod)
-	end)
-	if not ok then
-		warn(("[OfficeService] couldn't load %s: %s"):format(mod:GetFullName(), tostring(result)))
-		return nil
-	end
-	return result
-end
-
-local function templatesFolder(): Instance?
-	return ServerStorage:FindFirstChild("FirmTemplates")
-end
-
-local function ensureCatalog(): Catalog
-	if catalog.loaded then
-		return catalog
-	end
-	catalog.loaded = true
-	local config = Shared:FindFirstChild("Config")
-	local byId, list = OfficeAlloc.normalizeCompanies(optionalModule(config, "Companies"))
-	if #list == 0 then
-		-- Config/Companies isn't there yet: list the Street's firms by their tower names, all "Opening soon".
-		warn("[OfficeService] Config/Companies missing or empty; every office shows as opening soon")
-		for _, t in World.towers do
-			local ids: { [string]: string } = {}
-			if t.company then
-				ids[t.company] = t.label
-			end
-			for _, id in t.picker or {} do
-				ids[id] = ids[id] or DoorRules.prettify(id)
-			end
-			for id, label in ids do
-				local c = OfficeAlloc.normalizeCompany({ id = id, name = label, departments = {} })
-				if c and byId[id] == nil then
-					byId[id] = c
-					table.insert(list, c)
-				end
-			end
-		end
-	end
-	catalog.byId = byId
-	catalog.list = list
-	catalog.tracks = OfficeAlloc.normalizeTracks(optionalModule(config, "Tracks"))
-	local templates: { [string]: boolean } = {}
-	local folder = templatesFolder()
-	if folder then
-		for _, child in folder:GetChildren() do
-			templates[child.Name] = true
-		end
-	else
-		warn("[OfficeService] ServerStorage.FirmTemplates is missing; offices can't open")
-	end
-	catalog.templates = templates
-	catalog.directory = OfficeAlloc.directory(list, templates, catalog.tracks)
-	return catalog
-end
-
-local logosModule: any = nil
-local function logos(): any
-	if logosModule == nil then
-		local assets = Shared:FindFirstChild("Assets")
-		logosModule = optionalModule(assets, "Logos") or false
-	end
-	return if logosModule then logosModule else nil
-end
-
-local function departmentName(floor: string): string
-	if floor == LOBBY then
-		return Text.get("lobby")
-	end
-	return OfficeAlloc.departmentName(floor, ensureCatalog().tracks)
-end
+local warnedAnchors: { [string]: boolean } = {}
 
 ---------------------------------------------------------------------------------------------------
 -- Helpers
@@ -224,10 +132,21 @@ local function rootPart(player: Player): BasePart?
 	return nil
 end
 
+-- Runs fn in a pcall and logs a failure (fn returns nothing, so the error is the only second value).
+local function safely(label: string, fn: () -> ())
+	local ok, err = pcall(function(): string?
+		fn()
+		return nil
+	end)
+	if not ok then
+		warn(("[OfficeService] %s failed: %s"):format(label, tostring(err)))
+	end
+end
+
 local function notify(player: Player, text: string, kind: string?)
 	local ns = Registry.get("NotifyService")
 	if ns and type(ns.Notify) == "function" then
-		pcall(function()
+		safely("NotifyService:Notify", function()
 			ns:Notify(player, text, kind)
 		end)
 	end
@@ -242,19 +161,6 @@ local function eventActive(eventId: string): boolean
 		return ok and active == true
 	end
 	return false
-end
-
-local function companyOf(inst: Instance): (string?, string?)
-	local node: Instance? = inst
-	while node and node ~= workspace do
-		local id = node:GetAttribute("CompanyId")
-		if type(id) == "string" then
-			local floor = node:GetAttribute("Department")
-			return id, if type(floor) == "string" then floor else nil
-		end
-		node = node.Parent
-	end
-	return nil, nil
 end
 
 -- (companyId, floor) of the live floor at a world position.
@@ -280,14 +186,16 @@ local function setLocation(player: Player, loc: Location?)
 	local old = locations[player]
 	local same = (old == nil and loc == nil)
 		or (old ~= nil and loc ~= nil and old.companyId == loc.companyId and old.floor == loc.floor)
-	if same then
+	if same or not isLive(player) then
 		return
 	end
-	locations[player] = loc
-	if isLive(player) then
-		player:SetAttribute("OfficeCompany", if loc then loc.companyId else nil)
-		player:SetAttribute("OfficeFloor", if loc then loc.floor else nil)
+	if loc then
+		locations[player] = loc
+	else
+		locations[player] = nil
 	end
+	player:SetAttribute("OfficeCompany", if loc then loc.companyId else nil)
+	player:SetAttribute("OfficeFloor", if loc then loc.floor else nil)
 	OfficeService.LocationChanged:Fire(player, if loc then table.clone(loc) else nil)
 end
 
@@ -306,24 +214,12 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Instances and floors
 ---------------------------------------------------------------------------------------------------
-local function ensureInstance(company: OfficeAlloc.Company): (InstanceState?, string?)
-	local inst = instances[company.id]
-	if inst and inst.model.Parent then
-		return inst, nil
+local function releaseInstance(inst: InstanceState)
+	if instances[inst.companyId] == inst then
+		instances[inst.companyId] = nil
 	end
-	local index = OfficeAlloc.acquire(alloc, company.id)
-	if index == nil then
-		return nil, "full"
-	end
-	local model = Instance.new("Model")
-	model.Name = "Office_" .. company.id
-	model:SetAttribute("CompanyId", company.id)
-	model:SetAttribute("CompanyName", company.name)
-	model:SetAttribute("InstanceIndex", index)
-	model.Parent = root()
-	local fresh: InstanceState = { companyId = company.id, index = index, model = model, floors = {} }
-	instances[company.id] = fresh
-	return fresh, nil
+	inst.model:Destroy()
+	OfficeAlloc.release(alloc, inst.companyId)
 end
 
 local function removeFloor(key: string)
@@ -341,10 +237,40 @@ local function removeFloor(key: string)
 	fs.model:Destroy()
 	OfficeService.FloorRemoved:Fire(fs.companyId, fs.floor)
 	if inst and next(inst.floors) == nil then
-		instances[fs.companyId] = nil
-		inst.model:Destroy()
-		OfficeAlloc.release(alloc, fs.companyId)
+		releaseInstance(inst)
 	end
+end
+
+local function ensureInstance(company: OfficeAlloc.Company): (InstanceState?, string?)
+	local inst = instances[company.id]
+	if inst and inst.model.Parent then
+		return inst, nil
+	elseif inst then
+		-- something destroyed the instance model behind our back: drop its floors and start over
+		local keys: { string } = {}
+		for _, fs in inst.floors do
+			table.insert(keys, fs.key)
+		end
+		for _, key in keys do
+			removeFloor(key)
+		end
+		if instances[company.id] == inst then
+			releaseInstance(inst)
+		end
+	end
+	local index = OfficeAlloc.acquire(alloc, company.id)
+	if index == nil then
+		return nil, "full"
+	end
+	local model = Instance.new("Model")
+	model.Name = "Office_" .. company.id
+	model:SetAttribute("CompanyId", company.id)
+	model:SetAttribute("CompanyName", company.name)
+	model:SetAttribute("InstanceIndex", index)
+	model.Parent = root()
+	local fresh: InstanceState = { companyId = company.id, index = index, model = model, floors = {} }
+	instances[company.id] = fresh
+	return fresh, nil
 end
 
 local function liveFloorCount(): number
@@ -353,6 +279,27 @@ local function liveFloorCount(): number
 		n += 1
 	end
 	return n
+end
+
+local function spawnNpcs(fs: FloorState, company: OfficeAlloc.Company)
+	local track = Catalog.get().tracks[fs.floor]
+	local ctx: Npcs.Ctx = {
+		model = fs.model,
+		company = company,
+		floor = fs.floor,
+		departmentName = Catalog.departmentName(fs.floor),
+		bossTitle = if track then track.topTitle else nil,
+		anchors = fs.anchors,
+		liveFloors = liveFloorCount(),
+		alive = function(): boolean
+			return fs.alive and fs.model.Parent ~= nil
+		end,
+	}
+	task.spawn(function()
+		safely(("office NPCs for %s/%s"):format(company.id, fs.floor), function()
+			Npcs.populate(ctx)
+		end)
+	end)
 end
 
 local function ensureFloor(company: OfficeAlloc.Company, floor: string): (FloorState?, string?)
@@ -368,8 +315,7 @@ local function ensureFloor(company: OfficeAlloc.Company, floor: string): (FloorS
 	if floorIndex == nil then
 		return nil, "no_floor"
 	end
-	local folder = templatesFolder()
-	local template = if folder then folder:FindFirstChild(floor) else nil
+	local template = Catalog.template(floor)
 	if not template then
 		return nil, "opening_soon"
 	end
@@ -384,9 +330,7 @@ local function ensureFloor(company: OfficeAlloc.Company, floor: string): (FloorS
 	if not ok or typeof(cloned) ~= "Instance" then
 		warn(("[OfficeService] couldn't clone template %s: %s"):format(floor, tostring(cloned)))
 		if next(inst.floors) == nil then
-			instances[company.id] = nil
-			inst.model:Destroy()
-			OfficeAlloc.release(alloc, company.id)
+			releaseInstance(inst)
 		end
 		return nil, "error"
 	end
@@ -399,21 +343,22 @@ local function ensureFloor(company: OfficeAlloc.Company, floor: string): (FloorS
 	end
 	model.Name = if floor == LOBBY then "Lobby" else "Floor_" .. floor
 
-	local brandOk, brandErr = pcall(Template.prepare, model, company, floor, logos())
-	if not brandOk then
-		warn(("[OfficeService] branding %s/%s failed: %s"):format(company.id, floor, tostring(brandErr)))
-	end
+	safely(("branding %s/%s"):format(company.id, floor), function()
+		Template.prepare(model, company, floor, Catalog.logos())
+	end)
 	model:SetAttribute("InstanceIndex", inst.index)
 	model:SetAttribute("FloorIndex", floorIndex)
+	-- Streamed as one unit, so a client never sees half a floor (and anchors arrive with their room).
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 
-	-- Templates are built around the origin: move the whole clone by the instance/floor origin.
+	-- Templates are baked around the world origin: shift the clone's pivot (PrimaryPart-relative, rotation kept)
+	-- by this instance/floor's origin.
 	local origin = World.officeOrigin(inst.index, floorIndex)
 	model:PivotTo(CFrame.new(origin) * model:GetPivot())
 	local anchors = Template.anchors(model)
 	model.Parent = inst.model
 
-	local now = Time.now()
-	local rec = OfficeAlloc.newFloor(company.id, floor, now)
+	local rec = OfficeAlloc.newFloor(company.id, floor, Time.now())
 	local fs: FloorState = {
 		key = key,
 		companyId = company.id,
@@ -429,25 +374,7 @@ local function ensureFloor(company: OfficeAlloc.Company, floor: string): (FloorS
 	inst.floors[floor] = fs
 
 	OfficeService.FloorCreated:Fire(company.id, floor, model)
-
-	local track = ensureCatalog().tracks[floor]
-	task.spawn(function()
-		local npcOk, npcErr = pcall(Npcs.populate, {
-			model = model,
-			company = company,
-			floor = floor,
-			departmentName = departmentName(floor),
-			bossTitle = if track then track.topTitle else nil,
-			anchors = anchors,
-			liveFloors = liveFloorCount(),
-			alive = function()
-				return fs.alive and model.Parent ~= nil
-			end,
-		})
-		if not npcOk then
-			warn(("[OfficeService] office NPCs for %s/%s failed: %s"):format(company.id, floor, tostring(npcErr)))
-		end
-	end)
+	spawnNpcs(fs, company)
 	return fs, nil
 end
 
@@ -460,28 +387,28 @@ local function flat(cf: CFrame): CFrame
 	return CFrame.lookAt(cf.Position, cf.Position + f.Unit)
 end
 
-local ARRIVAL_FALLBACKS = { "entry", "floor_entry", "elevators", "review_spot" }
-
 local function arrivalCFrame(fs: FloorState, name: string): CFrame
 	local anchor = fs.anchors[name]
-	if not anchor then
+	if not (anchor and anchor.Parent) then
+		anchor = nil
 		for _, alt in ARRIVAL_FALLBACKS do
-			anchor = fs.anchors[alt]
-			if anchor then
+			local a = fs.anchors[alt]
+			if a and a.Parent then
+				anchor = a
 				break
 			end
 		end
 	end
-	if anchor and anchor.Parent then
+	if anchor then
 		return flat(anchor.CFrame) + ARRIVE_LIFT
 	end
 	local warnKey = fs.floor .. "/" .. name
-	if not warnedTemplates[warnKey] then
-		warnedTemplates[warnKey] = true
+	if not warnedAnchors[warnKey] then
+		warnedAnchors[warnKey] = true
 		warn(("[OfficeService] template %s has no OfficeAnchor %q; arriving at the floor origin"):format(fs.floor, name))
 	end
-	return CFrame.new(World.officeOrigin(OfficeAlloc.indexOf(alloc, fs.companyId) or 1, fs.floorIndex))
-		+ Vector3.new(0, 5, 0)
+	local index = OfficeAlloc.indexOf(alloc, fs.companyId) or 1
+	return CFrame.new(World.officeOrigin(index, fs.floorIndex) + Vector3.new(0, 5, 0))
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -490,11 +417,9 @@ end
 local function errorText(errKey: string?, company: OfficeAlloc.Company?, floor: string?): string
 	if errKey == "opening_soon" then
 		if company and floor and floor ~= LOBBY then
-			return Text.format("floor_opening_soon", { department = departmentName(floor) })
+			return Text.format("floor_opening_soon", { department = Catalog.departmentName(floor) })
 		end
-		return if company
-			then Text.format("opening_soon_named", { name = company.name })
-			else Text.get("unknown_company")
+		return if company then Text.format("opening_soon_named", { name = company.name }) else Text.get("unknown_company")
 	elseif errKey == "no_floor" then
 		return Text.format("no_floor", { name = if company then company.name else "" })
 	elseif errKey == "full" then
@@ -525,11 +450,20 @@ local function teleport(player: Player, cf: CFrame, opts: { [string]: any }): (b
 			warn("[OfficeService] WorldService:Teleport errored: " .. tostring(a))
 			return false, "error"
 		end
-		return a == true, if a == true then nil else (if type(b) == "string" then b else "error")
+		if a == true then
+			return true, nil
+		end
+		return false, if type(b) == "string" then b else "error"
 	end
-	-- No WorldService: plain move.
+	-- No WorldService: a plain, streaming-safe move.
 	local char = player.Character
 	if not char or not rootPart(player) then
+		return false, "no_character"
+	end
+	pcall(function()
+		player:RequestStreamAroundAsync(cf.Position, 5)
+	end)
+	if not isLive(player) or player.Character ~= char or char.Parent == nil then
 		return false, "no_character"
 	end
 	char:PivotTo(cf)
@@ -546,8 +480,8 @@ function OfficeService:EnterCompany(
 		return false, "no_player", Text.get("tp_failed")
 	end
 	local o: EnterOpts = opts or {}
-	local cat = ensureCatalog()
-	local company = if type(companyId) == "string" then cat.byId[companyId] else nil
+	local cat = Catalog.get()
+	local company = Catalog.company(companyId)
 	local target = floor or LOBBY
 	if not company or not OfficeAlloc.isAvailable(company, cat.templates, cat.tracks) then
 		return false, "opening_soon", errorText("opening_soon", company, nil)
@@ -575,21 +509,15 @@ function OfficeService:EnterCompany(
 	if not fs then
 		return false, err, errorText(err, company, target)
 	end
-	local arrive = o.arrive
-	if arrive == nil then
-		arrive = if target == LOBBY then (if o.source == "elevator" then "elevators" else "entry") else "floor_entry"
-	end
+	local defaultArrive = if target == LOBBY
+		then (if o.source == "elevator" then "elevators" else "entry")
+		else "floor_entry"
+	local arrive: string = o.arrive or defaultArrive
 	local cf = arrivalCFrame(fs, arrive)
-
-	if o.entryAnchor then
-		memory[player] = { companyId = company.id, anchor = o.entryAnchor }
-	elseif o.source ~= "elevator" then
-		memory[player] = { companyId = company.id, anchor = nil }
-	end
 
 	local tpOpts: { [string]: any } = {
 		label = company.name,
-		sublabel = departmentName(target),
+		sublabel = Catalog.departmentName(target),
 		reason = "office",
 	}
 	if o.source == "elevator" and eventActive("elevator_outage") then
@@ -601,9 +529,56 @@ function OfficeService:EnterCompany(
 	if not ok then
 		return false, terr, errorText(terr, company, target)
 	end
+	if not isLive(player) then
+		return false, "no_player", nil
+	end
 	fs.rec.lastOccupied = Time.now()
+	-- Remember where the player came in from the Street (the lobby "exit" door leads back there).
+	if o.entryAnchor then
+		memory[player] = { companyId = company.id, anchor = o.entryAnchor }
+	elseif o.source ~= "elevator" then
+		memory[player] = { companyId = company.id, anchor = nil }
+	end
 	setLocation(player, { companyId = company.id, floor = target })
 	return true, nil, nil
+end
+
+-- Office.Enter (Directory / Phone / tower picker). Students without street access stay on campus.
+function OfficeService:EnterFromRemote(player: Player, companyId: string, floor: string?): (boolean, string?, string?)
+	local world = worldService()
+	if world and type(world.CanReachStreet) == "function" then
+		local ok, can, text = pcall(function()
+			return world:CanReachStreet(player)
+		end)
+		if ok and can == false then
+			return false, "locked", if type(text) == "string" then text else Text.get("locked_flag")
+		end
+	end
+	local pick = pickers[player]
+	local entryAnchor: string? = nil
+	if pick and Time.now() - pick.at <= PICKER_TTL and pick.tenants[companyId] then
+		entryAnchor = pick.anchor
+	end
+	local ok, err, message = self:EnterCompany(player, companyId, floor, {
+		source = if entryAnchor then "door" else "directory",
+		entryAnchor = entryAnchor,
+	})
+	if ok and pick and pickers[player] == pick then
+		pickers[player] = nil
+	end
+	return ok, err, message
+end
+
+-- Office.Elevator: ride to another floor of the office the player is standing in (visitors included).
+function OfficeService:RideElevator(player: Player, floor: string): (boolean, string?, string?)
+	local loc = currentLocation(player) or locations[player]
+	if not loc then
+		return false, "not_in_office", errorText("not_in_office", nil, nil)
+	end
+	if loc.floor == floor then
+		return true, nil, nil
+	end
+	return self:EnterCompany(player, loc.companyId, floor, { source = "elevator" })
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -625,16 +600,16 @@ function OfficeService:GetPlayerLocation(player: Player): Location?
 end
 
 function OfficeService:GetCompany(companyId: string): OfficeAlloc.Company?
-	return ensureCatalog().byId[companyId]
+	return Catalog.company(companyId)
 end
 
 function OfficeService:GetDirectory(): { OfficeAlloc.Entry }
-	return ensureCatalog().directory
+	return Catalog.get().directory
 end
 
 function OfficeService:IsAvailable(companyId: string, floor: string?): boolean
-	local cat = ensureCatalog()
-	local company = cat.byId[companyId]
+	local cat = Catalog.get()
+	local company = Catalog.company(companyId)
 	if not company then
 		return false
 	end
@@ -645,7 +620,14 @@ function OfficeService:GetCompanyAt(inst: Instance): (string?, string?)
 	if typeof(inst) ~= "Instance" then
 		return nil, nil
 	end
-	return companyOf(inst)
+	return Prompts.companyOf(inst)
+end
+
+function OfficeService:GetLocationAt(position: Vector3): (string?, string?)
+	if typeof(position) ~= "Vector3" then
+		return nil, nil
+	end
+	return locate(position)
 end
 
 function OfficeService:GetAnchor(companyId: string, floor: string, name: string): BasePart?
@@ -658,7 +640,7 @@ function OfficeService:GetAnchor(companyId: string, floor: string, name: string)
 end
 
 function OfficeService:GetBossName(companyId: string, trackId: string): string
-	local company = ensureCatalog().byId[companyId]
+	local company = Catalog.company(companyId)
 	if not company then
 		return Text.bossNames[1]
 	end
@@ -687,6 +669,9 @@ function OfficeService:ResolveExit(player: Player, companyId: string): string
 end
 
 function OfficeService:SetPickerContext(player: Player, doorId: string, tenants: { string }, anchor: string?)
+	if not isLive(player) then
+		return
+	end
 	local set: { [string]: boolean } = {}
 	for _, id in tenants do
 		set[id] = true
@@ -695,119 +680,30 @@ function OfficeService:SetPickerContext(player: Player, doorId: string, tenants:
 end
 
 ---------------------------------------------------------------------------------------------------
--- Remotes
----------------------------------------------------------------------------------------------------
-local function canReachStreet(player: Player): (boolean, string?)
-	local world = worldService()
-	if world and type(world.CanReachStreet) == "function" then
-		local ok, can, text = pcall(function()
-			return world:CanReachStreet(player)
-		end)
-		if ok and can == false then
-			return false, if type(text) == "string" then text else Text.get("locked_flag")
-		end
-	end
-	return true, nil
-end
-
-local function bindRemotes()
-	Net.handle("Office.Enter", function(player: Player, companyId: any, floor: any)
-		local id = Guard.id(companyId)
-		if not id then
-			return false, "opening_soon", Text.get("unknown_company")
-		end
-		local fl: string? = nil
-		if floor ~= nil then
-			fl = Guard.id(floor)
-			if not fl then
-				return false, "no_floor", errorText("no_floor", ensureCatalog().byId[id], nil)
-			end
-		end
-		local reach, text = canReachStreet(player)
-		if not reach then
-			return false, "locked", text
-		end
-		local pick = pickers[player]
-		local entryAnchor: string? = nil
-		if pick and Time.now() - pick.at <= PICKER_TTL and pick.tenants[id] then
-			entryAnchor = pick.anchor
-		end
-		local ok, err, message = OfficeService:EnterCompany(player, id, fl, {
-			source = if entryAnchor then "door" else "directory",
-			entryAnchor = entryAnchor,
-		})
-		if ok and pick and pickers[player] == pick then
-			pickers[player] = nil
-		end
-		return ok, err, message
-	end, { rate = 1, burst = 3 })
-
-	Net.handle("Office.Elevator", function(player: Player, trackId: any)
-		local fl = Guard.id(trackId)
-		if not fl then
-			return false, "no_floor", errorText("no_floor", nil, nil)
-		end
-		local loc = currentLocation(player) or locations[player]
-		if not loc then
-			return false, "not_in_office", errorText("not_in_office", nil, nil)
-		end
-		if loc.floor == fl then
-			return true, nil, nil
-		end
-		return OfficeService:EnterCompany(player, loc.companyId, fl, { source = "elevator" })
-	end, { rate = 1, burst = 3 })
-
-	Net.handle("Office.Directory", function(_player: Player)
-		return ensureCatalog().directory
-	end, { rate = 1, burst = 5 })
-end
-
----------------------------------------------------------------------------------------------------
 -- Interact prompts (elevator_panel, company_directory)
 ---------------------------------------------------------------------------------------------------
-local function promptParent(inst: Instance): Instance?
-	local base: Instance? = nil
-	if inst:IsA("BasePart") or inst:IsA("Attachment") then
-		base = inst
-	elseif inst:IsA("Model") then
-		base = inst.PrimaryPart or inst:FindFirstChildWhichIsA("BasePart", true)
-	end
-	if base and base:IsA("BasePart") then
-		local use = base:FindFirstChild("Use")
-		if use and use:IsA("Attachment") then
-			return use
-		end
-	end
-	return base
-end
-
-local function wireInteract(inst: Instance)
-	local id = inst:GetAttribute("InteractId")
-	if type(id) ~= "string" or not OWNED_INTERACTS[id] or not inst:IsDescendantOf(workspace) then
+local function onPromptTriggered(player: Player, interactId: string, inst: Instance, _prompt: ProximityPrompt)
+	if not isLive(player) then
 		return
 	end
-	local parent = promptParent(inst)
-	if not parent or parent:FindFirstChild(PROMPT_NAME) then
+	local now = os.clock()
+	if now - (lastOpen[player] or -math.huge) < OPEN_COOLDOWN then
 		return
 	end
-	local def = World.interactIds[id]
-	local companyId = companyOf(inst)
-	local company = if companyId then ensureCatalog().byId[companyId] else nil
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = PROMPT_NAME
-	prompt.ActionText = if def then def.prompt else Text.get("office_elevator")
-	prompt.ObjectText = if id == "elevator_panel"
-		then (if company then company.name else Text.get("elevator_title"))
-		else Text.get("directory_title")
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 10
-	prompt.RequiresLineOfSight = false
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt:SetAttribute("InteractId", id)
-	if companyId then
-		prompt:SetAttribute("CompanyId", companyId)
+	lastOpen[player] = now
+	if interactId == "company_directory" then
+		Remotes.openDirectory(player, { source = "kiosk" })
+		return
 	end
-	prompt.Parent = parent
+	local companyId, dept = Prompts.companyOf(inst)
+	local company = Catalog.company(companyId)
+	if not company then
+		notify(player, Text.get("not_in_office"), "warn")
+		return
+	end
+	local loc = currentLocation(player) or locations[player]
+	local current = dept or (if loc and loc.companyId == company.id then loc.floor else LOBBY)
+	Remotes.openElevator(player, Catalog.elevatorPayload(company, current, eventActive("elevator_outage")) :: any)
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -832,6 +728,7 @@ local function onPlayerRemoving(player: Player)
 	locations[player] = nil
 	memory[player] = nil
 	pickers[player] = nil
+	lastOpen[player] = nil
 	if had then
 		OfficeService.LocationChanged:Fire(player, nil)
 	end
@@ -842,22 +739,19 @@ end
 ---------------------------------------------------------------------------------------------------
 function OfficeService:Init()
 	root()
-	bindRemotes()
+	Remotes.bind(OfficeService)
 end
 
 function OfficeService:Start()
-	ensureCatalog()
+	Catalog.get()
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
-	CollectionService:GetInstanceAddedSignal("Interact"):Connect(wireInteract)
-	for _, inst in CollectionService:GetTagged("Interact") do
-		wireInteract(inst)
-	end
+	Prompts.start(onPromptTriggered, function(companyId: string): string?
+		local c = Catalog.company(companyId)
+		return if c then c.name else nil
+	end)
 	while true do
 		task.wait(POLL_EVERY)
-		local ok, err = pcall(poll)
-		if not ok then
-			warn("[OfficeService] occupancy poll failed: " .. tostring(err))
-		end
+		safely("occupancy poll", poll)
 	end
 end
 
