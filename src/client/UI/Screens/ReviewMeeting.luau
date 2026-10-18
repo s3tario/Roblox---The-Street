@@ -2,8 +2,8 @@
 -- ReviewMeeting (client screen, owned by `careerPath`; design v3 §6): the weekly boss review as a short cutscene.
 --   office mode   the camera eases to frame the boss at the boss_chair, letterbox bars slide in, the boss's lines
 --                 type out, the breakdown card shows the four components, then the outcome is revealed
---   phone mode    an incoming call card first ("Answer"), then the same meeting with a portrait panel
---   discipline    a major risk violation or a mass firing: lines and the outcome, no breakdown
+--   phone mode    an incoming call card first ("Answer"), then the same meeting with a portrait panel; a major
+--                 risk violation or a mass firing is a phone call too (lines and the outcome, no breakdown card)
 -- The server already applied the result; this screen only plays it (closing early loses nothing).
 --   args = { payload = Career.Meeting payload, hideHud = true }
 

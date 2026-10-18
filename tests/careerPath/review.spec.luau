@@ -194,5 +194,59 @@ return function(t)
 			local text = table.concat(Review.dialogue(idle), "|")
 			t.expect(string.find(text, "book", 1, true) ~= nil).toBeTruthy()
 		end)
+		t.it("forced dismissals are phone calls with their own openings", function()
+			local neutral = { investment = 65, risk = 65, work = 65, reputation = 65 }
+			local layoff = table.clone(base)
+			layoff.mode = "layoff"
+			layoff.outcome = "fired"
+			layoff.band = "under"
+			layoff.fireReason = "mass"
+			layoff.components = neutral
+			local lines = Review.dialogue(layoff)
+			t.expect(lines[1]).toContain("Catherine Ashby")
+			t.expect(table.concat(lines, "|")).toContain("cutting headcount")
+			local risk = table.clone(layoff)
+			risk.mode = "discipline"
+			risk.fireReason = "risk"
+			local riskText = table.concat(Review.dialogue(risk), "|")
+			t.expect(riskText).toContain("Risk")
+			t.expect(riskText).toContain("risk-limit violation")
+			-- the Lifeline saves a laid-off player too
+			local saved = table.clone(layoff)
+			saved.lifeline = true
+			saved.outcome = "warning"
+			t.expect(table.concat(Review.dialogue(saved), "|")).toContain("alumni network")
+		end)
+		t.it("every opening, outcome and closing line fills all of its placeholders", function()
+			local D: any = Tracks.dialogue
+			local vars = {
+				name = "Maya",
+				boss = "Catherine Ashby",
+				company = "MG Freeman",
+				title = "Analyst",
+				newTitle = "Associate",
+				score = 72,
+				excess = "2.1%",
+				need = 4,
+				tier = "Rare",
+				week = 3,
+			}
+			local function check(pool: any)
+				for _, line in pool do
+					local filled = string.gsub(line, "{([%w_]+)}", function(k: string): string
+						t.expect(vars[k] ~= nil).toBeTruthy()
+						return tostring(vars[k])
+					end)
+					t.expect(string.find(filled, "{", 1, true)).toBeNil()
+				end
+			end
+			for _, group in { D.opening, D.strong, D.weak, D.outcome, D.blocked } do
+				for _, pool in group do
+					check(pool)
+				end
+			end
+			check(D.closing)
+			check(D.closing_fired)
+		end)
 	end)
 end

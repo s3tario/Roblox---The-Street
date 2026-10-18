@@ -176,7 +176,6 @@ return {
 	reinstated = "Reinstated as {title} at {company}. You're on probation.",
 	reinstate_no_credit = "You don't have a Career Reinstatement credit.",
 	fresh_start_done = "Fresh start. Head back to Eastbridge and recruit again.",
-	err_not_fired = "That option is only for players between jobs.",
 
 	-- Career hub screen
 	ui_level = "Level {level}",

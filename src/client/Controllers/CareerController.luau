@@ -451,10 +451,17 @@ end
 -- EmployeesOnly boss_review prompts
 ---------------------------------------------------------------------------------------------------
 local prompts: { [ProximityPrompt]: boolean } = setmetatable({}, { __mode = "k" }) :: any
+local hiddenByUs: { [ProximityPrompt]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 local watched: { [Instance]: RBXScriptConnection } = {}
 
+-- Hides the prompt for visitors; only ever re-enables a prompt this controller hid (OfficeController applies the
+-- same rule to every EmployeesOnly prompt, and the server may disable prompts for its own reasons).
 local function evaluate(prompt: ProximityPrompt)
 	if prompt:GetAttribute("EmployeesOnly") ~= true then
+		if hiddenByUs[prompt] then
+			hiddenByUs[prompt] = nil
+			prompt.Enabled = true
+		end
 		return
 	end
 	local companyId = prompt:GetAttribute("CompanyId")
@@ -471,8 +478,14 @@ local function evaluate(prompt: ProximityPrompt)
 		then CareerState.mergerPartners(events, career.companyId, workspace:GetServerTimeNow())
 		else nil
 	local allowed = CareerState.isEmployee(career, companyId, partners)
-	if prompt.Enabled ~= allowed then
-		prompt.Enabled = allowed
+	if not allowed then
+		if prompt.Enabled then
+			prompt.Enabled = false
+			hiddenByUs[prompt] = true
+		end
+	elseif hiddenByUs[prompt] then
+		hiddenByUs[prompt] = nil
+		prompt.Enabled = true
 	end
 end
 

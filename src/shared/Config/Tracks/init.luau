@@ -16,7 +16,9 @@
 --     salary, bonus,                       -- weekly base salary and on-target bonus (before company payMult)
 --     book,                                -- trading book size (before company bookMult)
 --     prestige,                            -- weekly Career Prestige at On track (before company prestigeMult)
---     minOvr,                              -- OVR needed to be promoted INTO this rank
+--     minOvr,                              -- OVR needed to be promoted INTO this rank: a soft floor. Rolled
+--                                          -- stats start near OVR 40 and grow ~0.6/active hour (Logic/Stats), so
+--                                          -- a typical player clears it; one who never does graded work doesn't
 --     coreToPromote?,                      -- core assignments at this rank needed to be promoted OUT of it
 --     schoolGate?,                         -- school tier order needed for this title (1 common .. 6 mythic)
 --     dressLevel?,                         -- outfit level needed for this title (default min(5, rank + 1))
@@ -126,7 +128,7 @@ local defs: { [string]: any } = {
 				bonus = 1000,
 				book = 500000,
 				prestige = 18,
-				minOvr = 36,
+				minOvr = 30,
 				coreToPromote = 14,
 			},
 			{
@@ -139,7 +141,7 @@ local defs: { [string]: any } = {
 				bonus = 1700,
 				book = 750000,
 				prestige = 28,
-				minOvr = 44,
+				minOvr = 38,
 				coreToPromote = 14,
 				office = true,
 			},
@@ -153,7 +155,7 @@ local defs: { [string]: any } = {
 				bonus = 2100,
 				book = 900000,
 				prestige = 40,
-				minOvr = 52,
+				minOvr = 44,
 				coreToPromote = 16,
 				office = true,
 			},
@@ -167,7 +169,7 @@ local defs: { [string]: any } = {
 				bonus = 3000,
 				book = 1000000,
 				prestige = 55,
-				minOvr = 60,
+				minOvr = 50,
 				schoolGate = 3,
 				office = true,
 			},

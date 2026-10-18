@@ -22,7 +22,8 @@ Meeting.REMOTE = "Career.Meeting"
 
 export type Ctx = {
 	player: Player,
-	mode: string, -- "office" | "phone" | "discipline"
+	mode: string, -- "office" (at the boss's desk) | "phone" (the call rings first)
+	opening: string?, -- dialogue opening pool when it differs from the mode: "discipline" | "layoff"
 	reviewId: string?,
 	week: number,
 	companyId: string,
@@ -119,7 +120,7 @@ function Meeting.build(ctx: Ctx): { [string]: any }
 	end
 	local lines, outcomeAt = Review.dialogue({
 		seed = tostring(ctx.player.UserId) .. ":" .. tostring(ctx.week) .. ":" .. tostring(ctx.reviewId or ctx.mode),
-		mode = ctx.mode,
+		mode = ctx.opening or ctx.mode,
 		outcome = ctx.outcome,
 		band = ctx.band or "under",
 		components = components,

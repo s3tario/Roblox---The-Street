@@ -1,0 +1,34 @@
+-- Payload validators for work-task specs (owned by `work`). Not a spec itself (no .spec suffix).
+--
+-- Specs run inside the virtual DataModel, so they can't string-require files under tests/. The validators live in
+-- the Rojo tree instead; copy these lines into your own spec (work2, projects, ...):
+--
+--   local Shared = game:GetService("ReplicatedStorage").Shared
+--   local Kinds = require(Shared.Logic.Tasks._shared.Kinds)   -- Kinds.validate(payload) -> (ok, err?)
+--   local Solve = require(Shared.Logic.Tasks._shared.Solve)   -- Solve.perfect(secret), Solve.degrade(secret, k)
+--
+-- and the checks every task module should pass (tests/work/modules.spec.luau runs them for every module):
+--
+--   for _, difficulty in { 0.1, 0.5, 0.9 } do
+--     for seed = 1, 50 do
+--       local payload, secret = mod.generate(Rng.new(seed), { difficulty = difficulty, hints = 2 })
+--       assert(Kinds.validate(payload))                              -- every payload is drawable
+--       assert(mod.grade(secret, Solve.perfect(secret), {}).quality >= 95)
+--       assert(mod.grade(secret, "garbage", {}).quality <= 15)       -- garbage never errors and scores low
+--     end
+--   end
+--
+-- Contract shapes (contracts §8): every payload has kind, title, optional prompt and hints = {string}.
+--   mcq      questions = { {id, text, options = {string}, context?} }          answers { [qid] = optionIndex }
+--   fill     fields = { {id, label, unit?, hint?} }, table? = {columns, rows}  answers { [fieldId] = number }
+--   order    items = { {id, text} }                                           answers { itemId, ... }
+--   match    left = { {id, text} }, right = { {id, text} }                    answers { [leftId] = rightId }
+--   spot     table = {columns = {string}, rows = {{string}}}, maxPicks         answers { {row, col}, ... }
+--   alloc    items = { {id, text, detail?} }, total, step, minEach?, maxEach?, unit?   answers { [itemId] = number }
+--   dialogue speaker, lines = { {id, text, options = { {id, text} }} }        answers { [lineId] = optionId }
+--   call     items = { {id, label, chart = {number}, news} }, options = {string}       answers { [itemId] = optionIndex }
+--   format   elements = { {id, text, kind?} }, issues = { {id, text} }        answers { [elementId] = {issueId} }
+--   multi    sections = { payload }                                         answers { [i] = sectionAnswers }
+
+local Shared = game:GetService("ReplicatedStorage").Shared
+return require(Shared.Logic.Tasks._shared.Kinds)

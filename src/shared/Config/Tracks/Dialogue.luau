@@ -18,8 +18,12 @@ return {
 			"Got a minute, {name}? It's {boss}. Let's run through your week.",
 		},
 		discipline = {
-			"{name}. Sit down. We need to talk about your book.",
-			"{name}, this can't wait. Risk flagged your positions.",
+			"{name}, it's {boss}. Risk just flagged your book. This can't wait.",
+			"{name}? {boss} here. We need to talk about your positions, right now.",
+		},
+		layoff = {
+			"{name}, it's {boss}. I'm calling everyone on the floor today. There's no easy way to say this.",
+			"{name}? {boss} here. The firm announced layoffs this morning, and I wanted you to hear it from me.",
 		},
 	},
 

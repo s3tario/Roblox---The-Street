@@ -199,6 +199,18 @@ local function runReview(player: Player, c: { [string]: any }, mode: string): st
 		recentViolations = num(if metrics then metrics.violations else 0, 0) + lastViolations(c),
 	})
 	c.outfitLevel = outfitLevel
+	-- Firing depends only on the band and the streak; a week that keeps the job earns its review XP first, so a
+	-- bonus that reaches the level cap counts toward this week's promotion (as in the Logic/Leveling simulator).
+	local firing = CareerState.decide({
+		status = c.status,
+		criticalStreak = c.criticalStreak,
+		band = result.band,
+		promotable = false,
+	})
+	local xp = 0
+	if not firing.fired then
+		xp = svc:AddXP(player, Leveling.reviewXp(num(c.level, 1), result.band), "review")
+	end
 	local promo = Derive.promotion(player, c, result.band)
 	local decision = CareerState.decide({
 		status = c.status,
@@ -220,10 +232,8 @@ local function runReview(player: Player, c: { [string]: any }, mode: string): st
 
 	-- Friday pay (the week was worked even when it ends in a firing; no bonus then)
 	local pay = payWeek(player, role, company, result.band, decision.fired)
-	local xp = 0
 	local prestige = 0
 	if not decision.fired then
-		xp = svc:AddXP(player, Leveling.reviewXp(num(c.level, 1), result.band), "review")
 		prestige = Review.prestige(role, company, result.band)
 		c.prestige = num(c.prestige, 0) + prestige
 	end
@@ -399,7 +409,8 @@ function ReviewService:Dismiss(player: Player, reason: string, _info: any?): str
 			player,
 			Meeting.build({
 				player = player,
-				mode = if reason == "risk" then "discipline" else "phone",
+				mode = "phone",
+				opening = if reason == "risk" then "discipline" else "layoff",
 				reviewId = nil,
 				week = week,
 				companyId = companyId,

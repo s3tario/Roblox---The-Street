@@ -7,21 +7,39 @@
 -- framed = false when there is nothing to look at (phone call, or the boss isn't on this client); the screen then
 -- shows a portrait panel instead.
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-
 local Cinematic = {}
 
 export type Handle = { framed: boolean, stop: () -> () }
 
-local EASE = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-local BACK = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local EASE_IN = 1.2 -- seconds to ease onto the boss
+local EASE_BACK = 0.6 -- seconds to restore the field of view
 local DISTANCE = 6.5
 local SIDE = 2.4
 local FOV = 45
 
+-- Services are looked up on use (and may be missing, e.g. when screens are smoke-tested outside Roblox).
+local function service(name: string): any
+	local ok, s = pcall(function()
+		return game:GetService(name)
+	end)
+	return if ok then s else nil
+end
+
+local function currentCamera(): Camera?
+	local ws: any = workspace
+	if ws == nil then
+		return nil
+	end
+	local cam = ws.CurrentCamera
+	return if typeof(cam) == "Instance" and cam:IsA("Camera") then cam else nil
+end
+
 local function controls(): any
-	local player = Players.LocalPlayer
+	local players = service("Players")
+	local player = if players then players.LocalPlayer else nil
+	if typeof(player) ~= "Instance" then
+		return nil
+	end
 	local scripts = player:FindFirstChildOfClass("PlayerScripts")
 	local mod = if scripts then scripts:FindFirstChild("PlayerModule") else nil
 	if not mod or not mod:IsA("ModuleScript") then
@@ -101,7 +119,7 @@ local function framing(info: { [string]: any }): (CFrame?, Vector3?)
 end
 
 function Cinematic.start(cameraInfo: any, reducedMotion: boolean?): Handle
-	local camera = workspace.CurrentCamera
+	local camera = currentCamera()
 	local info = if type(cameraInfo) == "table" then cameraInfo else {}
 	local target = if camera then framing(info) else nil
 	setControls(false)
@@ -121,12 +139,14 @@ function Cinematic.start(cameraInfo: any, reducedMotion: boolean?): Handle
 	local savedType = cam.CameraType
 	local savedFov = cam.FieldOfView
 	cam.CameraType = Enum.CameraType.Scriptable
+	local tweens = service("TweenService") :: TweenService?
 	local tween: Tween? = nil
-	if reducedMotion then
+	if reducedMotion or not tweens then
 		cam.CFrame = target
 		cam.FieldOfView = FOV
 	else
-		local t = TweenService:Create(cam, EASE, { CFrame = target, FieldOfView = FOV })
+		local ease = TweenInfo.new(EASE_IN, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		local t = tweens:Create(cam, ease, { CFrame = target, FieldOfView = FOV })
 		t:Play()
 		tween = t
 	end
@@ -142,10 +162,11 @@ function Cinematic.start(cameraInfo: any, reducedMotion: boolean?): Handle
 				tween:Cancel()
 			end
 			if cam.Parent then
-				if reducedMotion then
+				if reducedMotion or not tweens then
 					cam.FieldOfView = savedFov
 				else
-					TweenService:Create(cam, BACK, { FieldOfView = savedFov }):Play()
+					local back = TweenInfo.new(EASE_BACK, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+					tweens:Create(cam, back, { FieldOfView = savedFov }):Play()
 				end
 				cam.CameraType = if savedType == Enum.CameraType.Scriptable then Enum.CameraType.Custom else savedType
 			end
