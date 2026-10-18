@@ -126,5 +126,18 @@ return {
 	err_unavailable = "Deals are unavailable right now.",
 	err_timeout = "The server took too long. Try again.",
 	err_rate_limited = "Slow down a little.",
+	err_stale = "That stage was already handed in. Here's where the deal stands now.",
 	err_generic = "Something went wrong. Try again.",
+
+	---------------------------------------------------------------------------------------------------
+	-- Stats (what a deal trains)
+	---------------------------------------------------------------------------------------------------
+	stat_knowledge = "Knowledge",
+	stat_skill = "Skill",
+	stat_speed = "Speed",
+	stat_charisma = "Charisma",
+	stat_network = "Network",
+	stat_discipline = "Discipline",
+	stat_risk = "Risk Sense",
+	stat_luck = "Luck",
 }

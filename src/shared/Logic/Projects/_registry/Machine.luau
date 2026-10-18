@@ -15,7 +15,7 @@
 --
 -- Def = {
 --   id, title, version?, outcomeWeight? (0..1, default 0.25),
---   stages = { StageDef },   StageDef = { id, title, kind, brief?, weight?, build, apply? }
+--   stages = { StageDef },   StageDef = { id, title, kind, brief?, weight?, stats?, build, apply? }
 --     build(state, rng, ctx) -> (payload, secret, meta?)   payload: a contracts §8 work payload (kind and title are
 --         filled in when missing); secret: the Logic/Tasks/_shared/Grade secret; meta: plain data kept for apply
 --     apply(state, graded, answers, meta, ctx) -> debrief?   updates state.facts after grading and returns one line
@@ -101,6 +101,7 @@ export type StageDef = {
 	kind: string,
 	brief: string?,
 	weight: number?,
+	stats: { string }?, -- what the stage trains (ProfileService:AwardStatXp after grading); default: the deal's stats
 	build: (state: State, rng: Rng.Rng, ctx: Ctx) -> ({ [string]: any }, { [string]: any }, { [string]: any }?),
 	apply: ((state: State, graded: Graded, answers: any, meta: { [string]: any }, ctx: Ctx) -> string?)?,
 }
@@ -194,7 +195,8 @@ function Machine.stageAverage(def: Def, state: State): number
 end
 
 function Machine.combine(stageAvg: number, outcomeScore: number, outcomeWeight: number?): number
-	local w = math.clamp(if type(outcomeWeight) == "number" then outcomeWeight else Machine.DEFAULT_OUTCOME_WEIGHT, 0, 1)
+	local w =
+		math.clamp(if type(outcomeWeight) == "number" then outcomeWeight else Machine.DEFAULT_OUTCOME_WEIGHT, 0, 1)
 	local q = (1 - w) * Common.num(stageAvg, 0) + w * Common.num(outcomeScore, 0)
 	return math.floor(math.clamp(q, 0, 100) + 0.5)
 end

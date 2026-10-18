@@ -34,7 +34,7 @@ Shop.shops = {
 		kind = "wearable",
 		rules = {
 			{ category = "suits" },
-			{ category = "business" },
+			{ category = "business", slots = { "top", "bottom", "outer" } },
 			{ category = "womens", slots = { "top", "bottom" } },
 			{ category = "luxury" },
 			{ category = "accessories", slots = { "neck", "head" } },
@@ -183,6 +183,7 @@ Shop.strings = {
 	sale_badge = "Sale -{pct}%",
 	sale_hint = "{event}: everything {pct}% off",
 	sale_event = "Fashion Week",
+	sale_generic = "Sale: everything {pct}% off",
 	dress_firm = "Your firm requires Level {level}",
 	dress_firm_ok = "Your firm requires Level {level}. You're dressed for it.",
 	dress_firm_short = "Your firm requires Level {level}. You're Level {current}.",
@@ -193,6 +194,7 @@ Shop.strings = {
 	owned = "Owned",
 	wearing = "Wearing",
 	requires_rank = "Requires {title}",
+	requires_rank_n = "Requires rank {rank}",
 	requires_pass = "{pass}",
 	pass_corner_office = "Corner Office Collection",
 	pass_executive_club = "Executive Club",
@@ -211,6 +213,7 @@ Shop.strings = {
 	worn = "Wearing it now.",
 	place_now = "Place it",
 	open_store = "Open Store",
+	store_soon = "The Store opens soon.",
 	empty_tab = "Nothing here yet.",
 	preview_hint = "Drag to turn",
 	select_hint = "Tap an item to preview it.",
@@ -238,6 +241,8 @@ Shop.strings = {
 	where_room = "Room {n}",
 	office_full = "Every private office on your floor is taken, so you keep a desk for now.",
 	desk_full = "Your floor is full. Your desk frees up when someone leaves.",
+	unit_full = "Every room here is taken right now. One frees up when someone leaves.",
+	nameplate_text = "{name}\n{title}",
 	your_desk = "Your desk",
 	your_office = "Your office",
 	your_room = "Your room",
@@ -269,6 +274,9 @@ Shop.strings = {
 	-- errors (keys after "err_"); the Wardrobe screen reads the same Shop.Buy keys
 	err_unknown_item = "That item doesn't exist.",
 	err_not_for_sale = "That piece isn't sold in the shops.",
+	err_roll = "That piece only comes from the Life Roll.",
+	err_heirloom = "That's a family heirloom.",
+	err_busy = "One moment, still finishing your last purchase.",
 	err_owned = "You already own that.",
 	err_rank = "Your career rank is too low for that.",
 	err_pass = "That comes with a game pass.",
@@ -298,10 +306,12 @@ function Shop.text(key: string, vars: { [string]: any }?): string
 		return key
 	end
 	if vars then
-		s = (string.gsub(s, "{(%w+)}", function(k)
-			local v = vars[k]
-			return if v ~= nil then tostring(v) else "{" .. k .. "}"
-		end))
+		s = (
+			string.gsub(s, "{(%w+)}", function(k)
+				local v = vars[k]
+				return if v ~= nil then tostring(v) else "{" .. k .. "}"
+			end)
+		)
 	end
 	return s
 end

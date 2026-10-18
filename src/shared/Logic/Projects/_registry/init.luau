@@ -27,11 +27,19 @@
 --   Registry.plain(value) -> (ok, err?)    JSON-safe for a DataStore: dense arrays or string-keyed maps, finite
 --                                          numbers, valid UTF-8, no metatables, bounded size
 --   Registry.rankTitle(track?, rank) -> string
+--   Registry.stageStats(mod, stageId) -> { statId }   what a stage trains (stage.stats, else the deal's stats)
+--   Registry.marketMood(info) -> 0.8..1.2  info = { event?, dayChange?, ipoFrenzy? } (the ctx.marketMood deals read)
+--   Registry.statLabel(statId) -> string   Registry.timeText(seconds) -> "4m 05s"
 --   Registry.text(key, vars?) -> string    Registry.strings (Strings.luau)
 --   Registry.Machine                       the shared stage machine (Machine.luau)
+--   Registry.Runs                          the run lifecycle ProjectService applies to records (Runs.luau)
+--   Registry.DealKit                       helpers deal modules share (DealKit.luau); Plain.luau backs plain()
 
 local Machine = require(script.Machine)
 local Strings = require(script.Strings)
+local Runs = require(script.Runs)
+local Plain = require(script.Plain)
+local DealKit = require(script.DealKit)
 
 -- careerPath's ladder titles and XP pacing, when they load (guarded: this registry works without them).
 local Tracks: any = nil
@@ -54,6 +62,9 @@ do
 	end
 end
 
+export type Completion = Runs.Completion
+export type Card = Runs.Card
+
 export type Who = {
 	employed: boolean,
 	status: string,
@@ -66,6 +77,8 @@ export type Who = {
 export type HistoryEntry = { at: number, quality: number, closed: boolean, name: string }
 export type Record = {
 	state: any,
+	companyId: string?,
+	lastRewards: { [string]: any }?,
 	runs: number,
 	closed: number,
 	best: number,
@@ -98,6 +111,8 @@ export type Rewards = {
 local Registry = {}
 
 Registry.Machine = Machine
+Registry.Runs = Runs
+Registry.DealKit = DealKit
 Registry.strings = Strings
 
 -- Run by another service, never listed or touched by ProjectService.
@@ -225,6 +240,7 @@ function Registry.stagesOf(mod: any): { { [string]: any } }
 				title = if type(s.title) == "string" then s.title else s.id,
 				kind = if type(s.kind) == "string" then s.kind else "",
 				brief = if type(s.brief) == "string" then s.brief else nil,
+				stats = Registry.stageStats(mod, s.id),
 			})
 		end
 	end
@@ -244,6 +260,75 @@ function Registry.statsOf(mod: any): { string }
 		out = { "knowledge", "skill" }
 	end
 	return out
+end
+
+local STAT_IDS = {
+	knowledge = true,
+	skill = true,
+	speed = true,
+	charisma = true,
+	network = true,
+	discipline = true,
+	risk = true,
+	luck = true,
+} :: { [string]: boolean }
+Registry.STAT_IDS = STAT_IDS
+
+function Registry.stageStats(mod: any, stageId: string): { string }
+	if type(mod) == "table" and type(mod.stages) == "table" then
+		for _, s in mod.stages do
+			if type(s) == "table" and s.id == stageId and type(s.stats) == "table" then
+				local out: { string } = {}
+				for _, id in s.stats do
+					if type(id) == "string" and STAT_IDS[id] then
+						table.insert(out, id)
+					end
+				end
+				if #out > 0 then
+					return out
+				end
+			end
+		end
+	end
+	return Registry.statsOf(mod)
+end
+
+function Registry.statLabel(statId: string): string
+	local label = (Strings :: any)["stat_" .. tostring(statId)]
+	return if type(label) == "string" then label else tostring(statId)
+end
+
+-- "45s", "4m 05s", "1h 02m" (cooldowns on the deal cards).
+function Registry.timeText(seconds: number): string
+	local s = math.max(0, math.ceil(num(seconds, 0)))
+	if s < 60 then
+		return tostring(s) .. "s"
+	elseif s < 3600 then
+		return string.format("%dm %02ds", s // 60, s % 60)
+	end
+	return string.format("%dh %02dm", s // 3600, (s % 3600) // 60)
+end
+
+-- How the market treats new deals right now (ctx.marketMood): a boom or an IPO Frenzy warms investors up, a crash
+-- cools them down, and the benchmark's move today nudges it either way.
+Registry.MOOD_EVENTS = {
+	boom = 1.15,
+	meme_rally = 1.1,
+	earnings_frenzy = 1.05,
+	crazy_day = 0.97,
+	rate_shock = 0.9,
+	flash_crash = 0.88,
+	crash = 0.82,
+} :: { [string]: number }
+
+function Registry.marketMood(info: any): number
+	local i: { [string]: any } = if type(info) == "table" then info else {}
+	local mood = if type(i.event) == "string" then Registry.MOOD_EVENTS[i.event] or 1 else 1
+	mood += math.clamp(num(i.dayChange, 0) * 3, -0.06, 0.06)
+	if i.ipoFrenzy == true then
+		mood += 0.08
+	end
+	return math.clamp(math.floor(mood * 100 + 0.5) / 100, 0.8, 1.2)
 end
 
 function Registry.cooldownOf(mod: any): number
@@ -347,6 +432,12 @@ function Registry.record(raw: any): Record
 	r.cooldownUntil = num(r.cooldownUntil, 0)
 	if type(r.history) ~= "table" then
 		r.history = {}
+	end
+	if r.companyId ~= nil and type(r.companyId) ~= "string" then
+		r.companyId = nil
+	end
+	if r.lastRewards ~= nil and type(r.lastRewards) ~= "table" then
+		r.lastRewards = nil
 	end
 	if r.state ~= nil and type(r.state) ~= "table" then
 		r.state = nil
@@ -474,71 +565,10 @@ function Registry.sorted(mods: { any }): { any }
 	return out
 end
 
----------------------------------------------------------------------------------------------------
--- JSON safety (DataStores store JSON: mixed or sparse tables silently lose data)
----------------------------------------------------------------------------------------------------
-local MAX_NODES = 20000
-local MAX_DEPTH = 14
-local MAX_STRING = 4000
-
-local function walk(v: any, depth: number, budget: { n: number }, path: string): (boolean, string?)
-	budget.n += 1
-	if budget.n > MAX_NODES then
-		return false, "too large"
-	end
-	if depth > MAX_DEPTH then
-		return false, "too deep at " .. path
-	end
-	local t = type(v)
-	if t == "string" then
-		if #v > MAX_STRING or utf8.len(v) == nil then
-			return false, "bad string at " .. path
-		end
-		return true, nil
-	elseif t == "number" then
-		if v ~= v or v == math.huge or v == -math.huge then
-			return false, "non-finite number at " .. path
-		end
-		return true, nil
-	elseif t == "boolean" then
-		return true, nil
-	elseif t == "table" then
-		if getmetatable(v) ~= nil then
-			return false, "metatable at " .. path
-		end
-		local n = #v
-		local count, numeric, stringy = 0, false, false
-		for k, x in v do
-			count += 1
-			local kt = type(k)
-			if kt == "number" then
-				numeric = true
-				if k ~= math.floor(k) or k < 1 or k > n then
-					return false, "sparse array at " .. path
-				end
-			elseif kt == "string" then
-				stringy = true
-			else
-				return false, "bad key type at " .. path
-			end
-			local ok, err = walk(x, depth + 1, budget, path .. "." .. tostring(k))
-			if not ok then
-				return false, err
-			end
-		end
-		if numeric and stringy then
-			return false, "mixed table at " .. path
-		end
-		if numeric and count ~= n then
-			return false, "array with holes at " .. path
-		end
-		return true, nil
-	end
-	return false, "unsupported " .. t .. " at " .. path
-end
-
 function Registry.plain(value: any): (boolean, string?)
-	return walk(value, 1, { n = 0 }, "state")
+	return Plain.check(value)
 end
+
+Runs._bind(Registry)
 
 return Registry

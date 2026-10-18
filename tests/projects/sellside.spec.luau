@@ -60,28 +60,44 @@ return function(t)
 			end
 		end)
 		t.it("uses the player's firm in the documents when it is known", function()
-			local state = sellside.new(Rng.new(3), CTX)
-			t.expect((sellside.facts(state) :: any).firm).toBe(Universe_firm_or(CTX))
+			local mine = table.clone(CTX) :: any
+			mine.companyName = "Harrow Williams"
+			local state = sellside.new(Rng.new(3), mine)
+			t.expect((sellside.facts(state) :: any).firm).toBe("Harrow Williams")
+			local cim = sellside.new(Rng.new(3), mine)
+			cim = sellside.act(cim, Solve.perfect(cim.current.secret), mine)
+			local text = {}
+			for _, el in cim.current.payload.elements do
+				table.insert(text, el.text)
+			end
+			t.expect(table.concat(text, " ")).toContain("Harrow")
+			-- without a known firm the documents still name a fictional bank
+			local generic = sellside.facts(sellside.new(Rng.new(3), CTX)) :: any
+			t.expect(type(generic.firm)).toBe("string")
+			t.expect(#generic.firm).toBeGreaterThan(0)
 		end)
 	end)
 
 	t.describe("bid round", function()
-		t.it("ranks the headlines trap > stock > clean > family, so the right answer isn't the biggest number", function()
-			for seed = 1, 15 do
-				local state = toBids(seed)
-				state = sellside.act(state, Solve.perfect(state.current.secret), CTX)
-				local f = sellside.facts(state) :: any
-				local ev = {}
-				for _, b in f.bids do
-					ev[b.kind] = b.ev
+		t.it(
+			"ranks the headlines trap > stock > clean > family, so the right answer isn't the biggest number",
+			function()
+				for seed = 1, 15 do
+					local state = toBids(seed)
+					state = sellside.act(state, Solve.perfect(state.current.secret), CTX)
+					local f = sellside.facts(state) :: any
+					local ev = {}
+					for _, b in f.bids do
+						ev[b.kind] = b.ev
+					end
+					t.expect(ev.trap).toBeGreaterThan(ev.stock)
+					t.expect(ev.stock).toBeGreaterThan(ev.clean)
+					t.expect(ev.clean).toBeGreaterThan(ev.family)
+					t.expect(f.winner).toBe("clean")
+					t.expect(f.backupWarm).toBe(true)
 				end
-				t.expect(ev.trap).toBeGreaterThan(ev.stock)
-				t.expect(ev.stock).toBeGreaterThan(ev.clean)
-				t.expect(ev.clean).toBeGreaterThan(ev.family)
-				t.expect(f.winner).toBe("clean")
-				t.expect(f.backupWarm).toBe(true)
 			end
-		end)
+		)
 		t.it("a trap bid with no backup re-trades the price down", function()
 			local clean = finishPerfect(toBids(4))
 			local state = toBids(4)

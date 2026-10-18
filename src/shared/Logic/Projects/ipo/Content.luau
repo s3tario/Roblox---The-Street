@@ -322,7 +322,11 @@ Content.roadshowLines = {
 				score = 20,
 				note = "Never suggest the insiders are selling at the top.",
 			},
-			{ text = "The market is hot, so why not?", score = 40, note = "Timing alone isn't a reason to own a stock." },
+			{
+				text = "The market is hot, so why not?",
+				score = 40,
+				note = "Timing alone isn't a reason to own a stock.",
+			},
 			{
 				text = "We need the money to cover our losses.",
 				score = 25,
@@ -338,7 +342,11 @@ Content.roadshowLines = {
 				text = "No. Management isn't selling, and every insider has signed a 180-day lock-up.",
 				score = 100,
 			},
-			{ text = "Some, but we can't say how much.", score = 40, note = "Vague answers on insider selling spook investors." },
+			{
+				text = "Some, but we can't say how much.",
+				score = 40,
+				note = "Vague answers on insider selling spook investors.",
+			},
 			{
 				text = "Yes, the founders are selling most of their stake.",
 				score = 15,
@@ -366,7 +374,11 @@ Content.roadshowLines = {
 				score = 15,
 				note = "Promises like that come back as lawsuits when a quarter misses.",
 			},
-			{ text = "No comment.", score = 55, note = "Right to hold back, but explain why: the prospectus is the rulebook." },
+			{
+				text = "No comment.",
+				score = 55,
+				note = "Right to hold back, but explain why: the prospectus is the rulebook.",
+			},
 		},
 	},
 	{
@@ -378,8 +390,16 @@ Content.roadshowLines = {
 					.. "data is on page 47 of the prospectus.",
 				score = 100,
 			},
-			{ text = "We don't really have competitors.", score = 20, note = "Everyone has competitors. Denial looks naive." },
-			{ text = "They copy everything we do.", score = 35, note = "Complaining isn't a strategy. Show the evidence." },
+			{
+				text = "We don't really have competitors.",
+				score = 20,
+				note = "Everyone has competitors. Denial looks naive.",
+			},
+			{
+				text = "They copy everything we do.",
+				score = 35,
+				note = "Complaining isn't a strategy. Show the evidence.",
+			},
 			{
 				text = "We're the cheapest option.",
 				score = 50,
@@ -418,7 +438,11 @@ Content.roadshowLines = {
 					.. "renewal, and the risk factors explain how we're diversifying.",
 				score = 100,
 			},
-			{ text = "There aren't any real risks.", score = 10, note = "Every prospectus lists risks. Denying them destroys trust." },
+			{
+				text = "There aren't any real risks.",
+				score = 10,
+				note = "Every prospectus lists risks. Denying them destroys trust.",
+			},
 			{
 				text = "A market crash, I suppose.",
 				score = 40,

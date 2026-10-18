@@ -58,7 +58,8 @@ local function strings(v: any, out: { string })
 	end
 end
 
-local SECRET_KEYS = { key = true, scores = true, best = true, target = true, credit = true, valid = true, secret = true }
+local SECRET_KEYS =
+	{ key = true, scores = true, best = true, target = true, credit = true, valid = true, secret = true }
 
 local function hasSecret(v: any, depth: number): boolean
 	if type(v) ~= "table" or depth > 8 then
@@ -114,7 +115,10 @@ return function(t)
 				t.expect(type(mod.version)).toBe("number")
 				for _, stat in Registry.statsOf(mod) do
 					t.expect(
-						table.find({ "knowledge", "skill", "speed", "charisma", "network", "discipline", "risk", "luck" }, stat)
+						table.find(
+							{ "knowledge", "skill", "speed", "charisma", "network", "discipline", "risk", "luck" },
+							stat
+						)
 					).toBeTruthy()
 				end
 			end
