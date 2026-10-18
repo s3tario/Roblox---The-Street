@@ -43,7 +43,14 @@ local function warnToast(player: Player, a: Risk.Active, now: number)
 	end
 end
 
-local function processPlayer(svc: any, player: Player, ps: Session.PState, now: number, p: { [string]: number }, open: boolean)
+local function processPlayer(
+	svc: any,
+	player: Player,
+	ps: Session.PState,
+	now: number,
+	p: { [string]: number },
+	open: boolean
+)
 	local book, data = Session.bookOf(player)
 	if not book or not data then
 		return

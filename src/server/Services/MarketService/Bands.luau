@@ -48,6 +48,9 @@ local function track(label: Instance)
 	local width: number = attr(face, "BandWidth") or (if face then face.Size.X else 40)
 	local pps: number = attr(face, "TickerPps") or 30
 	labels[label] = { label = label, width = width, pps = pps }
+	if not label.RichText then
+		label.RichText = true -- the line carries <font color> tags
+	end
 	if lastLine then
 		local text, reps = Band.fit(lastLine, width, pps, label.TextSize)
 		label.Text = text
@@ -110,12 +113,8 @@ function Bands.update(line: string)
 		if label.Parent == nil then
 			labels[label] = nil
 		else
-			local key = string.format(
-				"%d|%d|%d",
-				math.floor(entry.width),
-				math.floor(entry.pps),
-				math.floor(label.TextSize)
-			)
+			local key =
+				string.format("%d|%d|%d", math.floor(entry.width), math.floor(entry.pps), math.floor(label.TextSize))
 			local fit = fits[key]
 			if not fit then
 				local text, reps = Band.fit(line, entry.width, entry.pps, label.TextSize)

@@ -344,13 +344,7 @@ function Ledger.check(
 	return true, nil, p
 end
 
-function Ledger.maxDelta(
-	book: Book,
-	prices: { [string]: number },
-	ticker: string,
-	dir: number,
-	limits: Limits
-): number
+function Ledger.maxDelta(book: Book, prices: { [string]: number }, ticker: string, dir: number, limits: Limits): number
 	local mid = prices[ticker]
 	if type(mid) ~= "number" or mid <= 0 then
 		return 0
@@ -367,7 +361,7 @@ function Ledger.maxDelta(
 	lo = 1
 	while lo < hi do
 		local m = (lo + hi + 1) // 2
-		if (Ledger.check(book, prices, ticker, d * m, limits)) then
+		if Ledger.check(book, prices, ticker, d * m, limits) then
 			lo = m
 		else
 			hi = m - 1

@@ -68,7 +68,11 @@ local prices = Session.prices
 ---------------------------------------------------------------------------------------------------
 -- Trading API
 ---------------------------------------------------------------------------------------------------
-function PortfolioService:Trade(player: Player, order: Desk.Order, txnId: string): (boolean, string?, { [string]: any }?)
+function PortfolioService:Trade(
+	player: Player,
+	order: Desk.Order,
+	txnId: string
+): (boolean, string?, { [string]: any }?)
 	local ps = states[player]
 	local book = bookOf(player)
 	if not ps or not book then

@@ -151,7 +151,8 @@ return {
 	limit_gross = "Gross exposure limit",
 	limit_short = "Shorting",
 	short_allowed = "Allowed",
-	short_locked = "From Associate",
+	short_locked = "From {title}",
+	short_title_default = "Associate",
 	risk_mult = "Probation: limits x{mult}",
 	risk_headroom = "Risk Sense headroom +{pct}",
 	week_violations = "Violations this week: {count} / {max}",
@@ -216,8 +217,12 @@ return {
 	catalyst_done = "Resolved",
 	frenzy_tag = "FRENZY",
 
-	-- HUD chip
+	-- HUD chip and controller
 	hud_open = "Open the terminal",
+	hud_invested_short = "INVESTED",
+	news_title_hint = "Read-only: quotes and headlines. Trade from any terminal or the Market tab.",
+	offline_trade = "The exchange isn't connected. Try again in a moment.",
+	selected_index = "STREET 10 benchmark: pick a company to trade.",
 
 	-- Errors (Portfolio.Trade and friends)
 	err_closed = "The market is closed. Orders open at the bell.",
@@ -226,7 +231,7 @@ return {
 	err_bad_ticker = "Unknown ticker.",
 	err_bad_qty = "Enter a whole number of shares.",
 	err_no_position = "You don't hold that stock.",
-	err_no_short = "Short selling unlocks at Associate.",
+	err_no_short = "Short selling unlocks at {title}.",
 	err_concentration = "That would put {pct} of your book in {ticker}. Limit: {limit}.",
 	err_gross = "That would take gross exposure to {pct}. Limit: {limit}.",
 	err_cash = "Not enough cash in the book.",

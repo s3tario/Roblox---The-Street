@@ -345,7 +345,9 @@ local function onPrompt(mode: string)
 			local name = Deps.companyName(companyId)
 			Deps.notify(
 				player,
-				if name then Tickers.text("employees_only", { company = name }) else Tickers.text("employees_only_generic"),
+				if name
+					then Tickers.text("employees_only", { company = name })
+					else Tickers.text("employees_only_generic"),
 				"warn"
 			)
 			return

@@ -50,21 +50,25 @@ function Remotes.bind(service: any)
 		return service:Trade(player, order, txn)
 	end, { rate = 3, burst = 8 })
 
-	Net.handle("Portfolio.SetStops", function(player: Player, rawTicker: any, rawStop: any, rawTake: any): (boolean, string?)
-		local ticker = Guard.id(rawTicker)
-		if not ticker or not Tickers.get(ticker) then
-			return false, "bad_ticker"
-		end
-		local okStop, stop = level(rawStop)
-		if not okStop then
-			return false, "bad_stop"
-		end
-		local okTake, take = level(rawTake)
-		if not okTake then
-			return false, "bad_take"
-		end
-		return service:SetStops(player, ticker, stop, take)
-	end, { rate = 2, burst = 6 })
+	Net.handle(
+		"Portfolio.SetStops",
+		function(player: Player, rawTicker: any, rawStop: any, rawTake: any): (boolean, string?)
+			local ticker = Guard.id(rawTicker)
+			if not ticker or not Tickers.get(ticker) then
+				return false, "bad_ticker"
+			end
+			local okStop, stop = level(rawStop)
+			if not okStop then
+				return false, "bad_stop"
+			end
+			local okTake, take = level(rawTake)
+			if not okTake then
+				return false, "bad_take"
+			end
+			return service:SetStops(player, ticker, stop, take)
+		end,
+		{ rate = 2, burst = 6 }
+	)
 
 	Net.handle("Portfolio.Flatten", function(player: Player, rawTxn: any): (boolean, string?, number?)
 		local txn = Guard.id(rawTxn)

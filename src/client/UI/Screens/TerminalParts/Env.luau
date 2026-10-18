@@ -37,6 +37,7 @@ export type State = {
 	panel: { [string]: any }?, -- Portfolio.Panel (week metrics, session curve, skill)
 	mode: string,
 	layout: string,
+	shortTitle: string, -- the title that unlocks shorting on the player's track (e.g. "Associate")
 }
 
 export type Part = {

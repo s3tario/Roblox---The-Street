@@ -15,6 +15,7 @@
 --   View.event(event, now) -> {id, name, desc, tone, glyph, secondsLeft}?   the active market event, public fields
 --   View.age(at, now) -> string                          "4m ago"
 --   View.toneColor(tone) -> palette key                  "good" -> "up", "bad" -> "down", "warn", "info" -> "dim"
+--   View.limitRows(limits, shortTitle?) / limits(book) -> Limits / invested(book, prices) / validSelection(id)
 --   View.price / pct / money / compact / signedMoney / changeColor / phaseLine   formatting
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -512,17 +513,60 @@ function View.toneColor(tone: any): string
 	return "dim"
 end
 
--- One line per active risk limit for the risk panel.
-function View.limitRows(limits: Ledger.Limits): { { key: string, value: string } }
+-- One line per active risk limit for the risk panel. shortTitle names the rank that unlocks shorting on the
+-- player's track (Config/Tracks rank 2, e.g. "Associate" in IB).
+function View.limitRows(limits: Ledger.Limits, shortTitle: string?): { { key: string, value: string } }
+	local title = if type(shortTitle) == "string" and shortTitle ~= ""
+		then shortTitle
+		else Tickers.text("short_title_default")
 	local rows = {
 		{ key = Tickers.text("limit_conc"), value = View.plainPct(limits.concentration, 0) },
 		{ key = Tickers.text("limit_gross"), value = View.plainPct(limits.gross, 0) },
 		{
 			key = Tickers.text("limit_short"),
-			value = if limits.short then Tickers.text("short_allowed") else Tickers.text("short_locked"),
+			value = if limits.short
+				then Tickers.text("short_allowed")
+				else Tickers.text("short_locked", { title = title }),
 		},
 	}
 	return rows
+end
+
+-- A valid selection: a listed ticker or the STREET 10 benchmark ("ST10").
+function View.validSelection(id: any): string?
+	if type(id) ~= "string" then
+		return nil
+	end
+	if id == Tickers.BENCHMARK.id or Tickers.get(id) then
+		return id
+	end
+	return nil
+end
+
+-- The replicated book's limits (data.portfolio.limits), validated; the student defaults when missing.
+function View.limits(book: any): Ledger.Limits
+	local l = if type(book) == "table" then book.limits else nil
+	if type(l) == "table" and type(l.concentration) == "number" and type(l.gross) == "number" then
+		return {
+			rank = math.max(0, math.floor(num(l.rank, 0))),
+			concentration = math.clamp(num(l.concentration, Ledger.CONC_JUNIOR), 0, 2),
+			gross = math.clamp(num(l.gross, Ledger.GROSS_JUNIOR), 0, 3),
+			short = l.short == true,
+			margin = l.margin == true,
+			mult = num(l.mult, 1),
+			headroom = num(l.headroom, 0),
+		}
+	end
+	return Ledger.defaultLimits()
+end
+
+-- LIVE INVESTED: the market value of open positions (design v3 §11), at live prices.
+function View.invested(book: any, prices: { [string]: number }): number
+	if type(book) ~= "table" or type(book.positions) ~= "table" then
+		return 0
+	end
+	local ok, v = pcall(Ledger.invested, book, prices)
+	return if ok and type(v) == "number" and v == v then v else 0
 end
 
 return View

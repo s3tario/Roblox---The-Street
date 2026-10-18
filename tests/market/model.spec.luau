@@ -60,9 +60,7 @@ return function(t)
 				spread += 1
 			end
 			t.expect(spread).toBeGreaterThanOrEqual(6)
-			t.expect(Tickers.text("err_concentration", { pct = "45%", ticker = "APX", limit = "40%" })).toContain(
-				"45%"
-			)
+			t.expect(Tickers.text("err_concentration", { pct = "45%", ticker = "APX", limit = "40%" })).toContain("45%")
 			for _, id in Tickers.EVENT_IDS do
 				t.expect(Tickers.events[id]).never(nil)
 			end
@@ -375,7 +373,10 @@ return function(t)
 			t.expect(again.marketCap).toBe(f.shares * 100)
 		end)
 		t.it("formats the LED band line and repeats it to fill a band", function()
-			local line = Band.line({ { id = "APX", price = 219.4, changePct = 0.012 } }, { level = 5012.3, changePct = -0.004 })
+			local line = Band.line(
+				{ { id = "APX", price = 219.4, changePct = 0.012 } },
+				{ level = 5012.3, changePct = -0.004 }
+			)
 			t.expect(line).toContain("APX")
 			t.expect(line).toContain("+1.20%")
 			t.expect(line).toContain("ST10 5012.3")

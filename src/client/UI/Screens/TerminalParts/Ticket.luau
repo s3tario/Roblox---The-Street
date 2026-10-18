@@ -31,6 +31,7 @@ end
 export type TicketPart = {
 	frame: GuiObject,
 	update: (state: Env.State) -> (),
+	tick: ((now: number) -> ())?,
 	destroy: (() -> ())?,
 	setSide: (side: string) -> (),
 }
@@ -314,7 +315,11 @@ function Ticket.new(env: Env.Env): TicketPart
 		buyBtn.setText(Tickers.text(if h < 0 then "cover" else "buy"))
 		sellBtn.setText(Tickers.text(if h > 0 or not st.limits.short then "sell" else "short"))
 		if isIndex then
-			Style.setText(concText, Tickers.text("chart_empty"))
+			Style.setText(concText, Tickers.text("selected_index"), "dim")
+			Style.setText(grossText, "")
+			Style.setText(costText, "")
+			Style.setText(statusLabel, "")
+			bar.set(0, true)
 			place.setDisabled(true)
 			place.setText(Tickers.text("buy"))
 			return
@@ -378,6 +383,7 @@ function Ticket.new(env: Env.Env): TicketPart
 	return {
 		frame = root :: GuiObject,
 		update = update,
+		tick = nil,
 		destroy = nil,
 		setSide = function(s: string)
 			side = if s == "sell" then "sell" else "buy"

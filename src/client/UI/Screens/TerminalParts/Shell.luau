@@ -10,6 +10,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Tickers = require(Shared.Config.Tickers)
 local Kit = require(script.Parent.Parent.Parent:WaitForChild("Kit"))
+local Theme = require(script.Parent.Parent.Parent:WaitForChild("Theme"))
 local Style = require(script.Parent.Style)
 
 local Shell = {}
@@ -20,6 +21,12 @@ local INSETS = {
 	terminal = { left = 6, right = 6, top = 6, bottom = 6, radius = 10 },
 	laptop = { left = 14, right = 14, top = 16, bottom = 30, radius = 16 },
 }
+-- short screens (phones in landscape) get a thinner bezel so the market keeps the room
+local COMPACT = {
+	terminal = { left = 3, right = 3, top = 3, bottom = 3, radius = 8 },
+	laptop = { left = 8, right = 8, top = 10, bottom = 20, radius = 12 },
+}
+Shell.COMPACT_BELOW = 480 -- unscaled px of bezel height
 
 function Shell.new(parent: Instance): Shell
 	local bezel = Instance.new("Frame")
@@ -62,9 +69,11 @@ function Shell.new(parent: Instance): Shell
 	Kit.padding(screen, 8, 8)
 
 	local variant = "terminal"
-	Style.bind(bezel, function(pal)
+	local compact = false
+	local function apply(pal: Style.Pal)
 		variant = pal.variant
-		local inset = INSETS[pal.variant] or INSETS.terminal
+		local set = if compact then COMPACT else INSETS
+		local inset = set[pal.variant] or set.terminal
 		bezel.BackgroundColor3 = pal.bezel
 		bezelCorner.CornerRadius = UDim.new(0, inset.radius)
 		bezelStroke.Color = pal.bezelEdge
@@ -77,7 +86,20 @@ function Shell.new(parent: Instance): Shell
 		screenStroke.Transparency = if pal.variant == "laptop" then 0.2 else 0.65
 		webcam.Visible = pal.variant == "laptop"
 		webcam.BackgroundColor3 = pal.bezelEdge
+		webcam.Position = UDim2.new(0.5, 0, 0, if compact then 2 else 5)
 		brand.Visible = pal.variant == "laptop"
+		brand.Position = UDim2.new(0.5, 0, 1, if compact then -3 else -7)
+	end
+	Style.bind(bezel, function(pal)
+		apply(pal)
+	end)
+	Kit.propChanged(bezel, "AbsoluteSize", function()
+		local size = Kit.unscaledSize(bezel)
+		local want = size ~= nil and size.Y < Shell.COMPACT_BELOW
+		if want ~= compact then
+			compact = want
+			apply(Style.palette(Theme.get()))
+		end
 	end)
 
 	return {

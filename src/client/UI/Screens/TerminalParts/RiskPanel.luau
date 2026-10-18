@@ -101,7 +101,7 @@ function RiskPanel.new(_env: Env.Env): Env.Part
 
 	local function update(st: Env.State)
 		local limits = st.limits
-		for i, r in View.limitRows(limits) do
+		for i, r in View.limitRows(limits, st.shortTitle) do
 			local row = limitRows[i]
 			if row then
 				Style.setText(row.key, r.key)

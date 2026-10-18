@@ -113,17 +113,29 @@ return function(t)
 	t.describe("Market Skill", function()
 		t.it("needs two traded weeks in the season and rewards consistent excess return", function()
 			local weeks = {}
-			Metrics.recordWeek(weeks, { s = 5, w = 1, at = 0, twr = 0.03, bench = 0.01, excess = 0.02, dd = 0.01, vol = 0.02, trades = 4 })
+			Metrics.recordWeek(
+				weeks,
+				{ s = 5, w = 1, at = 0, twr = 0.03, bench = 0.01, excess = 0.02, dd = 0.01, vol = 0.02, trades = 4 }
+			)
 			t.expect(Metrics.seasonSkill(weeks, 5)).toBeNil()
-			Metrics.recordWeek(weeks, { s = 5, w = 2, at = 0, twr = 0, bench = 0, excess = 0, dd = 0, vol = 0, trades = 0 })
+			Metrics.recordWeek(
+				weeks,
+				{ s = 5, w = 2, at = 0, twr = 0, bench = 0, excess = 0, dd = 0, vol = 0, trades = 0 }
+			)
 			t.expect(Metrics.seasonSkill(weeks, 5)).toBeNil() -- an untraded week doesn't count
-			Metrics.recordWeek(weeks, { s = 5, w = 3, at = 0, twr = 0.02, bench = 0, excess = 0.02, dd = 0.08, vol = 0.03, trades = 2 })
+			Metrics.recordWeek(
+				weeks,
+				{ s = 5, w = 3, at = 0, twr = 0.02, bench = 0, excess = 0.02, dd = 0.08, vol = 0.03, trades = 2 }
+			)
 			local skill = Metrics.seasonSkill(weeks, 5) :: number
 			local expected = math.floor(1000 + 10000 * (0.02 + 0.02 - 0.5 * 0.05) / math.sqrt(2) + 0.5)
 			t.expect(skill).toBe(expected)
 			t.expect(Metrics.seasonSkill(weeks, 6)).toBeNil()
 			for i = 1, 30 do
-				Metrics.recordWeek(weeks, { s = 6, w = i, at = 0, twr = -0.5, bench = 0, excess = -0.5, dd = 0.5, vol = 0, trades = 1 })
+				Metrics.recordWeek(
+					weeks,
+					{ s = 6, w = i, at = 0, twr = -0.5, bench = 0, excess = -0.5, dd = 0.5, vol = 0, trades = 1 }
+				)
 			end
 			t.expect(#weeks).toBe(Metrics.WEEKS_MAX)
 			t.expect(Metrics.seasonSkill(weeks, 6)).toBe(0)

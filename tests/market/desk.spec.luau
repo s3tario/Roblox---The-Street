@@ -48,9 +48,11 @@ return function(t)
 			Desk.submit(cache, "txn-2", b, prices, order, JUNIOR, 3, true)
 			t.expect(b.positions.APX.shares).toBe(20)
 			-- a refused order replays its refusal too, even if it would pass now
-			local refused = Desk.submit(cache, "txn-3", b, prices, { ticker = "APX", side = "buy", qty = 1 }, JUNIOR, 4, false)
+			local refused =
+				Desk.submit(cache, "txn-3", b, prices, { ticker = "APX", side = "buy", qty = 1 }, JUNIOR, 4, false)
 			t.expect(refused.err).toBe("closed")
-			local still = Desk.submit(cache, "txn-3", b, prices, { ticker = "APX", side = "buy", qty = 1 }, JUNIOR, 5, true)
+			local still =
+				Desk.submit(cache, "txn-3", b, prices, { ticker = "APX", side = "buy", qty = 1 }, JUNIOR, 5, true)
 			t.expect(still.err).toBe("closed")
 			t.expect(b.positions.APX.shares).toBe(20)
 			-- the cache is bounded
@@ -63,7 +65,8 @@ return function(t)
 		t.it("fits a Max order to the limits and closes positions", function()
 			local b = book(10000)
 			local prices = { APX = 100 }
-			local r = Desk.trade(b, prices, { ticker = "APX", side = "buy", qty = 1000000, fit = true }, JUNIOR, 1, true)
+			local r =
+				Desk.trade(b, prices, { ticker = "APX", side = "buy", qty = 1000000, fit = true }, JUNIOR, 1, true)
 			t.expect(r.ok).toBe(true)
 			t.expect(b.positions.APX.shares).toBeBetween(39, 40)
 			local close = Desk.trade(b, prices, { ticker = "APX", side = "close" }, JUNIOR, 2, true)
@@ -88,7 +91,8 @@ return function(t)
 			t.expect(next(b.positions)).toBeNil()
 			local badTake = Desk.trade(b, prices, { ticker = "APX", side = "buy", qty = 5, take = 95 }, JUNIOR, 1, true)
 			t.expect(badTake.err).toBe("bad_take")
-			local ok = Desk.trade(b, prices, { ticker = "APX", side = "buy", qty = 5, stop = 90, take = 120 }, JUNIOR, 1, true)
+			local ok =
+				Desk.trade(b, prices, { ticker = "APX", side = "buy", qty = 5, stop = 90, take = 120 }, JUNIOR, 1, true)
 			t.expect(ok.ok).toBe(true)
 			t.expect(b.stops.APX.stop).toBe(90)
 			t.expect((Desk.setStops(b, prices, "APX", 95, nil))).toBe(true)
