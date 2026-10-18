@@ -171,7 +171,9 @@ local function solve(secret: any, k: number): any
 	elseif kind == "dialogue" then
 		local out: { [string]: string } = {}
 		for i, lineId in sortedKeys(secret.scores) do
-			local best = if type(secret.best) == "table" and secret.best[lineId] then secret.best[lineId] else bestOf(secret.scores[lineId])
+			local best = if type(secret.best) == "table" and secret.best[lineId]
+				then secret.best[lineId]
+				else bestOf(secret.scores[lineId])
 			out[lineId] = if i <= k then worstOf(secret.scores[lineId]) else best
 		end
 		return out

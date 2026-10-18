@@ -135,6 +135,14 @@ Tasks.strings = {
 	board_start = "Start",
 	board_retry = "Retry",
 	board_refresh = "Refresh",
+	board_week = "Week {week} · {day}",
+	board_cooldown = "Ready in {time}",
+	board_offer_from = "From {source}",
+	board_trained = "Trains {stats}",
+	board_kind = "{kind} · {time}",
+	board_core_hint = "Core work counts toward your promotion.",
+	board_next_day = "Next workday in {time}",
+	board_friday = "Friday: head to your weekly review when it's ready.",
 
 	-- runner
 	runner_submit = "Submit",
@@ -149,6 +157,22 @@ Tasks.strings = {
 	runner_incomplete_title = "Not finished",
 	runner_part = "Part {i} of {n}",
 	runner_how = "How it works",
+	runner_part_error = "This part couldn't be drawn. Submit what you can; it won't count against you twice.",
+	runner_answered = "{n}/{total} answered",
+	runner_desk = "At your desk: +{pct}% XP",
+	runner_hints_show = "Show hints ({n})",
+	runner_hints_hide = "Hide hints",
+	runner_late_warn = "Past the deadline: it still counts, but pays less.",
+
+	-- renderers
+	fill_placeholder = "Type a number",
+	fill_not_number = "Enter a number, like 1,250 or 12.5",
+	match_pick = "Choose…",
+	spot_counter = "Flags: {n}/{max}",
+	alloc_total = "Allocated {used} of {total} {unit} · {left} left",
+	alloc_over = "Over budget: {used} of {total} {unit}",
+	format_flags = "⚑ {n}",
+	call_move = "{pct} over the period",
 
 	-- results
 	result_title = "Results",
@@ -181,6 +205,8 @@ Tasks.strings = {
 	note_alloc_over = "You allocated {given}{unit} of {total}{unit}.",
 	note_call_perfect = "Every call right.",
 	note_dialogue_good = "You read the room well.",
+	note_dialogue_weak = "That line didn't land. Think about what the other person needs to hear.",
+	note_call_partial = "{label}: close, but the news points further than that.",
 
 	-- toasts
 	toast_done = "{title}: {q} quality · +{xp} XP · +{pay}",
@@ -191,6 +217,8 @@ Tasks.strings = {
 	toast_offered = "New on your board: {title}.",
 	toast_client_rep = "The client noticed: +{rep} reputation.",
 	toast_desk_bonus = "Desk bonus applied.",
+	toast_new_day = "New work on your board: {n} tasks.",
+	toast_xp_capped = "XP is capped at your title's top level until you're promoted.",
 
 	-- errors (remote error keys)
 	err_not_loaded = "Your save is still loading. Try again in a moment.",
@@ -211,6 +239,20 @@ Tasks.strings = {
 	err_unavailable = "Work isn't available right now.",
 }
 
+Tasks.WEEKDAYS = { "Mon", "Tue", "Wed", "Thu", "Fri" }
+
+-- Display names for the eight attributes (Config/LifeRoll owns the full definitions).
+Tasks.STAT_NAMES = {
+	knowledge = "Knowledge",
+	skill = "Skill",
+	speed = "Speed",
+	charisma = "Charisma",
+	network = "Network",
+	discipline = "Discipline",
+	risk = "Risk Sense",
+	luck = "Luck",
+} :: { [string]: string }
+
 Tasks.ERRORS = {
 	not_loaded = "err_not_loaded",
 	unknown_task = "err_unknown_task",
@@ -227,6 +269,7 @@ Tasks.ERRORS = {
 	timeout = "err_timeout",
 	expired = "err_expired",
 	unavailable = "err_unavailable",
+	void = "toast_void",
 } :: { [string]: string }
 
 function Tasks.text(key: string, vars: { [string]: any }?): string

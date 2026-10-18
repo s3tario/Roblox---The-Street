@@ -55,7 +55,10 @@ local function fv(rng: Rng.Rng): Problem
 		tol = 0.01,
 		short = "Future value",
 		hint = "Future value = amount × (1 + rate)^years.",
-		note = Common.fill("${p} × 1.{rr}^{n} ≈ ${v}.", { p = commas(p), rr = string.format("%02d", r), n = n, v = commas(v) }),
+		note = Common.fill(
+			"${p} × 1.{rr}^{n} ≈ ${v}.",
+			{ p = commas(p), rr = string.format("%02d", r), n = n, v = commas(v) }
+		),
 	}
 end
 
@@ -75,7 +78,10 @@ local function pv(rng: Rng.Rng): Problem
 		tol = 0.01,
 		short = "Present value",
 		hint = "Present value = future amount ÷ (1 + rate)^years.",
-		note = Common.fill("${f} ÷ 1.{rr}^{n} ≈ ${v}.", { f = commas(f), rr = string.format("%02d", r), n = n, v = commas(v) }),
+		note = Common.fill(
+			"${f} ÷ 1.{rr}^{n} ≈ ${v}.",
+			{ f = commas(f), rr = string.format("%02d", r), n = n, v = commas(v) }
+		),
 	}
 end
 
@@ -100,7 +106,10 @@ local function growth(rng: Rng.Rng): Problem
 		scales = { 1, 100 },
 		short = "Growth",
 		hint = "Growth = (new − old) ÷ old.",
-		note = Common.fill("({b} − {a}) ÷ {a} ≈ {v}%.", { a = commas(a), b = commas(b), v = string.format("%.1f", v) }),
+		note = Common.fill(
+			"({b} − {a}) ÷ {a} ≈ {v}%.",
+			{ a = commas(a), b = commas(b), v = string.format("%.1f", v) }
+		),
 	}
 end
 
@@ -121,7 +130,10 @@ local function margin(rng: Rng.Rng): Problem
 		scales = { 1, 100 },
 		short = "Operating margin",
 		hint = "Margin = profit ÷ revenue.",
-		note = Common.fill("{op} ÷ {rev} ≈ {v}%.", { op = commas(op), rev = commas(revenue), v = string.format("%.1f", v) }),
+		note = Common.fill(
+			"{op} ÷ {rev} ≈ {v}%.",
+			{ op = commas(op), rev = commas(revenue), v = string.format("%.1f", v) }
+		),
 	}
 end
 
@@ -141,7 +153,10 @@ local function pe(rng: Rng.Rng): Problem
 		tol = 0.02,
 		short = "P/E ratio",
 		hint = "P/E = share price ÷ earnings per share.",
-		note = Common.fill("{p} ÷ {e} ≈ {v}x.", { p = string.format("%.2f", price), e = string.format("%.2f", eps), v = string.format("%.1f", v) }),
+		note = Common.fill(
+			"{p} ÷ {e} ≈ {v}x.",
+			{ p = string.format("%.2f", price), e = string.format("%.2f", eps), v = string.format("%.1f", v) }
+		),
 	}
 end
 
@@ -181,7 +196,10 @@ local function portfolio(rng: Rng.Rng): Problem
 		scales = { 1, 100 },
 		short = "Portfolio return",
 		hint = "A portfolio's return is the weighted average of its parts.",
-		note = Common.fill("{w}% × {rs}% + {wb}% × {rb}% = {v}%.", { w = w, rs = rs, wb = 100 - w, rb = rb, v = string.format("%.1f", v) }),
+		note = Common.fill(
+			"{w}% × {rs}% + {wb}% × {rb}% = {v}%.",
+			{ w = w, rs = rs, wb = 100 - w, rb = rb, v = string.format("%.1f", v) }
+		),
 	}
 end
 

@@ -258,10 +258,7 @@ function Board.build(
 		local entries: { { any } } = {}
 		for i, m in list do
 			local isCore = m.core == true
-			local allowed = if wantCore == true
-				then isCore
-				elseif coreCount >= maxCore then not isCore
-				else true
+			local allowed = if wantCore == true then isCore elseif coreCount >= maxCore then not isCore else true
 			if allowed then
 				table.insert(entries, { i, weightOf(m) })
 			end

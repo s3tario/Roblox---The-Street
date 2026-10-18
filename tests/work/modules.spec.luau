@@ -45,7 +45,16 @@ for _, list in { STUDENT, IB, OTHER } do
 	end
 end
 
-local STAT_IDS = { knowledge = true, skill = true, speed = true, charisma = true, network = true, discipline = true, risk = true, luck = true }
+local STAT_IDS = {
+	knowledge = true,
+	skill = true,
+	speed = true,
+	charisma = true,
+	network = true,
+	discipline = true,
+	risk = true,
+	luck = true,
+}
 local DIFFICULTIES = { 0.1, 0.5, 0.9 }
 local SEEDS = 50
 
@@ -217,24 +226,27 @@ return function(t)
 
 	t.describe("partial credit", function()
 		for _, id in ALL do
-			t.it(id .. ": quality never rises as more items go wrong, and an all-wrong attempt is well below perfect", function()
-				local mod = load(id)
-				for seed = 1, 20 do
-					local ctx = ctxFor(0.5 + (seed % 3) * 0.2)
-					local _, secret = mod.generate(Rng.new(seed * 31), ctx)
-					local n = Solve.items(secret)
-					t.expect(n).toBeGreaterThan(0)
-					local prev = mod.grade(secret, Solve.perfect(secret), ctx).quality
-					for k = 1, n do
-						local q = mod.grade(secret, Solve.degrade(secret, k), ctx).quality
-						if q > prev then
-							error(("%s seed %d: k=%d scored %d > %d"):format(id, seed, k, q, prev))
+			t.it(
+				id .. ": quality never rises as more items go wrong, and an all-wrong attempt is well below perfect",
+				function()
+					local mod = load(id)
+					for seed = 1, 20 do
+						local ctx = ctxFor(0.5 + (seed % 3) * 0.2)
+						local _, secret = mod.generate(Rng.new(seed * 31), ctx)
+						local n = Solve.items(secret)
+						t.expect(n).toBeGreaterThan(0)
+						local prev = mod.grade(secret, Solve.perfect(secret), ctx).quality
+						for k = 1, n do
+							local q = mod.grade(secret, Solve.degrade(secret, k), ctx).quality
+							if q > prev then
+								error(("%s seed %d: k=%d scored %d > %d"):format(id, seed, k, q, prev))
+							end
+							prev = q
 						end
-						prev = q
+						t.expect(prev).toBeLessThan(60)
 					end
-					t.expect(prev).toBeLessThan(60)
 				end
-			end)
+			)
 		end
 		t.it("one wrong item earns partial (not zero, not full) credit", function()
 			for _, id in ALL do

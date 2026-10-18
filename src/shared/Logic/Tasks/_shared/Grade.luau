@@ -22,7 +22,8 @@
 --   format   { issues = {[elemId] = {issueId}}, notes = {[elemId] = string}, labels, valid = {[issueId] = text} }
 --   multi    { sections = {secret}, weights = {number}? }
 -- Any secret may carry summary = { great?, good?, ok?, weak?, bad? } to replace the generic summary line.
--- ctx.toleranceMult widens fill tolerance; ctx.charismaBonus adds quality points to dialogue sections.
+-- ctx.toleranceMult widens fill tolerance and softens false spot flags; ctx.charismaBonus adds quality points to
+-- dialogue sections (only for the lines answered).
 
 local Config = require(script.Parent.Parent.Parent.Parent.Config.Tasks)
 local Format = require(script.Parent.Parent.Parent.Parent.Util.Format)
@@ -152,7 +153,9 @@ end
 local function gradeFill(secret: { [string]: any }, answers: any, ctx: any): Section
 	local fields = tableOr(secret.fields)
 	local a = tableOr(answers)
-	local tolMult = if type(ctx) == "table" and finite(ctx.toleranceMult) then math.clamp(ctx.toleranceMult, 1, 1.5) else 1
+	local tolMult = if type(ctx) == "table" and finite(ctx.toleranceMult)
+		then math.clamp(ctx.toleranceMult, 1, 1.5)
+		else 1
 	local order: { string } = {}
 	if type(secret.fieldOrder) == "table" then
 		for _, id in secret.fieldOrder do
@@ -193,7 +196,9 @@ local function gradeFill(secret: { [string]: any }, answers: any, ctx: any): Sec
 				elseif type(f) == "table" and type(f.label) == "string" then f.label
 				else id
 			local unit = if type(f) == "table" and type(f.unit) == "string" then f.unit else ""
-			local shown = if type(f) == "table" and type(f.shown) == "string" then f.shown else Grade.withUnit(value, unit)
+			local shown = if type(f) == "table" and type(f.shown) == "string"
+				then f.shown
+				else Grade.withUnit(value, unit)
 			local vars = {
 				label = label,
 				expected = shown,
@@ -308,8 +313,13 @@ local function cellKey(pick: any): string?
 	return tostring(r) .. ":" .. tostring(c)
 end
 
-local function gradeSpot(secret: { [string]: any }, answers: any): Section
+local function gradeSpot(secret: { [string]: any }, answers: any, ctx: any): Section
 	local groups = tableOr(secret.groups)
+	-- Skill (ctx.toleranceMult 1..1.5) softens the cost of a false flag: 0.5 of an error at 1x, 0.33 at 1.5x
+	local tolMult = if type(ctx) == "table" and finite(ctx.toleranceMult)
+		then math.clamp(ctx.toleranceMult, 1, 1.5)
+		else 1
+	local penalty = 0.5 / tolMult
 	local maxPicks = if finite(secret.maxPicks) then math.floor(secret.maxPicks) else #groups + 2
 	local groupOf: { [string]: number } = {}
 	for gi, g in groups do
@@ -355,7 +365,7 @@ local function gradeSpot(secret: { [string]: any }, answers: any): Section
 		table.insert(notes, Config.text("note_spot_false", { n = falsePicks }))
 	end
 	local n = #groups
-	local score = if n > 0 then (hits - 0.5 * falsePicks) / n else (if falsePicks == 0 then 1 else 0)
+	local score = if n > 0 then (hits - penalty * falsePicks) / n else (if falsePicks == 0 then 1 else 0)
 	return section("spot", score, hits, n, notes)
 end
 
@@ -407,7 +417,11 @@ local function gradeAlloc(secret: { [string]: any }, answers: any): Section
 	local score = 1 - dist / (0.5 * total)
 	if over then
 		score *= total / sum
-		table.insert(out, 1, Config.text("note_alloc_over", { given = Grade.show(sum), total = Grade.show(total), unit = unit }))
+		table.insert(
+			out,
+			1,
+			Config.text("note_alloc_over", { given = Grade.show(sum), total = Grade.show(total), unit = unit })
+		)
 	end
 	return section("alloc", score, inBand, #ids, out)
 end
@@ -422,12 +436,15 @@ local function gradeDialogue(secret: { [string]: any }, answers: any, ctx: any):
 		table.insert(ids, id)
 	end
 	table.sort(ids)
-	local sum, correct = 0, 0
+	local sum, correct, answered = 0, 0, 0
 	local out: { string } = {}
 	for _, lineId in ids do
 		local opts = tableOr(scores[lineId])
 		local chosen = str(a[lineId])
 		local s = if chosen and finite(opts[chosen]) then opts[chosen] else 0
+		if chosen and finite(opts[chosen]) then
+			answered += 1
+		end
 		sum += math.clamp(s, 0, 100)
 		local top = best[lineId]
 		local topScore = if type(top) == "string" and finite(opts[top]) then opts[top] else 100
@@ -442,7 +459,11 @@ local function gradeDialogue(secret: { [string]: any }, answers: any, ctx: any):
 		end
 	end
 	local n = #ids
-	local bonus = if type(ctx) == "table" and finite(ctx.charismaBonus) then math.clamp(ctx.charismaBonus, 0, 8) else 0
+	-- Charisma (ctx.charismaBonus 0..8) adds quality points, earned only on the lines actually answered
+	local maxBonus = if type(ctx) == "table" and finite(ctx.charismaBonus)
+		then math.clamp(ctx.charismaBonus, 0, 8)
+		else 0
+	local bonus = if n > 0 then maxBonus * answered / n else 0
 	local avg = if n > 0 then sum / n else 0
 	if n > 0 and correct == n then
 		table.insert(out, Config.text("note_dialogue_good"))
@@ -646,10 +667,7 @@ function Grade.auto(secret: any, answers: any, ctx: any): Result
 	end
 	local brief: { { kind: string, score: number, correct: number, total: number } } = {}
 	for _, s in sections do
-		table.insert(
-			brief,
-			{ kind = s.kind, score = math.floor(s.score + 0.5), correct = s.correct, total = s.total }
-		)
+		table.insert(brief, { kind = s.kind, score = math.floor(s.score + 0.5), correct = s.correct, total = s.total })
 	end
 	return { quality = quality, correct = correct, total = total, feedback = feedback, sections = brief }
 end

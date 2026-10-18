@@ -9,6 +9,9 @@
 --   Universe.person(rng) -> "Priya Lindqvist"                          Universe.first(rng) / Universe.last(rng)
 --   Universe.sectorIds -> { string }
 --   Universe.listed(rng) -> { ticker, name, sector }
+--   Universe.FIRMS / Universe.firm(rng, exclude?) -> string            the parody IB firms (design v3 §4)
+--   Universe.codename(rng) -> "Project Falcon"                        deal codenames
+--   Universe.month(rng) -> "March"
 
 local Rng = require(script.Parent.Parent.Parent.Parent.Util.Rng)
 
@@ -280,6 +283,79 @@ end
 
 function Universe.listed(rng: Rng.Rng): { ticker: string, name: string, sector: string }
 	return rng:pick(Universe.LISTED)
+end
+
+-- Parody bank names from design v3 §4 (Config/Companies owns the full records; tasks only need names).
+Universe.FIRMS = {
+	"MG Freeman",
+	"Goldfield Saxe",
+	"Morrow Stanton",
+	"Merriweather Lynch",
+	"Evermoor",
+	"Lazaro Frères",
+	"Centerline",
+	"Harrow Williams",
+	"Blairmont",
+	"Houlton Lockey",
+	"Sterling & Vance",
+	"Eastbridge Capital",
+}
+
+function Universe.firm(rng: Rng.Rng, exclude: string?): string
+	local pool: { string } = {}
+	for _, f in Universe.FIRMS do
+		if f ~= exclude then
+			table.insert(pool, f)
+		end
+	end
+	return rng:pick(pool)
+end
+
+local CODENAMES = {
+	"Falcon",
+	"Bluebird",
+	"Granite",
+	"Lantern",
+	"Meridian",
+	"Northstar",
+	"Orchid",
+	"Pinnacle",
+	"Quartz",
+	"Redwood",
+	"Sapphire",
+	"Tidewater",
+	"Wildcat",
+	"Atlas",
+	"Beacon",
+	"Copperhead",
+	"Driftwood",
+	"Evergreen",
+	"Harbor",
+	"Ironbark",
+}
+
+function Universe.codename(rng: Rng.Rng): string
+	return "Project " .. rng:pick(CODENAMES)
+end
+
+local MONTHS = {
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+}
+Universe.MONTHS = MONTHS
+
+function Universe.month(rng: Rng.Rng): string
+	return rng:pick(MONTHS)
 end
 
 return Universe

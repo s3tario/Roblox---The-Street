@@ -54,8 +54,14 @@ function Build.mcq(rng: Rng.Rng, specs: { McqSpec }, opts: { options: number? }?
 		local qid = spec.id or ("q" .. tostring(i))
 		local wrong = rng:shuffle(spec.wrong)
 		local pool: { string } = { spec.correct }
-		for j = 1, math.min(#wrong, nOpts - 1) do
-			table.insert(pool, wrong[j])
+		-- distractors that repeat the answer (or each other) are dropped, so every option is distinct
+		for _, w in wrong do
+			if #pool >= nOpts then
+				break
+			end
+			if table.find(pool, w) == nil then
+				table.insert(pool, w)
+			end
 		end
 		local shown = rng:shuffle(pool)
 		local correctIndex = table.find(shown, spec.correct) or 1
@@ -262,8 +268,13 @@ function Build.spotTable(
 		table.insert(secretGroups, { cells = cells, note = g.note })
 	end
 	local picks = maxPicks or (#groups + 2)
-	return { columns = columns, rows = rows },
-		{ kind = "spot", groups = secretGroups, maxPicks = picks, rows = #rows, cols = #columns }
+	return { columns = columns, rows = rows }, {
+		kind = "spot",
+		groups = secretGroups,
+		maxPicks = picks,
+		rows = #rows,
+		cols = #columns,
+	}
 end
 
 ---------------------------------------------------------------------------------------------------

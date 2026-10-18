@@ -15,6 +15,9 @@
 --   Common.fill(template, vars) -> string   "{name}" substitution
 --   Common.pct(ratio, decimals?) -> "12.5%"   Common.mult(x) -> "8.4x"   Common.money(m, unit?) -> "$1,240M"
 --   Common.commas(n, decimals?) -> "1,240"
+--   Common.typo(rng, text) -> string        the same text with two neighbouring letters swapped in its longest word
+-- Time
+--   Common.year(ctx) -> number              calendar year of ctx.now (2026 when now is unknown)
 -- Lists
 --   Common.pickN(rng, list, n) -> { T }     n distinct picks (shuffled copy)
 --   Common.has(list, value) -> boolean
@@ -118,13 +121,15 @@ function Common.hints(ctx: Ctx, lines: { string }): { string }?
 end
 
 function Common.fill(template: string, vars: { [string]: any }): string
-	return (string.gsub(template, "{([%w_]+)}", function(key: string): string
-		local v = vars[key]
-		if v == nil then
-			return "{" .. key .. "}"
-		end
-		return tostring(v)
-	end))
+	return (
+		string.gsub(template, "{([%w_]+)}", function(key: string): string
+			local v = vars[key]
+			if v == nil then
+				return "{" .. key .. "}"
+			end
+			return tostring(v)
+		end)
+	)
 end
 
 function Common.commas(n: number, decimals: number?): string
@@ -143,6 +148,47 @@ end
 function Common.money(m: number, unit: string?, decimals: number?): string
 	local s = Format.commas(math.abs(m), decimals or 0)
 	return (if m < 0 then "-$" else "$") .. s .. (unit or "M")
+end
+
+function Common.typo(rng: Rng.Rng, text: string): string
+	local best, bestStart = "", 0
+	local pos = 1
+	while true do
+		local a, b = string.find(text, "%a+", pos)
+		if not a or not b then
+			break
+		end
+		if b - a + 1 > #best then
+			best, bestStart = string.sub(text, a, b), a
+		end
+		pos = b + 1
+	end
+	if #best < 4 then
+		return text .. text:sub(-1)
+	end
+	-- swap two neighbouring interior letters that differ (so the word visibly changes)
+	local candidates: { number } = {}
+	for i = 2, #best - 2 do
+		if string.sub(best, i, i) ~= string.sub(best, i + 1, i + 1) then
+			table.insert(candidates, i)
+		end
+	end
+	if #candidates == 0 then
+		return text .. text:sub(-1)
+	end
+	local i = rng:pick(candidates)
+	local word = string.sub(best, 1, i - 1)
+		.. string.sub(best, i + 1, i + 1)
+		.. string.sub(best, i, i)
+		.. string.sub(best, i + 2)
+	return string.sub(text, 1, bestStart - 1) .. word .. string.sub(text, bestStart + #best)
+end
+
+function Common.year(ctx: Ctx): number
+	if ctx.now > 1e9 then
+		return 1970 + math.floor(ctx.now / 31556952)
+	end
+	return 2026
 end
 
 function Common.pickN<T>(rng: Rng.Rng, list: { T }, n: number): { T }
