@@ -3,6 +3,9 @@
 -- small template builders; the mechanics live in ib_sellside/init.luau. Fictional companies and people only.
 -- Templates use "{var}" placeholders filled from the deal's facts (Common.fill).
 
+export type CimVariant = { issue: string, text: string?, typo: string?, note: string }
+export type CimElement = { kind: string, clean: string, broken: { CimVariant } }
+
 local Content = {}
 
 Content.title = "Sell-Side M&A"
@@ -34,6 +37,14 @@ Content.narrative = {
 	management = "Management presents to the buyers today. Coach {founder} through the Q&A.",
 	bids = "First-round letters of intent are in. Compare them and choose who leads into the final round.",
 	negotiation = "Final round with {winner}. Push the price without losing the deal.",
+}
+
+-- Headers of the parts inside a multi-part stage ("Part 1 of 2 · The teaser").
+Content.sections = {
+	teaserMcq = "The teaser",
+	teaserMatch = "The long list",
+	bidsFill = "The letters of intent",
+	bidsMcq = "Pick the lead",
 }
 
 Content.prompts = {
@@ -234,7 +245,7 @@ Content.cimElements = {
 			{ issue = "typo", typo = "firm", note = "Even our own firm's name is misspelt in the footer." },
 		},
 	},
-}
+} :: { CimElement }
 
 Content.cimSummary = {
 	great = "A clean CIM. Buyers will read the story, not the typos.",
@@ -642,19 +653,22 @@ Content.negotiationDebrief = {
 -- Outcome
 ---------------------------------------------------------------------------------------------------
 Content.outcome = {
-	closedHeadline = "{buyer} agreed to buy {company} for ${price}M.",
-	pulledHeadline = "No deal: {founder} walked away from a ${price}M offer.",
-	above = "That's {pct} above the board's ${reserve}M reserve.",
-	below = "That's {pct} below the ${reserve}M reserve, but the board took the certainty.",
-	short = "The board's reserve was ${reserve}M, and the final offer fell {pct} short.",
+	-- money values arrive formatted ("$640M", "$1.2B")
+	closedHeadline = "{buyer} agreed to buy {company} for {price}.",
+	pulledHeadline = "No deal: {founder}'s board walked away from a {price} offer.",
+	above = "That's {pct} above the board's {reserve} reserve.",
+	below = "That's {pct} below the {reserve} reserve, but the board took the certainty.",
+	short = "The board's reserve was {reserve}, and the final offer fell {pct} short.",
 	competition = "{buyers} buyers in the process kept the pressure on.",
 	thin = "With only {buyers} buyers in the process, there was little competition.",
-	retradePivot = "{winner} couldn't raise its debt and tried to cut the price. Your backup bidder, {buyer}, stepped in.",
+	retradePivot = "{winner} couldn't raise its debt and tried to cut the price. Your backup bidder, {buyer}, stepped "
+		.. "in.",
 	retradeCut = "{winner} couldn't raise its debt and re-traded the price {cut}% lower after weeks of exclusivity.",
 	stockSlide = "{winner}'s shares kept falling during diligence, shaving {cut}% off the value of its offer.",
+	familyLow = "{winner} was the safest bidder, and also the cheapest.",
 	negotiationUp = "Your final negotiation added {pct} to the price.",
 	negotiationDown = "The final negotiation gave away {pct}.",
-	dealName = "{codename}: ${price}M sale of {company}",
+	dealName = "{codename}: {price} sale of {company}",
 	dealNameRunning = "{codename}: sale of {company}",
 	dealNamePulled = "{codename}: sale of {company} (pulled)",
 	figures = {

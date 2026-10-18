@@ -81,6 +81,12 @@ function Ticket.new(env: Env.Env): TicketPart
 			update(last)
 		end
 	end
+	-- a new edit starts a new order: the last fill / refusal message no longer applies
+	local function edited()
+		if not busy then
+			status, statusColor = "", "dim"
+		end
+	end
 	buyBtn = Kit.Button({
 		text = Tickers.text("buy"),
 		style = "primary",
@@ -89,6 +95,7 @@ function Ticket.new(env: Env.Env): TicketPart
 		onClick = function()
 			side = "buy"
 			fit = false
+			edited()
 			rerender()
 		end,
 	})
@@ -101,6 +108,7 @@ function Ticket.new(env: Env.Env): TicketPart
 		onClick = function()
 			side = "sell"
 			fit = false
+			edited()
 			rerender()
 		end,
 	})
@@ -124,6 +132,7 @@ function Ticket.new(env: Env.Env): TicketPart
 		onChange = function(v: number)
 			qty = math.max(0, math.floor(v))
 			fit = false
+			edited()
 			rerender()
 		end,
 	})
@@ -166,6 +175,7 @@ function Ticket.new(env: Env.Env): TicketPart
 				qty = View.presetQty(st.book, st.prices, st.selected, side, preset, st.limits)
 				fit = preset == "max"
 				input.set(qty, true)
+				edited()
 				rerender()
 			end,
 		})

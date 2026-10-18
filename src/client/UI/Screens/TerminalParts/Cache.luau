@@ -254,6 +254,9 @@ function Cache.applyTick(cache: Cache, tick: any): (boolean, boolean)
 		if eventId ~= cache.eventId then
 			stale = true
 			cache.eventId = eventId
+			if eventId == nil then
+				cache.event = nil -- the event ended: drop its strip now, not when the next snapshot lands
+			end
 		end
 		for _, view in cache.tickers do
 			local p = cache.prices[view.id]

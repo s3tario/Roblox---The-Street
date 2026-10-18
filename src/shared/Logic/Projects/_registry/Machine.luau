@@ -21,18 +21,19 @@
 --     apply(state, graded, answers, meta, ctx) -> debrief?   updates state.facts after grading and returns one line
 --         telling the player what happened ("6 buyers signed NDAs and received the CIM.")
 --   init(rng, ctx) -> facts    the scenario (plain data)
---   dealName(state) -> string  the plaque name (also shown while the deal runs)
+--   dealName(state) -> string  the running name (refreshed after every stage); finish may set the plaque name
 --   summary(state, ctx) -> { text, metrics = { {id, label, value, tone?} } }   must never reveal an answer
 --   finish(state, ctx) -> Outcome   { closed, score 0..100, headline, lines = {string}, figures = { {label, value,
---       tone?} }, dealName? }
+--       tone?} }, dealName?, data? = { plain numbers for tests and the results story } }
 -- }
 --
 -- State (saved as is in data.projects[id].state, so JSON-safe: string-keyed maps and dense arrays only):
---   { version, id, seed, stageIndex, stageCount, done, quality, scores = {[stageId] = n},
+--   { version, id, seed, difficulty, stageIndex, stageCount, done, quality, scores = {[stageId] = n},
 --     feedback = {[stageId] = {string}}, debrief = {[stageId] = string}, facts, current = {id, payload, secret,
 --     meta}?, outcome?, dealName }
--- A stage is generated when it is entered, from Rng(Hash(id, seed, stageId)) and the facts so far: later stages
--- react to earlier choices, and a saved deal rebuilds exactly the same stage if its `current` is ever lost.
+-- A stage is generated when it is entered, from Rng(Hash(id, seed, stageId)), the facts so far and the difficulty
+-- frozen when the deal started: later stages react to earlier choices, and a saved deal rebuilds exactly the same
+-- stage if its `current` is ever lost (even after the player levels up mid-deal).
 
 local Rng = require(script.Parent.Parent.Parent.Parent.Util.Rng)
 local Hash = require(script.Parent.Parent.Parent.Parent.Util.Hash)
@@ -68,6 +69,7 @@ export type Outcome = {
 	lines: { string },
 	figures: { Figure },
 	dealName: string?,
+	data: { [string]: any }?,
 }
 export type Current = {
 	id: string,
@@ -79,6 +81,7 @@ export type State = {
 	version: number,
 	id: string,
 	seed: number,
+	difficulty: number,
 	stageIndex: number,
 	stageCount: number,
 	done: boolean,
@@ -200,6 +203,16 @@ local function stageRng(state: State, stageId: string): Rng.Rng
 	return Rng.new(Hash.u32("project", state.id, state.seed, stageId))
 end
 
+-- The ctx a stage is built with: the live one, with the difficulty the deal started at.
+local function buildCtx(state: State, ctx: Ctx): Ctx
+	if type(state.difficulty) == "number" and state.difficulty == state.difficulty then
+		local c = table.clone(ctx)
+		c.difficulty = Common.clamp(state.difficulty, 0, 1)
+		return c
+	end
+	return ctx
+end
+
 -- Builds the stage at state.stageIndex into state.current.
 local function enter(def: Def, state: State, ctx: Ctx)
 	local stage = def.stages[state.stageIndex]
@@ -207,7 +220,7 @@ local function enter(def: Def, state: State, ctx: Ctx)
 		state.current = nil
 		return
 	end
-	local payload, secret, meta = stage.build(state, stageRng(state, stage.id), ctx)
+	local payload, secret, meta = stage.build(state, stageRng(state, stage.id), buildCtx(state, ctx))
 	if type(payload.kind) ~= "string" then
 		payload.kind = stage.kind
 	end
@@ -240,6 +253,7 @@ local function newState(def: Def, rng: Rng.Rng, ctx: Ctx): State
 		version = def.version or 1,
 		id = def.id,
 		seed = seed,
+		difficulty = ctx.difficulty,
 		stageIndex = 1,
 		stageCount = #def.stages,
 		done = false,
@@ -358,6 +372,8 @@ local function actOn(def: Def, state: State, answers: any, ctx: Ctx): (State, Re
 		result.outcome = TableUtil.deepCopy(outcome)
 	else
 		state.stageIndex += 1
+		-- the running name can depend on choices made so far (the IPO's client is picked in stage 1)
+		state.dealName = def.dealName(state)
 		enter(def, state, ctx)
 		local nextDef = def.stages[state.stageIndex]
 		result.nextStage = if nextDef then nextDef.title else nil
