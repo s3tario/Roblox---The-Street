@@ -2,7 +2,7 @@
 -- Terminal view model (owned by `market`). PURE: turns the market cache and the replicated book into rows and text
 -- for the Terminal's parts. Previews reuse Shared/Logic/Portfolio/Ledger, the same maths the server enforces.
 --
---   View.layoutMode(width) -> "wide" | "phone"           View.variant(themeName) -> "terminal" | "laptop"
+--   View.layoutMode(width, height?) -> "wide" | "phone"  View.variant(themeName) -> "terminal" | "laptop"
 --   View.canUsePrompt(career, events, companyId?) -> boolean   hide EmployeesOnly prompts for visitors
 --   View.positions(book, prices) -> { PositionRow }      sorted by value
 --   View.account(book, prices) -> Ledger.summary
@@ -12,6 +12,9 @@
 --   View.series(view, range) -> { number }              "1d" intraday path (or the last close), "30d" closes + now
 --   View.calendar(rows) -> { {label, when, tickers, frenzy} }
 --   View.news(items, ticker?) -> items                   View.breaches(risk, now) -> rows with secondsLeft
+--   View.event(event, now) -> {id, name, desc, tone, glyph, secondsLeft}?   the active market event, public fields
+--   View.age(at, now) -> string                          "4m ago"
+--   View.toneColor(tone) -> palette key                  "good" -> "up", "bad" -> "down", "warn", "info" -> "dim"
 --   View.price / pct / money / compact / signedMoney / changeColor / phaseLine   formatting
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -51,7 +54,8 @@ export type Preview = {
 
 local View = {}
 
-View.WIDE_MIN = 880
+View.WIDE_MIN = 980 -- unscaled px (UIScale already applied)
+View.WIDE_MIN_H = 560
 View.PRESETS = { "p10", "p25", "p50", "max", "close" }
 View.PRESET_FRACTION = { p10 = 0.1, p25 = 0.25, p50 = 0.5 } :: { [string]: number }
 
@@ -62,11 +66,18 @@ local function num(x: any, default: number): number
 	return default
 end
 
-function View.layoutMode(width: number?): string
+-- Three columns need room both ways: phones in landscape are wide but short, so they get the tabbed layout too.
+function View.layoutMode(width: number?, height: number?): string
 	if type(width) ~= "number" or width <= 0 then
 		return "wide"
 	end
-	return if width >= View.WIDE_MIN then "wide" else "phone"
+	if width < View.WIDE_MIN then
+		return "phone"
+	end
+	if type(height) == "number" and height > 0 and height < View.WIDE_MIN_H then
+		return "phone"
+	end
+	return "wide"
 end
 
 function View.variant(themeName: string?): string
@@ -373,8 +384,10 @@ function View.calendar(rows: any): { { [string]: any } }
 		if type(r) == "table" and type(r.tickers) == "table" then
 			local names: { string } = {}
 			local frenzy = false
+			local first: string? = nil
 			for _, t in r.tickers do
 				if type(t) == "table" and type(t.id) == "string" then
+					first = first or t.id
 					local cons = if type(t.consensus) == "number"
 						then " " .. Tickers.text("cal_cons", { cons = Format.money(t.consensus, 2) })
 						else ""
@@ -389,6 +402,7 @@ function View.calendar(rows: any): { { [string]: any } }
 				tickers = table.concat(names, " · "),
 				frenzy = frenzy,
 				inDays = inDays,
+				first = first,
 			})
 		end
 	end
@@ -430,11 +444,85 @@ function View.breaches(risk: any, now: number): { { [string]: any } }
 				kind = b.kind,
 				ticker = b.ticker,
 				text = text,
+				deadline = num(b.deadline, now),
 				secondsLeft = math.max(0, math.floor(num(b.deadline, now) - now)),
 			})
 		end
 	end
 	return out
+end
+
+---------------------------------------------------------------------------------------------------
+-- Events and news
+---------------------------------------------------------------------------------------------------
+export type EventView = {
+	id: string,
+	name: string,
+	desc: string,
+	tone: string,
+	glyph: string,
+	secondsLeft: number,
+	closes: boolean,
+}
+
+function View.event(ev: any, now: number): EventView?
+	if type(ev) ~= "table" or type(ev.id) ~= "string" then
+		return nil
+	end
+	local info = Tickers.events[ev.id]
+	if not info then
+		return nil
+	end
+	local data = if type(ev.data) == "table" then ev.data else {}
+	local vars: { [string]: any } = {}
+	for k, v in data do
+		if type(k) == "string" and (type(v) == "string" or type(v) == "number") then
+			vars[k] = v
+		end
+	end
+	return {
+		id = ev.id,
+		name = info.name,
+		desc = Tickers.fill(info.desc, vars),
+		tone = info.tone,
+		glyph = info.glyph,
+		secondsLeft = math.max(0, math.floor(num(ev.endsAt, now) - now)),
+		closes = ev.id == "holiday",
+	}
+end
+
+function View.age(at: any, now: number): string
+	local secs = math.max(0, math.floor(now - num(at, now)))
+	if secs < 60 then
+		return Tickers.text("age_now")
+	elseif secs < 3600 then
+		return Tickers.text("age_min", { n = math.floor(secs / 60) })
+	end
+	return Tickers.text("age_hour", { n = math.floor(secs / 3600) })
+end
+
+function View.toneColor(tone: any): string
+	if tone == "good" then
+		return "up"
+	elseif tone == "bad" then
+		return "down"
+	elseif tone == "warn" then
+		return "warn"
+	end
+	return "dim"
+end
+
+-- One line per active risk limit for the risk panel.
+function View.limitRows(limits: Ledger.Limits): { { key: string, value: string } }
+	local rows = {
+		{ key = Tickers.text("limit_conc"), value = View.plainPct(limits.concentration, 0) },
+		{ key = Tickers.text("limit_gross"), value = View.plainPct(limits.gross, 0) },
+		{
+			key = Tickers.text("limit_short"),
+			value = if limits.short then Tickers.text("short_allowed") else Tickers.text("short_locked"),
+		},
+	}
+	return rows
 end
 
 return View

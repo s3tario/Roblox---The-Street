@@ -179,7 +179,9 @@ function FactsCard.new(_env: Env.Env, columns: number?): Env.Part
 			)
 			set(
 				"fact_cons",
-				if type(nxt.consensus) == "number" then Format.money(nxt.consensus, 2) else Tickers.text("fact_cons_pending"),
+				if type(nxt.consensus) == "number"
+					then Format.money(nxt.consensus, 2)
+					else Tickers.text("fact_cons_pending"),
 				if type(nxt.consensus) == "number" then "text" else "dim"
 			)
 		end

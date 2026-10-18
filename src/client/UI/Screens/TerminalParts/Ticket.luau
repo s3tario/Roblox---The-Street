@@ -28,7 +28,14 @@ local function parseLevel(text: string): (boolean, number?)
 	return true, math.floor(n * 100 + 0.5) / 100
 end
 
-function Ticket.new(env: Env.Env): Env.Part & { setSide: (side: string) -> () }
+export type TicketPart = {
+	frame: GuiObject,
+	update: (state: Env.State) -> (),
+	destroy: (() -> ())?,
+	setSide: (side: string) -> (),
+}
+
+function Ticket.new(env: Env.Env): TicketPart
 	local root = Style.box("Ticket", { color = "panel", autoY = true, pad = 12 })
 	local stack = Style.stack("Stack", 8)
 	stack.Parent = root
@@ -295,7 +302,10 @@ function Ticket.new(env: Env.Env): Env.Part & { setSide: (side: string) -> () }
 		last = st
 		local isIndex = st.selected == INDEX
 		local def = Tickers.get(st.selected)
-		Style.setText(who, if isIndex then Tickers.BENCHMARK.name else st.selected .. " · " .. (if def then def.name else ""))
+		Style.setText(
+			who,
+			if isIndex then Tickers.BENCHMARK.name else st.selected .. " · " .. (if def then def.name else "")
+		)
 		local h = View.held(st.book, st.selected)
 		Style.setText(held, if h ~= 0 then string.format("%s %d", Tickers.text("shares"), h) else "")
 		buyBtn.setStyle(if side == "buy" then "primary" else "secondary")
@@ -324,7 +334,10 @@ function Ticket.new(env: Env.Env): Env.Part & { setSide: (side: string) -> () }
 		)
 		Style.setText(
 			grossText,
-			Tickers.text("gross_preview", { pct = View.plainPct(p.grossRatio, 0), limit = View.plainPct(p.grossLimit, 0) }),
+			Tickers.text(
+				"gross_preview",
+				{ pct = View.plainPct(p.grossRatio, 0), limit = View.plainPct(p.grossLimit, 0) }
+			),
 			if p.err == "gross" then "down" else "dim"
 		)
 		if qty > 0 and p.fill > 0 then
@@ -363,8 +376,9 @@ function Ticket.new(env: Env.Env): Env.Part & { setSide: (side: string) -> () }
 	end
 
 	return {
-		frame = root,
+		frame = root :: GuiObject,
 		update = update,
+		destroy = nil,
 		setSide = function(s: string)
 			side = if s == "sell" then "sell" else "buy"
 			fit = false

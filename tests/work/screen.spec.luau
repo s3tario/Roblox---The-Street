@@ -66,9 +66,49 @@ local function sampleBoard(active: any?): any
 		done = 1,
 		total = 3,
 		tasks = {
-			{ id = "comps_analysis", title = "Trading Comps", desc = "d", kind = "fill", category = "work", core = true, done = false, xp = 120, pay = 480, timeLimit = 270, stats = { "Skill" } },
-			{ id = "interview_ib", title = "First-Round Interview", desc = "d", kind = "multi", category = "interview", core = false, done = false, offered = true, label = "MG Freeman", expiresAt = 4000, xp = 80, pay = 0, timeLimit = 240, stats = {} },
-			{ id = "data_cleanup", title = "Data Clean-up", desc = "d", kind = "spot", category = "work", core = false, done = true, quality = 88, xp = 60, pay = 300, timeLimit = 180, stats = {} },
+			{
+				id = "comps_analysis",
+				title = "Trading Comps",
+				desc = "d",
+				kind = "fill",
+				category = "work",
+				core = true,
+				done = false,
+				xp = 120,
+				pay = 480,
+				timeLimit = 270,
+				stats = { "Skill" },
+			},
+			{
+				id = "interview_ib",
+				title = "First-Round Interview",
+				desc = "d",
+				kind = "multi",
+				category = "interview",
+				core = false,
+				done = false,
+				offered = true,
+				label = "MG Freeman",
+				expiresAt = 4000,
+				xp = 80,
+				pay = 0,
+				timeLimit = 240,
+				stats = {},
+			},
+			{
+				id = "data_cleanup",
+				title = "Data Clean-up",
+				desc = "d",
+				kind = "spot",
+				category = "work",
+				core = false,
+				done = true,
+				quality = 88,
+				xp = 60,
+				pay = 300,
+				timeLimit = 180,
+				stats = {},
+			},
 		},
 		active = active,
 		totals = { tasks = 3, xp = 300, pay = 900, late = 0 },
@@ -111,7 +151,15 @@ return function(t)
 								end,
 							})
 							if not ok then
-								error(("%s (%s, d=%.1f seed %d) failed to mount: %s"):format(mod.id, payload.kind, d, seed, tostring(cleanup)))
+								error(
+									("%s (%s, d=%.1f seed %d) failed to mount: %s"):format(
+										mod.id,
+										payload.kind,
+										d,
+										seed,
+										tostring(cleanup)
+									)
+								)
 							end
 							t.expect(#root:GetChildren()).toBeGreaterThan(1)
 							if payload.kind == "multi" then
@@ -224,7 +272,11 @@ return function(t)
 				quality = 83,
 				correct = 3,
 				total = 4,
-				feedback = { "Solid work.", "Median: about 9.4x (you entered 8.1x).", "Equity value = EV − net debt." },
+				feedback = {
+					"Solid work.",
+					"Median: about 9.4x (you entered 8.1x).",
+					"Equity value = EV − net debt.",
+				},
 				sections = { { kind = "fill", score = 80 }, { kind = "mcq", score = 100 } },
 				onTime = true,
 				xp = 140,
@@ -275,7 +327,18 @@ return function(t)
 			end
 			function ctl:Submit(_id: string, _answers: any)
 				table.insert(self.calls, "submit")
-				return true, { title = "x", quality = 70, feedback = { "ok" }, onTime = true, xp = 10, pay = 0, paid = false, rep = 0, stats = {} }
+				return true,
+					{
+						title = "x",
+						quality = 70,
+						feedback = { "ok" },
+						onTime = true,
+						xp = 10,
+						pay = 0,
+						paid = false,
+						rep = 0,
+						stats = {},
+					}
 			end
 			function ctl:Abandon(_id: string)
 				table.insert(self.calls, "abandon")
@@ -330,9 +393,56 @@ return function(t)
 			t.expect(find(root, "OrderList") ~= nil).toBeTruthy()
 			handle.close()
 		end)
+		t.it("a board refresh that lands after a task started never replaces the runner", function()
+			local ctl = fakeController(nil)
+			local gated = false
+			local parked: thread? = nil
+			local baseGetBoard = ctl.GetBoard
+			function ctl:GetBoard()
+				if gated then
+					parked = coroutine.running()
+					coroutine.yield()
+				end
+				return baseGetBoard(self)
+			end
+			-- capture the board's handlers (the screen and this spec share the BoardView module)
+			local handlers: any = nil
+			local realBuild = BoardView.build
+			BoardView.build = function(parent: Instance, board: any, h: any)
+				handlers = h
+				return realBuild(parent, board, h)
+			end
+			local ok, err = pcall(function()
+				local root = Instance.new("Frame")
+				local handle = WorkScreen.open({}, root, ctxFor(ctl))
+				t.expect(find(root, "BoardView") ~= nil).toBeTruthy()
+				gated = true
+				handlers.onRefresh() -- in flight, parked
+				t.expect(parked ~= nil).toBeTruthy()
+				gated = false
+				handlers.onStart("comps_analysis") -- resolves at once: the runner opens
+				t.expect(find(root, "Runner") ~= nil).toBeTruthy()
+				task.spawn(parked :: thread) -- the stale board reply arrives now
+				t.expect(find(root, "Runner") ~= nil).toBeTruthy()
+				t.expect(find(root, "BoardView")).toBeNil()
+				handle.close()
+			end)
+			BoardView.build = realBuild
+			if not ok then
+				error(err, 0)
+			end
+		end)
 		t.it("shows a polite message when the controller is missing", function()
 			local root = Instance.new("Frame")
-			local handle = WorkScreen.open({}, root, { Registry = { get = function() return nil end }, close = function() end })
+			local handle = WorkScreen.open(
+				{},
+				root,
+				{ Registry = {
+					get = function()
+						return nil
+					end,
+				}, close = function() end }
+			)
 			local msg = find(root, "MessageText") :: any
 			t.expect(msg ~= nil).toBeTruthy()
 			t.expect(msg.Text).toBe(Config.text("err_unavailable"))
@@ -372,13 +482,25 @@ return function(t)
 			t.expect(cooling.enabled).toBe(false)
 			t.expect(cooling.text).toBe(Config.text("board_cooldown", { time = "1:00" }))
 		end)
+		t.it("offer countdowns tick for open offers only", function()
+			local offer = { id = "interview_ib", offered = true, done = false, expiresAt = 1125 }
+			t.expect(View.expiryText(offer, 1000)).toBe(Config.text("board_expires", { time = "2m 05s" }))
+			t.expect(View.expiryText(offer, 2000)).toBe(Config.text("board_expires", { time = "0s" }))
+			t.expect(View.expiryText({ id = "a", offered = true, done = true, expiresAt = 1125 }, 1000)).toBeNil()
+			t.expect(View.expiryText({ id = "a", offered = false, expiresAt = 1125 }, 1000)).toBeNil()
+			t.expect(View.expiryText({ id = "a", offered = true }, 1000)).toBeNil()
+			for _, tag in View.cardTags(offer, 1000) do
+				t.expect(string.find(tag.text, "Expires", 1, true)).toBeNil()
+			end
+		end)
 		t.it("headers and empty states read naturally", function()
 			t.expect(View.title({ student = true })).toBe(Config.text("board_title_student"))
 			t.expect(View.title({ student = false })).toBe(Config.text("board_title"))
 			t.expect(View.subtitle(sampleBoard(nil))).toBe("Week 2 · Tue · 1/3 done")
 			t.expect(View.emptyText(sampleBoard(nil))).toBeNil()
 			t.expect(View.emptyText({ total = 0, unemployed = true })).toBe(Config.text("board_unemployed"))
-			t.expect(View.emptyText({ total = 2, done = 2, nextIn = 125 })).toBe(Config.text("board_all_done", { time = "2m 05s" }))
+			t.expect(View.emptyText({ total = 2, done = 2, nextIn = 125 }))
+				.toBe(Config.text("board_all_done", { time = "2m 05s" }))
 			t.expect(View.emptyText({ total = 2, done = 2, nextIn = -1 })).toBe(Config.text("board_friday"))
 			t.expect(View.emptyText(nil)).toBe(Config.text("board_loading"))
 		end)

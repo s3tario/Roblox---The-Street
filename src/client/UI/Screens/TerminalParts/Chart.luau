@@ -105,7 +105,10 @@ function Chart.new(env: Env.Env, height: number?): Env.Part
 			Style.setText(after, "")
 			Style.setText(
 				info,
-				Tickers.text("day_range", { low = string.format("%.1f", idx.low), high = string.format("%.1f", idx.high) })
+				Tickers.text(
+					"day_range",
+					{ low = string.format("%.1f", idx.low), high = string.format("%.1f", idx.high) }
+				)
 			)
 			points = if st.range == "30d" then table.clone(idx.daily) else table.clone(idx.intraday)
 			if st.range == "30d" and level > 0 then
@@ -129,13 +132,21 @@ function Chart.new(env: Env.Env, height: number?): Env.Part
 				Style.setText(price, View.price(quote.price))
 				Style.setText(
 					change,
-					string.format("%s%s (%s)", if quote.change >= 0 then "+" else "-", View.price(math.abs(quote.change)), View.pct(quote.changePct)),
+					string.format(
+						"%s%s (%s)",
+						if quote.change >= 0 then "+" else "-",
+						View.price(math.abs(quote.change)),
+						View.pct(quote.changePct)
+					),
 					View.changeColor(quote.changePct)
 				)
 				-- after hours, a report moves the price away from the session close
 				local ahMove = if quote.close > 0 then quote.price / quote.close - 1 else 0
 				if st.cache.phase ~= "open" and math.abs(ahMove) > 0.0005 then
-					Style.setText(after, Tickers.text("after_hours", { price = View.price(quote.price), pct = View.pct(ahMove) }))
+					Style.setText(
+						after,
+						Tickers.text("after_hours", { price = View.price(quote.price), pct = View.pct(ahMove) })
+					)
 				else
 					Style.setText(after, "")
 				end

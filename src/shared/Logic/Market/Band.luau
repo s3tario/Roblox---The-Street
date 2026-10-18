@@ -28,7 +28,14 @@ end
 
 function Band.quote(id: string, price: number, pct: number): string
 	local color, text = change(pct)
-	return string.format('<font color="%s">%s</font> %.2f <font color="%s">%s</font>', Band.TEXT, id, price, color, text)
+	return string.format(
+		'<font color="%s">%s</font> %.2f <font color="%s">%s</font>',
+		Band.TEXT,
+		id,
+		price,
+		color,
+		text
+	)
 end
 
 function Band.line(

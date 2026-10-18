@@ -20,7 +20,7 @@ type Row = {
 	bar: Frame,
 	price: TextLabel,
 	pct: TextLabel,
-	spark: Kit.Sparkline,
+	spark: typeof(Kit.Sparkline(nil :: any)),
 	sig: string,
 }
 
@@ -104,7 +104,8 @@ function Watchlist.new(env: Env.Env): Env.Part
 		rl.HorizontalAlignment = Enum.HorizontalAlignment.Right
 		local price = Style.text("Price", "--", { size = "sm", font = "mono", align = "right", order = 1 })
 		price.Parent = right
-		local pct = Style.text("Change", "--", { size = "xs", font = "mono", align = "right", color = "dim", order = 2 })
+		local pct =
+			Style.text("Change", "--", { size = "xs", font = "mono", align = "right", color = "dim", order = 2 })
 		pct.Parent = right
 		Kit.connect(b, "Activated", function()
 			Kit.sound("click")
@@ -143,7 +144,10 @@ function Watchlist.new(env: Env.Env): Env.Part
 					path = {}
 				end
 			end
-			Style.setText(row.price, if price then (if row.id == INDEX then string.format("%.1f", price) else View.price(price)) else "--")
+			Style.setText(
+				row.price,
+				if price then (if row.id == INDEX then string.format("%.1f", price) else View.price(price)) else "--"
+			)
 			Style.setText(row.pct, View.pct(changePct), View.changeColor(changePct))
 			local sig = #path .. ":" .. tostring(path[#path])
 			if sig ~= row.sig then

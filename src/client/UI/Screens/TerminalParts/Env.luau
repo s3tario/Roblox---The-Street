@@ -2,7 +2,7 @@
 -- Shared types for the Terminal's parts (owned by `market`).
 --   Env    what every part gets at construction: the controller, the UIController ctx and the screen's actions
 --   State  what every part's update(state) gets on each refresh (market cache, the replicated book, live prices)
---   Part   { frame, update(state), destroy? }
+--   Part   { frame, update(state), tick?(now), destroy? }
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Ledger = require(Shared.Logic.Portfolio.Ledger)
@@ -15,6 +15,7 @@ export type Actions = {
 	trade: (side: string) -> (), -- open the ticket on a side ("buy" | "sell")
 	notify: (text: string, kind: string?) -> (),
 	refresh: () -> (), -- rebuild state and update every part now
+	confirm: (opts: { [string]: any }, callback: (ok: boolean) -> ()) -> (), -- Kit.Confirm through UIController
 }
 
 export type Env = {
@@ -41,6 +42,7 @@ export type State = {
 export type Part = {
 	frame: GuiObject,
 	update: (state: State) -> (),
+	tick: ((now: number) -> ())?, -- once a second while open (countdowns)
 	destroy: (() -> ())?,
 }
 

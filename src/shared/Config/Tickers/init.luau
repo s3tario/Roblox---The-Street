@@ -69,7 +69,13 @@ Tickers.BENCHMARK = { id = "ST10", name = "STREET 10", base = 5000 }
 Tickers.MARKET_VOL = 0.008 -- daily volatility of the market factor
 
 Tickers.sectors = {
-	tech = { id = "tech", name = "Technology", vol = 0.009, rateSens = -0.6, catalysts = { "chip_export", "ai_summit" } },
+	tech = {
+		id = "tech",
+		name = "Technology",
+		vol = 0.009,
+		rateSens = -0.6,
+		catalysts = { "chip_export", "ai_summit" },
+	},
 	financials = {
 		id = "financials",
 		name = "Financials",
@@ -77,7 +83,13 @@ Tickers.sectors = {
 		rateSens = -1.0,
 		catalysts = { "stress_test", "capital_rules" },
 	},
-	autos = { id = "autos", name = "Automotive", vol = 0.012, rateSens = -0.5, catalysts = { "ev_credit", "auto_sales" } },
+	autos = {
+		id = "autos",
+		name = "Automotive",
+		vol = 0.012,
+		rateSens = -0.5,
+		catalysts = { "ev_credit", "auto_sales" },
+	},
 	realestate = {
 		id = "realestate",
 		name = "Real Estate",
@@ -352,13 +364,15 @@ local function fill(template: string, vars: { [string]: any }?): string
 	if not vars then
 		return template
 	end
-	return (string.gsub(template, "{(%w+)}", function(key: string): string
-		local v = vars[key]
-		if v == nil then
-			return "{" .. key .. "}"
-		end
-		return tostring(v)
-	end))
+	return (
+		string.gsub(template, "{(%w+)}", function(key: string): string
+			local v = vars[key]
+			if v == nil then
+				return "{" .. key .. "}"
+			end
+			return tostring(v)
+		end)
+	)
 end
 Tickers.fill = fill
 

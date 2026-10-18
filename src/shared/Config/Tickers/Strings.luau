@@ -30,6 +30,9 @@ return {
 	phase_open_long = "Market open · closes in {time}",
 	phase_after_long = "After hours · opens in {time}",
 	phase_closed_long = "Market closed for the holiday",
+	phase_open_short = "closes in {time}",
+	phase_after_short = "opens in {time}",
+	phase_closed_short = "holiday",
 	day_label = "Day {day}",
 	loading = "Connecting to the exchange...",
 	offline = "Market data unavailable. Retrying...",
@@ -173,6 +176,48 @@ return {
 	-- Event strip
 	event_ends = "ends in {time}",
 	event_active = "LIVE EVENT",
+
+	-- Ages and misc
+	age_now = "just now",
+	age_min = "{n}m ago",
+	age_hour = "{n}h ago",
+	cancel = "Cancel",
+	paper_badge = "PAPER",
+	book_badge = "LIVE BOOK",
+	read_only_badge = "READ ONLY",
+	index_line = "ST10 {level} ({pct})",
+
+	-- Positions (extra)
+	positions_count = "{n} open",
+	edit_stops = "Stops",
+	stop_short = "SL",
+	take_short = "TP",
+	stops_cleared = "Stops cleared for {ticker}.",
+	no_stops = "No stops set",
+	flatten_confirm_ok = "Close all",
+	closing = "Closing...",
+	closed_position = "Closed {ticker}.",
+
+	-- Account (extra)
+	book_size = "Book size",
+	week_none = "No trades yet this week",
+	skill_label = "Market Skill",
+	skill_none = "Needs 2 traded weeks",
+	paper_note = "Practice money only: your real book opens with your first job.",
+
+	-- Risk (extra)
+	risk_clear = "Inside every limit",
+	violations_label = "Violations this week",
+
+	-- Calendar (extra)
+	no_calendar = "No reports in the next 8 market days.",
+	catalyst_odds = "{sector}: {odds} chance of good news ({up} / {down})",
+	catalyst_when = "Resolves Day {day}, one minute after the open",
+	catalyst_done = "Resolved",
+	frenzy_tag = "FRENZY",
+
+	-- HUD chip
+	hud_open = "Open the terminal",
 
 	-- Errors (Portfolio.Trade and friends)
 	err_closed = "The market is closed. Orders open at the bell.",

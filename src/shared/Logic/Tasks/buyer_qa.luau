@@ -89,7 +89,9 @@ local TURNS: { Bank.Turn } = {
 			"Strip out the one-off deal. What's the real growth rate?",
 		},
 		best = {
-			{ text = "Excluding it, revenue grew {g}%. The bridge is in the data room, so you can check every number." },
+			{
+				text = "Excluding it, revenue grew {g}%. The bridge is in the data room, so you can check every number.",
+			},
 		},
 		good = {
 			{

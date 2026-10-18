@@ -108,8 +108,12 @@ function Style.variant(): string
 	return Style.palette(Theme.get()).variant
 end
 
+-- Theme colour keys (View.changeColor and Kit specs use them) map onto the terminal palette.
+Style.ALIASES = { good = "up", bad = "down", textDim = "dim", surface = "panelAlt" } :: { [string]: string }
+
 function Style.color(pal: Pal, key: any): Color3
-	local v = (pal :: any)[if type(key) == "string" then key else "text"]
+	local k = if type(key) == "string" then (Style.ALIASES[key] or key) else "text"
+	local v = (pal :: any)[k]
 	if typeof(v) == "Color3" then
 		return v
 	end

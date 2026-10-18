@@ -51,8 +51,19 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 	local closed = false
 	local current: { [string]: any }? = nil
 	local mode = "loading"
-	local loading = false
+	local starting = false
 	local lastBoard: any = nil
+	-- Every remote round trip remembers the view generation it started in; a reply that arrives after the view
+	-- moved on (a board refresh landing after the player already started a task) is dropped instead of
+	-- replacing the newer view.
+	local generation = 0
+	local function nextGeneration(): number
+		generation += 1
+		return generation
+	end
+	local function stale(gen: number): boolean
+		return closed or gen ~= generation
+	end
 
 	local function notify(text: string, kind: string?)
 		if ui and type(ui.Notify) == "function" then
@@ -82,7 +93,7 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 		end
 	end
 
-	local function showMessage(text: string, retry: boolean)
+	local function showMessage(text: string)
 		clear()
 		mode = "message"
 		local frame = Kit.frame("Message")
@@ -102,6 +113,7 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 	local loadBoard: (resume: boolean) -> ()
 
 	local function showResults(result: any)
+		nextGeneration()
 		clear()
 		mode = "results"
 		win.setTitle(Config.text("result_title"))
@@ -116,6 +128,7 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 	end
 
 	local function showRunner(active: any)
+		nextGeneration()
 		clear()
 		mode = "runner"
 		win.setTitle(tostring(active.title or Config.text("board_title")))
@@ -174,17 +187,19 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 	end
 
 	local function startTask(taskId: string)
-		if not ctl or loading then
+		if not ctl or starting then
 			return
 		end
-		loading = true
+		starting = true
+		mode = "starting" -- live board refreshes pause while the start is in flight
+		local gen = nextGeneration()
 		task.spawn(function()
 			local ok, res = ctl:StartTask(taskId)
-			loading = false
-			if closed then
+			starting = false
+			if stale(gen) then
 				return
 			end
-			if ok then
+			if ok and type(res) == "table" then
 				showRunner(res)
 			else
 				notify(View.errorText(res), "warn")
@@ -194,6 +209,7 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 	end
 
 	local function showBoard(board: any)
+		nextGeneration()
 		clear()
 		mode = "board"
 		win.setTitle(View.title(board))
@@ -214,24 +230,21 @@ function Work.open(_args: any, root: Instance, ctx: any): { close: () -> () }
 
 	loadBoard = function(resume: boolean)
 		if not ctl then
-			showMessage(Config.text("err_unavailable"), false)
+			showMessage(Config.text("err_unavailable"))
 			return
 		end
-		if loading then
-			return
-		end
-		loading = true
+		-- a newer load (or any other view change) supersedes this one
+		local gen = nextGeneration()
 		if mode ~= "board" then
-			showMessage(Config.text("board_loading"), false)
+			showMessage(Config.text("board_loading"))
 		end
 		task.spawn(function()
 			local ok, board = ctl:GetBoard()
-			loading = false
-			if closed then
+			if stale(gen) then
 				return
 			end
 			if not ok or type(board) ~= "table" then
-				local list = showMessage(View.errorText(board) .. "\n" .. Config.text("board_error"), true)
+				local list = showMessage(View.errorText(board) .. "\n" .. Config.text("board_error"))
 				Kit.Button({
 					text = Config.text("board_retry"),
 					name = "Retry",

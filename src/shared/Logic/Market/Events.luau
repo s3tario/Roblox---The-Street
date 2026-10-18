@@ -239,7 +239,9 @@ defs.fed_day = {
 		ev.data.decided = true
 		local u = state.rng:next()
 		local forced = ev.params.outcome
-		local outcome: string = if forced == "hike" or forced == "cut" or forced == "hold"
+		local outcome: string = if forced == "hike"
+				or forced == "cut"
+				or forced == "hold"
 			then forced
 			elseif u < 0.4 then "hike"
 			elseif u < 0.7 then "cut"

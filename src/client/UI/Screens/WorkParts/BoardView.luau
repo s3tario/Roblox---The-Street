@@ -109,6 +109,14 @@ function BoardView.build(parent: Instance, board: any, handlers: { [string]: any
 			Kit.Label({ text = card.label, color = "accent", size = "sm", name = "OfferLabel", layoutOrder = 3 }).frame.Parent =
 				panel.frame
 		end
+		local expiryText = View.expiryText(card, now())
+		local expires: Kit.Label? = nil
+		if expiryText then
+			local label =
+				Kit.Label({ text = expiryText, color = "warn", size = "xs", name = "Expires", layoutOrder = 3 })
+			label.frame.Parent = panel.frame
+			expires = label
+		end
 		Kit.Label({ text = tostring(card.desc or ""), color = "textDim", size = "sm", name = "Desc", layoutOrder = 4 }).frame.Parent =
 			panel.frame
 		Kit.Label({ text = View.cardMeta(card), size = "sm", font = "mono", name = "Meta", layoutOrder = 5 }).frame.Parent =
@@ -137,7 +145,7 @@ function BoardView.build(parent: Instance, board: any, handlers: { [string]: any
 			end,
 		})
 		button.frame.Parent = panel.frame
-		table.insert(live, { card = card, button = button })
+		table.insert(live, { card = card, button = button, expires = expires })
 	end
 
 	-- footer
@@ -164,6 +172,10 @@ function BoardView.build(parent: Instance, board: any, handlers: { [string]: any
 			local act = View.cardAction(l.card, t, active)
 			l.button.setText(act.text)
 			l.button.setDisabled(not act.enabled)
+			local label = l.expires
+			if label then
+				label.setText(View.expiryText(l.card, t) or "")
+			end
 		end
 	end)
 

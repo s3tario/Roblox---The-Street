@@ -6,7 +6,8 @@
 --   View.deskText(board) -> (text, colorKey)
 --   View.cardAction(card, now, active?) -> { action, text, enabled, style }
 --       action = "start" | "resume" | "done" | "cooldown" | "busy"
---   View.cardTags(card, now) -> { { text, color } }             category, core, offered, carried, expiry
+--   View.cardTags(card, now) -> { { text, color } }             category, core, offered, carried, done
+--   View.expiryText(card, now) -> string?                       an offer's countdown ("Expires in 12m 30s")
 --   View.cardMeta(card) -> string                               "~120 XP · ~$480 · 3:30 limit"
 --   View.qualityColor(q) -> colorKey   View.band(q) -> "great" | "good" | "ok" | "weak" | "bad"
 --   View.progress(payload, answers) -> (answered, total)        Kinds.answered / Kinds.answerTotal
@@ -130,13 +131,6 @@ function View.cardTags(card: any, now: number): { Tag }
 	end
 	if card.offered == true then
 		table.insert(tags, { text = Config.text("board_offered"), color = "good" })
-		local exp = num(card.expiresAt, 0)
-		if exp > now and card.done ~= true then
-			table.insert(
-				tags,
-				{ text = Config.text("board_expires", { time = Format.duration(exp - now) }), color = "textDim" }
-			)
-		end
 	end
 	if card.carried == true then
 		table.insert(tags, { text = Config.text("board_carry"), color = "textDim" })
@@ -145,6 +139,18 @@ function View.cardTags(card: any, now: number): { Tag }
 		table.insert(tags, { text = Config.text("board_done"), color = "good" })
 	end
 	return tags
+end
+
+-- "Expires in 12m 30s" for an unfinished offered task with an expiry (ticks on the board), nil otherwise.
+function View.expiryText(card: any, now: number): string?
+	if type(card) ~= "table" or card.offered ~= true or card.done == true then
+		return nil
+	end
+	local exp = num(card.expiresAt, 0)
+	if exp <= 0 then
+		return nil
+	end
+	return Config.text("board_expires", { time = Format.duration(math.max(0, exp - now)) })
 end
 
 function View.cardMeta(card: any): string
