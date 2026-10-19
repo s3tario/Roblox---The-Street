@@ -23,7 +23,15 @@ local EDGE = 398 -- the region's edge in Plan coordinates is +/- 400
 local FAR_BANK = 310 -- where the river ends and the city begins
 
 -- A row of blocks along one axis. along = "x" (row at fixed z, facing `face`) or "z".
-type Row = { along: string, from: number, to: number, at: number, depth: number, face: Enum.NormalId, skip: { { number } }? }
+type Row = {
+	along: string,
+	from: number,
+	to: number,
+	at: number,
+	depth: number,
+	face: Enum.NormalId,
+	skip: { { number } }?,
+}
 
 local function blocks(m: Instance, row: Row, rng: Deps.RngT)
 	local cursor = row.from
@@ -70,7 +78,13 @@ local function blocks(m: Instance, row: Row, rng: Deps.RngT)
 		})
 		Paint.grime(gui, W, H, rng, { streaks = 6 })
 		-- cornice and the odd water tank silhouette
-		Kit.detail(m, part.CFrame * CFrame.new(0, part.Size.Y / 2 + 0.4, 0), part.Size * Vector3.new(1, 0, 1) + Vector3.new(1, 0.8, 1), Kit.shade(color, -0.2), M.Concrete).CastShadow =
+		Kit.detail(
+			m,
+			part.CFrame * CFrame.new(0, part.Size.Y / 2 + 0.4, 0),
+			part.Size * Vector3.new(1, 0, 1) + Vector3.new(1, 0.8, 1),
+			Kit.shade(color, -0.2),
+			M.Concrete
+		).CastShadow =
 			false
 		if rng:chance(0.25) then
 			local top = part.CFrame * CFrame.new(rng:range(-4, 4), part.Size.Y / 2 + 0.8, 0)
@@ -114,7 +128,17 @@ local function cityTowers(m: Instance, rng: Deps.RngT)
 		local h = rng:range(70, 190)
 		local x = rng:range(FAR_BANK + 30, 372)
 		local col = hex("#59636B"):Lerp(hex("#8E989E"), rng:range(0, 0.5))
-		local t = Geo.lbox(towers, x - w / 2, -6, z, x + w / 2, h, z + w, col, if rng:chance(0.5) then M.Glass else M.Concrete)
+		local t = Geo.lbox(
+			towers,
+			x - w / 2,
+			-6,
+			z,
+			x + w / 2,
+			h,
+			z + w,
+			col,
+			if rng:chance(0.5) then M.Glass else M.Concrete
+		)
 		t.Name = "Tower"
 		t.CastShadow = false
 		t.Reflectance = 0.05
@@ -126,7 +150,8 @@ local function cityTowers(m: Instance, rng: Deps.RngT)
 			end
 		end
 		if rng:chance(0.35) then
-			Kit.detail(towers, t.CFrame * CFrame.new(0, h / 2 + 10, 0), Vector3.new(1, 20, 1), col, M.Metal).CastShadow = false
+			Kit.detail(towers, t.CFrame * CFrame.new(0, h / 2 + 10, 0), Vector3.new(1, 20, 1), col, M.Metal).CastShadow =
+				false
 		end
 		z += w + rng:range(4, 18)
 	end
@@ -148,9 +173,33 @@ function Backdrop.build(parent: Instance): Model
 	local av = Plan.avenue
 	roads(m)
 	-- north and south rows (facing the town), the west row (facing east), leaving the roads open
-	blocks(m, { along = "x", from = -400, to = 228, at = -252, depth = 30, face = Enum.NormalId.Back, skip = { { mill.x0 - 2, mill.x1 + 2 } } }, rng)
-	blocks(m, { along = "x", from = -400, to = 228, at = 210, depth = 30, face = Enum.NormalId.Front, skip = { { mill.x0 - 2, mill.x1 + 2 } } }, rng)
-	blocks(m, { along = "z", from = -250, to = 210, at = -258, depth = 30, face = Enum.NormalId.Right, skip = { { av.z0 - 2, av.z1 + 2 } } }, rng)
+	blocks(m, {
+		along = "x",
+		from = -400,
+		to = 228,
+		at = -252,
+		depth = 30,
+		face = Enum.NormalId.Back,
+		skip = { { mill.x0 - 2, mill.x1 + 2 } },
+	}, rng)
+	blocks(m, {
+		along = "x",
+		from = -400,
+		to = 228,
+		at = 210,
+		depth = 30,
+		face = Enum.NormalId.Front,
+		skip = { { mill.x0 - 2, mill.x1 + 2 } },
+	}, rng)
+	blocks(m, {
+		along = "z",
+		from = -250,
+		to = 210,
+		at = -258,
+		depth = 30,
+		face = Enum.NormalId.Right,
+		skip = { { av.z0 - 2, av.z1 + 2 } },
+	}, rng)
 	-- the far townscapes at the region edge
 	farPanel(m, Plan.cf(-84, WALK + 40, -EDGE, Plan.S), Vector3.new(632, 80, 1), rng, true)
 	farPanel(m, Plan.cf(-84, WALK + 40, EDGE, Plan.N), Vector3.new(632, 80, 1), rng, true)

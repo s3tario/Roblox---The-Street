@@ -40,7 +40,14 @@ local STONE_DARK = hex("#9E9682")
 ---------------------------------------------------------------------------------------------------
 -- Steps rising toward the building: `front` = a CFrame on the facade plane (LookVector out), the landing runs from the
 -- facade out to `depth`, then `steps` steps of 0.5 down to the plaza.
-local function stoop(parent: Instance, front: CFrame, width: number, depth: number, steps: number, color: Color3): number
+local function stoop(
+	parent: Instance,
+	front: CFrame,
+	width: number,
+	depth: number,
+	steps: number,
+	color: Color3
+): number
 	local top = steps * 0.5
 	Kit.block(parent, L(front, 0, top / 2, -depth / 2), Vector3.new(width, top, depth), color, M.Concrete).Name =
 		"Landing"
@@ -177,8 +184,8 @@ local function halvorsen(m: Instance, mk: Instance)
 			Vector3.new(rng:range(2, 4), rng:range(3, 8), 0.2),
 			Geo.vary(hex("#4A3E28"), rng, 0.15),
 			M.Grass
-		).Name =
-			"Ivy" .. i
+		).Name = "Ivy"
+			.. i
 	end
 	-- cupola with a clock that stopped years ago
 	local cup = L(fr.cf, 0, H.h + 0.6, 0)
@@ -218,11 +225,18 @@ local function lobbyBackdrop(part: BasePart, rng: Deps.RngT)
 		Core.px(gui, W * (0.76 + i * 0.03), H * 0.35, W * 0.02, H * 0.3, c, 0.2)
 	end
 	for _ = 1, 4 do
-		Core.px(gui, rng:range(0, W * 0.25), rng:range(H * 0.25, H * 0.5), W * 0.06, H * 0.14, rng:pick({
-			hex("#E9E2CF"),
-			hex("#C8553D"),
-			hex("#2F5A3A"),
-		}))
+		Core.px(
+			gui,
+			rng:range(0, W * 0.25),
+			rng:range(H * 0.25, H * 0.5),
+			W * 0.06,
+			H * 0.14,
+			rng:pick({
+				hex("#E9E2CF"),
+				hex("#C8553D"),
+				hex("#2F5A3A"),
+			})
+		)
 	end
 	-- ceiling lights
 	for i = 0, 3 do
@@ -300,7 +314,16 @@ local function careerCenter(m: Instance, mk: Instance)
 		local ban = Kit.detail(bm, L(front, x, 19, -0.6), Vector3.new(4, 9, 0.1), hex("#1F2A44"), M.Fabric)
 		local gui = Paint.surface(ban, Enum.NormalId.Front, 30)
 		Core.bg(gui, hex("#1F2A44"))
-		Core.label(gui, "RECRUITING\nSEASON", 0.08, 0.1, 0.84, 0.45, C.mustard, { font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center })
+		Core.label(
+			gui,
+			"RECRUITING\nSEASON",
+			0.08,
+			0.1,
+			0.84,
+			0.45,
+			C.mustard,
+			{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+		)
 		Core.label(gui, Text.university, 0.08, 0.62, 0.84, 0.28, C.paper, {
 			font = Enum.Font.SourceSans,
 			align = Enum.TextXAlignment.Center,
@@ -322,7 +345,13 @@ local function careerCenter(m: Instance, mk: Instance)
 	for _, x in { -4.4, 4.4 } do
 		Kit.block(bm, L(bb, x, 4, 0), Vector3.new(0.6, 8, 0.6), post, M.Wood)
 	end
-	Kit.detail(bm, L(bb, 0, 8.4, 0.3) * CFrame.Angles(math.rad(-12), 0, 0), Vector3.new(10.4, 0.3, 2.2), hex("#4A3A2C"), M.WoodPlanks)
+	Kit.detail(
+		bm,
+		L(bb, 0, 8.4, 0.3) * CFrame.Angles(math.rad(-12), 0, 0),
+		Vector3.new(10.4, 0.3, 2.2),
+		hex("#4A3A2C"),
+		M.WoodPlanks
+	)
 	local board = Kit.block(bm, L(bb, 0, 4.9, 0), Vector3.new(8.4, 5, 0.4), hex("#9A7650"), M.Wood)
 	board.Name = "RecruitingBoard"
 	Markers.interact(board, "bulletin")
@@ -489,7 +518,13 @@ local function fountain(m: Instance, rng: Deps.RngT)
 	Kit.cylinder(f, L(c, 0, 2.3, 0), 3.6, 3.4, stone, M.Concrete)
 	Kit.cylinder(f, L(c, 0, 4.4, 0), 0.6, 4.4, Kit.shade(stone, -0.1), M.Concrete)
 	Kit.cylinder(f, L(c, 0, 5.9, 0), 2.4, 3.2, hex("#7D786E"), M.Concrete)
-	Kit.detail(f, L(c, 0.8, 6.0, 0.6) * CFrame.Angles(0, 0, math.rad(25)), Vector3.new(0.12, 2.2, 0.08), hex("#2A2826"), M.SmoothPlastic).Name =
+	Kit.detail(
+		f,
+		L(c, 0.8, 6.0, 0.6) * CFrame.Angles(0, 0, math.rad(25)),
+		Vector3.new(0.12, 2.2, 0.08),
+		hex("#2A2826"),
+		M.SmoothPlastic
+	).Name =
 		"Crack"
 	Geo.pipe(f, Plan.v(F.x, WALK + 7, F.z), Plan.v(F.x + 0.4, WALK + 8.4, F.z), 0.35, C.rust, M.CorrodedMetal, false)
 	-- the "out of order" notice taped to the rim
@@ -673,7 +708,11 @@ local function fence(m: Instance)
 		local plate = Kit.detail(m, L(arch, x, 4.2, -1.25), Vector3.new(1.8, 2.2, 0.1), hex("#C8BFA8"), M.Limestone)
 		plate.Name = "CrestPlate"
 		if not Deps.logo(plate, Enum.NormalId.Front, "eastbridge_state") then
-			Kit.sign(plate, "ES\n" .. Text.founded, { font = Enum.Font.Garamond, color = hex("#5C2A21"), pixelsPerStud = 60 })
+			Kit.sign(
+				plate,
+				"ES\n" .. Text.founded,
+				{ font = Enum.Font.Garamond, color = hex("#5C2A21"), pixelsPerStud = 60 }
+			)
 		end
 	end
 	-- the side gates are chained shut but the chain is long enough to squeeze past (decorative only)
@@ -703,11 +742,20 @@ local function yards(m: Instance)
 		"Shed"
 	Kit.detail(y, L(shed, 0, 10.3, 0), Vector3.new(17, 0.6, 13), C.rustDark, M.CorrodedMetal)
 	local door = Kit.detail(y, L(shed, -3, 4.5, -6.05), Vector3.new(6, 9, 0.1), hex("#5A5F63"), M.DiamondPlate)
-	Kit.sign(door, "FACILITIES\nAUTHORIZED ONLY", { font = Enum.Font.SpecialElite, color = hex("#E9E2CF"), pixelsPerStud = 20 })
+	Kit.sign(
+		door,
+		"FACILITIES\nAUTHORIZED ONLY",
+		{ font = Enum.Font.SpecialElite, color = hex("#E9E2CF"), pixelsPerStud = 20 }
+	)
 	Kit.block(y, L(shed, 12, 2.5, -2), Vector3.new(6, 5, 4), hex("#4F6B4A"), M.Metal).Name = "Generator"
 	Props.build("dumpster", y, Plan.cf(-20, WALK, -196, Plan.S), { seed = "yard-d3" })
 	Props.build("trash_can", y, Plan.cf(-8, WALK, -190, 0), { seed = "yard-t1" })
-	Props.build("chainlink_fence", y, Plan.cf(-14, WALK, -176, Plan.S), { length = 24, barbed = true, seed = "yard-f2" })
+	Props.build(
+		"chainlink_fence",
+		y,
+		Plan.cf(-14, WALK, -176, Plan.S),
+		{ length = 24, barbed = true, seed = "yard-f2" }
+	)
 	-- behind Marlow House on Mill Street's side: a cracked lot with a couple of beaters
 	Props.build("sedan", y, Plan.cf(52, WALK, -210, 0), { color = hex("#5B4A3A"), seed = "beater-1" })
 	Props.build("sedan", y, Plan.cf(36, WALK, -214, 4), { color = hex("#3E4A52"), seed = "beater-2" })

@@ -57,14 +57,30 @@ local function yardPaint(m: Instance, rng: Deps.RngT)
 	end
 	-- "BUS ONLY" stencils
 	for _, s in { { -232, 50 }, { -232, 84 } } do
-		Core.label(gui, "BUS ONLY", (s[1] - Y.x0) / (Y.x1 - Y.x0), (s[2] - Y.z0) / (Y.z1 - Y.z0) - 0.02, 0.14, 0.05, hex("#D8D4C8"), {
-			font = Enum.Font.Highway,
-			transparency = 0.45,
-		})
+		Core.label(
+			gui,
+			"BUS ONLY",
+			(s[1] - Y.x0) / (Y.x1 - Y.x0),
+			(s[2] - Y.z0) / (Y.z1 - Y.z0) - 0.02,
+			0.14,
+			0.05,
+			hex("#D8D4C8"),
+			{
+				font = Enum.Font.Highway,
+				transparency = 0.45,
+			}
+		)
 	end
 	-- oil stains under where buses idle
 	for _ = 1, 9 do
-		Core.dot(gui, xpx(rng:range(-240, -180)), zpx(rng:pick({ 52, 84, 120 }) + rng:range(-3, 3)), rng:range(14, 34), hex("#1C1D20"), rng:range(0.45, 0.7))
+		Core.dot(
+			gui,
+			xpx(rng:range(-240, -180)),
+			zpx(rng:pick({ 52, 84, 120 }) + rng:range(-3, 3)),
+			rng:range(14, 34),
+			hex("#1C1D20"),
+			rng:range(0.45, 0.7)
+		)
 	end
 	Paint.cracks(gui, W, H, rng, 18, { color = hex("#17181A") })
 end
@@ -75,12 +91,24 @@ local function island(m: Instance)
 	Geo.lbox(m, I.x0, WALK - 0.2, I.z0, I.x1, top, I.z1, hex("#8A8780"), M.Concrete).Name = "BoardingIsland"
 	-- yellow safety edges
 	for _, z in { I.z0 + 0.4, I.z1 - 0.4 } do
-		Kit.detail(m, Plan.cf((I.x0 + I.x1) / 2, top + 0.02, z), Vector3.new(I.x1 - I.x0, 0.04, 0.8), hex("#C9A93E"), M.SmoothPlastic).Name =
+		Kit.detail(
+			m,
+			Plan.cf((I.x0 + I.x1) / 2, top + 0.02, z),
+			Vector3.new(I.x1 - I.x0, 0.04, 0.8),
+			hex("#C9A93E"),
+			M.SmoothPlastic
+		).Name =
 			"SafetyEdge"
 	end
 	-- ramps at both ends (the island is half a stud up)
 	for _, e in { { I.x0 - 1.5, Plan.E }, { I.x1 + 1.5, Plan.W } } do
-		Kit.wedge(m, Plan.cf(e[1], WALK + (top - WALK) / 2, (I.z0 + I.z1) / 2, e[2] + 180), Vector3.new(I.z1 - I.z0, top - WALK, 3), hex("#8A8780"), M.Concrete).Name =
+		Kit.wedge(
+			m,
+			Plan.cf(e[1], WALK + (top - WALK) / 2, (I.z0 + I.z1) / 2, e[2] + 180),
+			Vector3.new(I.z1 - I.z0, top - WALK, 3),
+			hex("#8A8780"),
+			M.Concrete
+		).Name =
 			"IslandRamp"
 	end
 end
@@ -98,13 +126,28 @@ local function canopy(m: Instance, rng: Deps.RngT)
 	fascia.Name = "Fascia"
 	local fg = Paint.surface(fascia, Enum.NormalId.Front, 20)
 	Core.bg(fg, hex("#2C5E8A"))
-	Core.label(fg, Text.depot, 0.02, 0.1, 0.96, 0.8, hex("#E9E2CF"), { font = Enum.Font.Highway, align = Enum.TextXAlignment.Center })
+	Core.label(
+		fg,
+		Text.depot,
+		0.02,
+		0.1,
+		0.96,
+		0.8,
+		hex("#E9E2CF"),
+		{ font = Enum.Font.Highway, align = Enum.TextXAlignment.Center }
+	)
 	Paint.grime(fg, 1, 1, rng, { streaks = 6, soot = 0.0 })
 	Geo.lbox(cm, K.x0, K.y - 1.8, K.z1, K.x1, K.y + 0.9, K.z1 + 0.4, hex("#2C5E8A"), M.Metal, false).Name = "FasciaBack"
 	-- columns down the island, beams across
 	local iz = (I.z0 + I.z1) / 2
 	for _, x in { -234, -205, -176 } do
-		Kit.block(cm, Plan.cf(x, I.top + (K.y - I.top) / 2, iz), Vector3.new(1.2, K.y - I.top, 1.2), steel, M.CorrodedMetal).Name =
+		Kit.block(
+			cm,
+			Plan.cf(x, I.top + (K.y - I.top) / 2, iz),
+			Vector3.new(1.2, K.y - I.top, 1.2),
+			steel,
+			M.CorrodedMetal
+		).Name =
 			"Column"
 		Kit.detail(cm, Plan.cf(x, K.y - 0.6, cz), Vector3.new(0.8, 1.2, K.z1 - K.z0), steel, M.Metal).Name = "Beam"
 		Kit.detail(cm, Plan.cf(x, I.top + 0.6, iz), Vector3.new(2, 1.2, 2), C.concreteDark, M.Concrete)
@@ -129,7 +172,8 @@ local function canopy(m: Instance, rng: Deps.RngT)
 	end
 	-- the bay signs hanging from the beams
 	for i, z in { 52, 84 } do
-		local sg = Kit.detail(cm, Plan.cf(-205, K.y - 2.6, z, Plan.N), Vector3.new(14, 1.6, 0.2), hex("#1A1A1A"), M.Metal)
+		local sg =
+			Kit.detail(cm, Plan.cf(-205, K.y - 2.6, z, Plan.N), Vector3.new(14, 1.6, 0.2), hex("#1A1A1A"), M.Metal)
 		sg.Name = "BaySign" .. i
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 			local g = Paint.surface(sg, face, 24, { glow = true, brightness = 0.9 })
@@ -158,16 +202,49 @@ local function storeKiosk(m: Instance)
 	body.Name = "KioskBody"
 	Markers.interact(body, "store_kiosk")
 	Kit.block(k, L(cf, 0, 0.2, 0), Vector3.new(4, 0.4, 2.8), C.concreteDark, M.Concrete)
-	local screen = Kit.detail(k, L(cf, 0, 4.2, -1.12) * CFrame.Angles(math.rad(-10), 0, 0), Vector3.new(2.8, 2.4, 0.1), hex("#0E1A24"), M.SmoothPlastic)
+	local screen = Kit.detail(
+		k,
+		L(cf, 0, 4.2, -1.12) * CFrame.Angles(math.rad(-10), 0, 0),
+		Vector3.new(2.8, 2.4, 0.1),
+		hex("#0E1A24"),
+		M.SmoothPlastic
+	)
 	screen.Name = "KioskScreen"
 	local g = Paint.surface(screen, Enum.NormalId.Front, 60, { glow = true, brightness = 1.2 })
 	local bg = Core.bg(g, hex("#13243A"))
 	Core.gradient(bg, hex("#1F3A5C"), hex("#0E1A24"), 90)
-	Core.label(g, Text.storeKiosk, 0.06, 0.1, 0.88, 0.3, C.mustard, { font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center })
-	Core.label(g, Text.storeKioskSub, 0.06, 0.45, 0.88, 0.2, hex("#E8EEF5"), { font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center })
+	Core.label(
+		g,
+		Text.storeKiosk,
+		0.06,
+		0.1,
+		0.88,
+		0.3,
+		C.mustard,
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(
+		g,
+		Text.storeKioskSub,
+		0.06,
+		0.45,
+		0.88,
+		0.2,
+		hex("#E8EEF5"),
+		{ font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center }
+	)
 	local btn = Core.frame(g, 0.25, 0.72, 0.5, 0.16, C.mustard)
 	Core.round(btn, 0.3)
-	Core.label(btn, "TAP TO BROWSE", 0.05, 0.1, 0.9, 0.8, hex("#13243A"), { font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center })
+	Core.label(
+		btn,
+		"TAP TO BROWSE",
+		0.05,
+		0.1,
+		0.9,
+		0.8,
+		hex("#13243A"),
+		{ font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center }
+	)
 	-- a lit header on top
 	local hd = Kit.detail(k, L(cf, 0, 6.6, 0), Vector3.new(3.6, 1.2, 2.4), C.mustard, M.Neon)
 	hd.Transparency = 0.25
@@ -210,7 +287,8 @@ local function waitingRoom(m: Instance)
 		frame = hex("#4E5A5E"),
 		seed = "depot-front",
 	})
-	local floor = Kit.block(bm, L(front, 0, 0.05, depth / 2), Vector3.new(w - 2.4, 0.1, depth - 0.2), hex("#A8A296"), M.Slate)
+	local floor =
+		Kit.block(bm, L(front, 0, 0.05, depth / 2), Vector3.new(w - 2.4, 0.1, depth - 0.2), hex("#A8A296"), M.Slate)
 	floor.Name = "WaitingFloor"
 	-- rows of bolted seats, the ticket window, a vending machine and the departures board
 	for r = 0, 1 do
@@ -226,9 +304,14 @@ local function waitingRoom(m: Instance)
 	local glass = Kit.detail(bm, L(tw, 0, 6.5, -1.2), Vector3.new(10, 5, 0.2), hex("#AFC4CC"), M.Glass)
 	glass.Transparency = 0.55
 	local tsign = Kit.detail(bm, L(tw, 0, 10, -0.1), Vector3.new(9, 1.4, 0.1), hex("#1A1A1A"), M.Metal)
-	Kit.sign(tsign, "TICKETS · ROUTE 9", { font = Enum.Font.Highway, color = hex("#FFB547"), pixelsPerStud = 30, glow = true })
+	Kit.sign(
+		tsign,
+		"TICKETS · ROUTE 9",
+		{ font = Enum.Font.Highway, color = hex("#FFB547"), pixelsPerStud = 30, glow = true }
+	)
 	Props.build("vending_machine", bm, L(front, -27, 0, depth - 1.6), { seed = "depot-vend" })
-	local board = Kit.detail(bm, L(front, -4, 9.6, depth - 0.12), Vector3.new(14, 4, 0.1), hex("#141414"), M.SmoothPlastic)
+	local board =
+		Kit.detail(bm, L(front, -4, 9.6, depth - 0.12), Vector3.new(14, 4, 0.1), hex("#141414"), M.SmoothPlastic)
 	board.Name = "Departures"
 	local bg = Paint.surface(board, Enum.NormalId.Front, 24, { glow = true, brightness = 1 })
 	Core.bg(bg, hex("#141414"))
@@ -245,7 +328,8 @@ local function waitingRoom(m: Instance)
 			align = Enum.TextXAlignment.Left,
 		})
 	end
-	local clock = Kit.detail(bm, L(front, 13, 10, depth - 0.12), Vector3.new(2.4, 2.4, 0.1), hex("#E9E2CF"), M.SmoothPlastic)
+	local clock =
+		Kit.detail(bm, L(front, 13, 10, depth - 0.12), Vector3.new(2.4, 2.4, 0.1), hex("#E9E2CF"), M.SmoothPlastic)
 	local cg, CW, CH = Paint.surface(clock, Enum.NormalId.Front, 40)
 	Art.clockFace(cg, CW, CH, 6, 10, C.ink, hex("#E9E2CF"))
 	for i, x in { -12, 0, 12 } do
@@ -285,19 +369,40 @@ local function garage(m: Instance)
 	local bayW = (w - pierW * 4) / 3
 	for i = 0, 3 do
 		local x = -w / 2 + pierW / 2 + i * (bayW + pierW)
-		Kit.block(bm, L(front, x, sh / 2, -0.6), Vector3.new(2.4, sh, 1.6), Geo.vary(hex("#6E3326"), rng, 0.05), M.Brick).Name =
+		Kit.block(
+			bm,
+			L(front, x, sh / 2, -0.6),
+			Vector3.new(2.4, sh, 1.6),
+			Geo.vary(hex("#6E3326"), rng, 0.05),
+			M.Brick
+		).Name =
 			"Pier"
 	end
 	for b = 0, 2 do
 		local x = -w / 2 + pierW + bayW / 2 + b * (bayW + pierW)
 		if b ~= 2 then
-			local sh2 = Kit.block(bm, L(front, x, sh / 2, -0.3), Vector3.new(bayW, sh, 0.4), Geo.vary(hex("#7A7E80"), rng, 0.08), M.CorrodedMetal)
+			local sh2 = Kit.block(
+				bm,
+				L(front, x, sh / 2, -0.3),
+				Vector3.new(bayW, sh, 0.4),
+				Geo.vary(hex("#7A7E80"), rng, 0.08),
+				M.CorrodedMetal
+			)
 			sh2.Name = "Shutter"
 			local g, GW, GH = Paint.surface(sh2, Enum.NormalId.Front, 6)
 			for y = 4, GH, 6 do
 				Core.px(g, 0, y, GW, 2, hex("#4E5254"), 0.3)
 			end
-			Core.label(g, "BAY " .. (b + 1) .. " · KEEP CLEAR", 0.25, 0.42, 0.5, 0.12, hex("#C9B458"), { font = Enum.Font.Highway, align = Enum.TextXAlignment.Center })
+			Core.label(
+				g,
+				"BAY " .. (b + 1) .. " · KEEP CLEAR",
+				0.25,
+				0.42,
+				0.5,
+				0.12,
+				hex("#C9B458"),
+				{ font = Enum.Font.Highway, align = Enum.TextXAlignment.Center }
+			)
 		else
 			-- the open (east) bay: shutter rolled up into its housing, a bus nosed out of the dark (the only bay with
 			-- room in front of it: the waiting room stands before the other two)
@@ -311,7 +416,8 @@ local function garage(m: Instance)
 	end
 	Kit.block(bm, L(front, 0, 0.05, depth / 2), Vector3.new(w - 2.4, 0.1, depth - 0.2), hex("#6A6862"), M.Concrete).Name =
 		"GarageFloor"
-	local dark = Kit.detail(bm, L(front, 0, sh / 2, depth - 0.1), Vector3.new(w - 2.4, sh, 0.1), hex("#1A1B1C"), M.SmoothPlastic)
+	local dark =
+		Kit.detail(bm, L(front, 0, sh / 2, depth - 0.1), Vector3.new(w - 2.4, sh, 0.1), hex("#1A1B1C"), M.SmoothPlastic)
 	dark.Name = "BackWall"
 	local lamp = Kit.detail(bm, L(front, 0, sh - 0.6, 10), Vector3.new(1.2, 0.4, 6), hex("#E8D9A8"), M.Neon)
 	lamp:AddTag("InteriorLight")
@@ -355,7 +461,12 @@ function Depot.build(parent: Instance, mk: Instance): Model
 	local ns = Kit.detail(m, L(post, 0, 7, -0.2), Vector3.new(2.6, 1.6, 0.08), hex("#E9E2CF"), M.Metal)
 	Kit.sign(ns, Text.depotNoIdle, { font = Enum.Font.Highway, color = hex("#8A2C2C"), pixelsPerStud = 40 })
 	for i, z in { 48, 84, 120 } do
-		Props.build("chainlink_fence", m, Plan.cf(-249, WALK, z, Plan.E), { length = 36, barbed = true, seed = "depot-fence" .. i })
+		Props.build(
+			"chainlink_fence",
+			m,
+			Plan.cf(-249, WALK, z, Plan.E),
+			{ length = 36, barbed = true, seed = "depot-fence" .. i }
+		)
 	end
 	Props.build("jersey_barrier", m, Plan.cf(-160, WALK, 120, Plan.E), { seed = "depot-jb" })
 	Dress.cone(m, -166, 100, rng)

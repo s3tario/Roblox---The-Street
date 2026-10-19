@@ -86,7 +86,9 @@ function Buildings.roof(parent: Instance, cf: CFrame, w: number, d: number, h: n
 	for _ = 1, opts.vents or 0 do
 		local s = spot()
 		local vh = rng:range(2, 5)
-		Geo.ghost(Kit.cylinder(m, L(s, 0, vh / 2, 0), vh, rng:range(0.6, 1.4), Geo.vary(C.steel, rng, 0.15), M.CorrodedMetal))
+		Geo.ghost(
+			Kit.cylinder(m, L(s, 0, vh / 2, 0), vh, rng:range(0.6, 1.4), Geo.vary(C.steel, rng, 0.15), M.CorrodedMetal)
+		)
 	end
 	if opts.hatch and w > 14 and d > 14 then
 		local s = spot()
@@ -178,7 +180,13 @@ function Buildings.block(parent: Instance, o: BlockOpts): (Model, Frame)
 				"ShopWall"
 		end
 		-- shop ceiling and floor finishes
-		Kit.detail(m, L(cf, 0, sh - 0.15, -d / 2 + sd / 2), Vector3.new(w - 2.4, 0.3, sd - 0.2), hex("#D8D2C2"), M.SmoothPlastic).Name =
+		Kit.detail(
+			m,
+			L(cf, 0, sh - 0.15, -d / 2 + sd / 2),
+			Vector3.new(w - 2.4, 0.3, sd - 0.2),
+			hex("#D8D2C2"),
+			M.SmoothPlastic
+		).Name =
 			"ShopCeiling"
 	else
 		body = Kit.block(m, L(cf, 0, h / 2, 0), Vector3.new(w, h, d), color, mat)
@@ -188,7 +196,13 @@ function Buildings.block(parent: Instance, o: BlockOpts): (Model, Frame)
 	if o.plinth ~= false then
 		local pl = Geo.vary(C.concreteDark, rng, 0.06)
 		if o.shop then
-			Kit.block(m, L(cf, 0, 1.2, o.shop.depth / 2), Vector3.new(w + 0.5, 2.4, d - o.shop.depth + 0.5), pl, M.Concrete)
+			Kit.block(
+				m,
+				L(cf, 0, 1.2, o.shop.depth / 2),
+				Vector3.new(w + 0.5, 2.4, d - o.shop.depth + 0.5),
+				pl,
+				M.Concrete
+			)
 		else
 			Kit.block(m, L(cf, 0, 1.2, 0), Vector3.new(w + 0.5, 2.4, d + 0.5), pl, M.Concrete)
 		end
@@ -247,14 +261,38 @@ function Buildings.block(parent: Instance, o: BlockOpts): (Model, Frame)
 				else
 					pane.Reflectance = 0.18
 				end
-				Kit.detail(m, L(cf, x, yc - wh / 2 - 0.2, -d / 2 - 0.35), Vector3.new(ww + 1, 0.45, 0.8), trim, M.Concrete)
+				Kit.detail(
+					m,
+					L(cf, x, yc - wh / 2 - 0.2, -d / 2 - 0.35),
+					Vector3.new(ww + 1, 0.45, 0.8),
+					trim,
+					M.Concrete
+				)
 				if win.style == "arched" then
-					Kit.detail(m, L(cf, x, yc + wh / 2 + 0.6, -d / 2 - 0.15), Vector3.new(ww + 1.2, 1.2, 0.4), trim, M.Limestone)
+					Kit.detail(
+						m,
+						L(cf, x, yc + wh / 2 + 0.6, -d / 2 - 0.15),
+						Vector3.new(ww + 1.2, 1.2, 0.4),
+						trim,
+						M.Limestone
+					)
 				else
-					Kit.detail(m, L(cf, x, yc + wh / 2 + 0.35, -d / 2 - 0.12), Vector3.new(ww + 0.8, 0.7, 0.3), Kit.shade(color, -0.25), M.Brick)
+					Kit.detail(
+						m,
+						L(cf, x, yc + wh / 2 + 0.35, -d / 2 - 0.12),
+						Vector3.new(ww + 0.8, 0.7, 0.3),
+						Kit.shade(color, -0.25),
+						M.Brick
+					)
 				end
 				if win.ac and rng:chance(win.ac) then
-					Kit.detail(m, L(cf, x + rng:range(-0.6, 0.6), yc - wh * 0.22, -d / 2 - 0.9), Vector3.new(2.4, 1.6, 1.8), Geo.vary(hex("#BDB7A8"), rng, 0.1), M.Metal)
+					Kit.detail(
+						m,
+						L(cf, x + rng:range(-0.6, 0.6), yc - wh * 0.22, -d / 2 - 0.9),
+						Vector3.new(2.4, 1.6, 1.8),
+						Geo.vary(hex("#BDB7A8"), rng, 0.1),
+						M.Metal
+					)
 				end
 			end
 		end
@@ -396,10 +434,22 @@ function Buildings.storefront(parent: Instance, frontCf: CFrame, width: number, 
 		local sill = hatch.sill
 		Kit.block(m, L(frontCf, hatch.x, sill / 2, -0.4), Vector3.new(hatch.w, sill, 0.8), bulk, M.Concrete).Name =
 			"HatchBulkhead"
-		Kit.block(m, L(frontCf, hatch.x, sill + 0.15, -0.9), Vector3.new(hatch.w + 0.4, 0.3, 1.8), Geo.vary(hex("#6B4E35"), rng, 0.1), M.Wood).Name =
+		Kit.block(
+			m,
+			L(frontCf, hatch.x, sill + 0.15, -0.9),
+			Vector3.new(hatch.w + 0.4, 0.3, 1.8),
+			Geo.vary(hex("#6B4E35"), rng, 0.1),
+			M.Wood
+		).Name =
 			"HatchLedge"
 		for _, sx in { -1, 1 } do
-			Kit.detail(m, L(frontCf, hatch.x + sx * (hatch.w / 2), sill + (glassTop - sill) / 2, -0.45), Vector3.new(0.4, glassTop - sill, 0.5), frameC, M.Metal)
+			Kit.detail(
+				m,
+				L(frontCf, hatch.x + sx * (hatch.w / 2), sill + (glassTop - sill) / 2, -0.45),
+				Vector3.new(0.4, glassTop - sill, 0.5),
+				frameC,
+				M.Metal
+			)
 		end
 	end
 	for _, seg in segments do
@@ -408,33 +458,64 @@ function Buildings.storefront(parent: Instance, frontCf: CFrame, width: number, 
 		if len > 0.5 then
 			local cx = (a + b) / 2
 			Kit.block(m, L(frontCf, cx, 1.5, -0.4), Vector3.new(len, 2.4, 0.8), bulk, M.Concrete).Name = "Bulkhead"
-			local g = Kit.block(m, L(frontCf, cx, 2.7 + (glassTop - 2.7) / 2, -0.2), Vector3.new(len, glassTop - 2.7, 0.3), glassC, M.Glass)
+			local g = Kit.block(
+				m,
+				L(frontCf, cx, 2.7 + (glassTop - 2.7) / 2, -0.2),
+				Vector3.new(len, glassTop - 2.7, 0.3),
+				glassC,
+				M.Glass
+			)
 			g.Name = "ShopGlass"
 			g.Transparency = 0.45
 			g.Reflectance = 0.15
 			g.CastShadow = false
 			-- a mullion splitting long panes
 			if len > 12 then
-				Kit.detail(m, L(frontCf, cx, 2.7 + (glassTop - 2.7) / 2, -0.45), Vector3.new(0.4, glassTop - 2.7, 0.3), frameC, M.Metal)
+				Kit.detail(
+					m,
+					L(frontCf, cx, 2.7 + (glassTop - 2.7) / 2, -0.45),
+					Vector3.new(0.4, glassTop - 2.7, 0.3),
+					frameC,
+					M.Metal
+				)
 			end
 		end
 	end
 	-- door frame, transom and the door itself
 	for _, sx in { -1, 1 } do
-		Kit.detail(m, L(frontCf, dx + sx * (dw / 2 + 0.2), doorTop / 2 + 0.5, -0.45), Vector3.new(0.4, doorTop, 0.5), frameC, M.Metal)
+		Kit.detail(
+			m,
+			L(frontCf, dx + sx * (dw / 2 + 0.2), doorTop / 2 + 0.5, -0.45),
+			Vector3.new(0.4, doorTop, 0.5),
+			frameC,
+			M.Metal
+		)
 	end
 	Kit.detail(m, L(frontCf, dx, glassTop - 0.2, -0.45), Vector3.new(width - 1.2, 0.5, 0.5), frameC, M.Metal)
 	if glassTop > doorTop + 0.6 then
-		local tr = Kit.block(m, L(frontCf, dx, doorTop + 0.5 + (glassTop - doorTop - 0.5) / 2, -0.2), Vector3.new(dw, glassTop - doorTop - 0.5, 0.3), glassC, M.Glass)
+		local tr = Kit.block(
+			m,
+			L(frontCf, dx, doorTop + 0.5 + (glassTop - doorTop - 0.5) / 2, -0.2),
+			Vector3.new(dw, glassTop - doorTop - 0.5, 0.3),
+			glassC,
+			M.Glass
+		)
 		tr.Transparency = 0.45
 		tr.CastShadow = false
 	end
 	if o.open then
 		-- the door leaf stands open against the jamb
-		local leaf = Kit.detail(m, L(frontCf, dx - dw / 2 + 0.1, doorTop / 2 + 0.5, 1.5) * CFrame.Angles(0, math.rad(80), 0), Vector3.new(3, doorTop - 0.4, 0.2), glassC, M.Glass)
+		local leaf = Kit.detail(
+			m,
+			L(frontCf, dx - dw / 2 + 0.1, doorTop / 2 + 0.5, 1.5) * CFrame.Angles(0, math.rad(80), 0),
+			Vector3.new(3, doorTop - 0.4, 0.2),
+			glassC,
+			M.Glass
+		)
 		leaf.Transparency = 0.4
 	else
-		local door = Kit.block(m, L(frontCf, dx, doorTop / 2 + 0.5, -0.2), Vector3.new(dw, doorTop - 0.2, 0.3), glassC, M.Glass)
+		local door =
+			Kit.block(m, L(frontCf, dx, doorTop / 2 + 0.5, -0.2), Vector3.new(dw, doorTop - 0.2, 0.3), glassC, M.Glass)
 		door.Name = "ShopDoor"
 		door.Transparency = 0.35
 		Kit.detail(m, L(frontCf, dx, 4.2, -0.45), Vector3.new(dw * 0.7, 0.25, 0.3), hex("#B8B8B0"), M.Metal)
@@ -464,7 +545,13 @@ function Buildings.storefront(parent: Instance, frontCf: CFrame, width: number, 
 		end
 	end
 	if o.signSub then
-		local sub = Kit.detail(m, L(frontCf, 0, glassTop - 1.0, -0.38), Vector3.new(width - 3, 1.1, 0.05), Color3.new(1, 1, 1), M.SmoothPlastic)
+		local sub = Kit.detail(
+			m,
+			L(frontCf, 0, glassTop - 1.0, -0.38),
+			Vector3.new(width - 3, 1.1, 0.05),
+			Color3.new(1, 1, 1),
+			M.SmoothPlastic
+		)
 		sub.Transparency = 1
 		Kit.sign(sub, o.signSub, { font = Enum.Font.SpecialElite, color = C.paper, pixelsPerStud = 30, padding = 0.05 })
 	end
@@ -495,9 +582,21 @@ function Buildings.storefront(parent: Instance, frontCf: CFrame, width: number, 
 	end
 	if o.grille and o.grille > 0 then
 		local gh = (glassTop - 2.7) * o.grille
-		local sh = Kit.detail(m, L(frontCf, 0, glassTop - gh / 2, -0.7), Vector3.new(width - 1.2, gh, 0.15), Geo.vary(C.steel, rng, 0.1), M.CorrodedMetal)
+		local sh = Kit.detail(
+			m,
+			L(frontCf, 0, glassTop - gh / 2, -0.7),
+			Vector3.new(width - 1.2, gh, 0.15),
+			Geo.vary(C.steel, rng, 0.1),
+			M.CorrodedMetal
+		)
 		sh.Name = "Shutter"
-		Kit.detail(m, L(frontCf, 0, glassTop + 0.4, -0.85), Vector3.new(width - 1, 0.9, 0.9), Geo.vary(C.steel, rng, 0.1), M.CorrodedMetal)
+		Kit.detail(
+			m,
+			L(frontCf, 0, glassTop + 0.4, -0.85),
+			Vector3.new(width - 1, 0.9, 0.9),
+			Geo.vary(C.steel, rng, 0.1),
+			M.CorrodedMetal
+		)
 	end
 	return m
 end

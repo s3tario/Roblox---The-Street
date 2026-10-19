@@ -21,7 +21,18 @@ local Ground = {}
 local WALK = Plan.WALK
 local v = Plan.v
 
-local function lbox(parent: Instance, x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, color: Color3, mat: Enum.Material?, solid: boolean?): Part
+local function lbox(
+	parent: Instance,
+	x0: number,
+	y0: number,
+	z0: number,
+	x1: number,
+	y1: number,
+	z1: number,
+	color: Color3,
+	mat: Enum.Material?,
+	solid: boolean?
+): Part
 	return Geo.lbox(parent, x0, y0, z0, x1, y1, z1, color, mat, solid)
 end
 
@@ -36,7 +47,14 @@ local function roadCracks(part: BasePart, rng: Deps.RngT, n: number)
 	Paint.cracks(gui, W, H, rng, n, { color = hex("#17181A") })
 	-- oil stains in the lanes
 	for _ = 1, math.floor(n / 4) do
-		local d = Core.dot(gui, rng:range(0, W), rng:range(H * 0.2, H * 0.8), rng:range(8, 22), hex("#1C1D20"), rng:range(0.4, 0.7))
+		local d = Core.dot(
+			gui,
+			rng:range(0, W),
+			rng:range(H * 0.2, H * 0.8),
+			rng:range(8, 22),
+			hex("#1C1D20"),
+			rng:range(0.4, 0.7)
+		)
 		d.Name = "Stain"
 	end
 end
@@ -62,7 +80,16 @@ local function sidewalkJoints(part: BasePart, along: string, rng: Deps.RngT)
 	end
 end
 
-local function line(parent: Instance, x0: number, z0: number, x1: number, z1: number, color: Color3, rng: Deps.RngT, gaps: number)
+local function line(
+	parent: Instance,
+	x0: number,
+	z0: number,
+	x1: number,
+	z1: number,
+	color: Color3,
+	rng: Deps.RngT,
+	gaps: number
+)
 	-- a painted line split into segments; some fade, a few are missing entirely
 	local along = if math.abs(x1 - x0) > math.abs(z1 - z0) then "x" else "z"
 	local len = if along == "x" then x1 - x0 else z1 - z0
@@ -85,7 +112,9 @@ local function line(parent: Instance, x0: number, z0: number, x1: number, z1: nu
 end
 
 local function crosswalk(parent: Instance, cw: { [string]: any }, rng: Deps.RngT)
-	local size = if cw.along == "z" then Vector3.new(cw.width, 0.06, cw.length) else Vector3.new(cw.length, 0.06, cw.width)
+	local size = if cw.along == "z"
+		then Vector3.new(cw.width, 0.06, cw.length)
+		else Vector3.new(cw.length, 0.06, cw.width)
 	local p = Kit.detail(parent, Plan.cf(cw.x, 0.02, cw.z), size, Color3.new(1, 1, 1), M.SmoothPlastic)
 	p.Name = "Crosswalk"
 	p.Transparency = 1
@@ -117,7 +146,13 @@ local function crosswalk(parent: Instance, cw: { [string]: any }, rng: Deps.RngT
 		local r = Kit.wedge(parent, cf, rsize, hex("#8E8A82"), M.Concrete)
 		r.Name = "CurbRamp"
 		-- tactile warning strip
-		local strip = Kit.detail(parent, cf * CFrame.new(0, WALK / 2 + 0.01, 0.6), Vector3.new(cw.width * 0.6, 0.04, 0.9), hex("#B8962E"), M.DiamondPlate)
+		local strip = Kit.detail(
+			parent,
+			cf * CFrame.new(0, WALK / 2 + 0.01, 0.6),
+			Vector3.new(cw.width * 0.6, 0.04, 0.9),
+			hex("#B8962E"),
+			M.DiamondPlate
+		)
 		strip.CastShadow = false
 	end
 end
@@ -217,7 +252,18 @@ function Ground.build(parent: Instance)
 		local z = if onMill then rng:range(-230, 190) else rng:range(av.z0 + 1, av.z1 - 6)
 		if not (onMill and z > av.z0 - 2 and z < av.z1 + 2) then
 			local w, d = rng:range(3, 9), rng:range(2, 6)
-			local p = lbox(m, x, -0.02, z, x + w, 0.03, z + d, Geo.vary(if rng:chance(0.5) then C.asphaltPatch else hex("#232427"), rng, 0.05), M.Asphalt, false)
+			local p = lbox(
+				m,
+				x,
+				-0.02,
+				z,
+				x + w,
+				0.03,
+				z + d,
+				Geo.vary(if rng:chance(0.5) then C.asphaltPatch else hex("#232427"), rng, 0.05),
+				M.Asphalt,
+				false
+			)
 			p.Name = "Patch"
 			p.CastShadow = false
 		end
@@ -227,26 +273,30 @@ function Ground.build(parent: Instance)
 		local c = Kit.cylinder(m, Plan.cf(mh[1], 0.03, mh[2]), 0.08, 3.2, hex("#2A2826"), M.DiamondPlate)
 		Geo.ghost(c).Name = "Manhole"
 	end
-	for _, dr in { { -230, -13.2 }, { -120, 13.2 }, { -10, -13.2 }, { 40, 13.2 }, { 150, -13.2 }, { 79.2, 60 }, { 108.8, -120 } } do
+	for _, dr in
+		{ { -230, -13.2 }, { -120, 13.2 }, { -10, -13.2 }, { 40, 13.2 }, { 150, -13.2 }, { 79.2, 60 }, { 108.8, -120 } }
+	do
 		local alongX = math.abs(dr[2]) > 13
 		local size = if alongX then Vector3.new(3, 0.08, 1.2) else Vector3.new(1.2, 0.08, 3)
 		local g = Kit.detail(m, Plan.cf(dr[1], 0.03, dr[2]), size, hex("#1E1F21"), M.DiamondPlate)
 		g.Name = "Drain"
 	end
 	-- puddles collect in the gutters, the back alley and the yards
-	for i, pd in {
-		{ -190, 11.5, 1.6 },
-		{ -60, -11.5, 1.2 },
-		{ 30, 12, 1.4 },
-		{ 140, -11, 2.0 },
-		{ -100, 91, 1.5 },
-		{ -20, 90, 2.2 },
-		{ 40, 92, 1.3 },
-		{ -230, 120, 2.4 },
-		{ 180, 150, 2.6 },
-		{ 200, -112, 1.8 },
-		{ 92, 70, 1.1 },
-	} do
+	for i, pd in
+		{
+			{ -190, 11.5, 1.6 },
+			{ -60, -11.5, 1.2 },
+			{ 30, 12, 1.4 },
+			{ 140, -11, 2.0 },
+			{ -100, 91, 1.5 },
+			{ -20, 90, 2.2 },
+			{ 40, 92, 1.3 },
+			{ -230, 120, 2.4 },
+			{ 180, 150, 2.6 },
+			{ 200, -112, 1.8 },
+			{ 92, 70, 1.1 },
+		}
+	do
 		local y = if math.abs(pd[2]) < 14 then 0.02 else WALK + 0.02
 		Props.build("puddle", m, Plan.cf(pd[1], y, pd[2], rng:range(0, 180)), { size = pd[3], seed = "puddle" .. i })
 	end
@@ -254,7 +304,11 @@ function Ground.build(parent: Instance)
 	-- the riverside: embankment, railing, the river
 	local riv = Plan.river
 	lbox(m, Plan.PLAY.x1, -16, -400, Plan.PLAY.x1 + 4, WALK, 400, hex("#6E6B63"), M.Concrete).Name = "Embankment"
-	local water = Geo.water(m, CFrame.new(v((riv.x0 + 4 + riv.x1) / 2, riv.surface - 4, 0)), Vector3.new(riv.x1 - riv.x0 - 4, 8, 800))
+	local water = Geo.water(
+		m,
+		CFrame.new(v((riv.x0 + 4 + riv.x1) / 2, riv.surface - 4, 0)),
+		Vector3.new(riv.x1 - riv.x0 - 4, 8, 800)
+	)
 	water.Name = "River"
 	local rail = hex("#3E4347")
 	local rx = Plan.PLAY.x1 + 0.6

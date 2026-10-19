@@ -15,6 +15,7 @@ local Deps = require(script.Deps)
 local CareerCenter = require(script.CareerCenter)
 local Lecture = require(script.Lecture)
 local Dorm = require(script.Dorm)
+local Subway = require(script.Subway)
 
 local Kit = Deps.Kit
 local World = Deps.World
@@ -41,6 +42,7 @@ function CampusInteriors.build(parent: Instance?): Model
 	CareerCenter.build(root, mk, origin("career_center"))
 	Lecture.build(root, mk, origin("lecture"))
 	Dorm.build(root, mk, origin("dorm"))
+	Subway.build(root, mk, origin("subway"))
 	settle(root)
 	root.Parent = parent
 	return root

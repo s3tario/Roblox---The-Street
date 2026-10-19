@@ -40,7 +40,14 @@ local function siteCf(s: Spec): CFrame
 end
 
 -- Interior shop floor finish (on top of the lot asphalt) and an overhead fluorescent fixture row.
-local function shopFloor(parent: Instance, front: CFrame, w: number, depth: number, color: Color3, mat: Enum.Material): Part
+local function shopFloor(
+	parent: Instance,
+	front: CFrame,
+	w: number,
+	depth: number,
+	color: Color3,
+	mat: Enum.Material
+): Part
 	local f = Kit.block(parent, L(front, 0, 0.05, depth / 2), Vector3.new(w, 0.1, depth), color, mat)
 	f.Name = "ShopFloor"
 	return f
@@ -105,7 +112,11 @@ local function diner(m: Instance)
 		font = "script",
 		flicker = true,
 	})
-	Signs.neon(bm, L(front, -8, 6.5, 0.6), { text = Text.dinerOpen, color = hex("#5CE1FF"), width = 6, height = 1.6, flicker = true })
+	Signs.neon(
+		bm,
+		L(front, -8, 6.5, 0.6),
+		{ text = Text.dinerOpen, color = hex("#5CE1FF"), width = 6, height = 1.6, flicker = true }
+	)
 	-- inside: checkerboard floor, counter with stools, booths along the window, menu board, pie case, jukebox
 	local floor = shopFloor(bm, front, w - 2.4, depth - 0.2, hex("#E6E0D2"), M.SmoothPlastic)
 	local fg = Paint.surface(floor, Enum.NormalId.Top, 4)
@@ -114,12 +125,18 @@ local function diner(m: Instance)
 	Kit.block(bm, L(counter, 0, 1.8, 0), Vector3.new(26, 3.6, 2.4), hex("#8A2C2C"), M.SmoothPlastic).Name = "Counter"
 	Kit.block(bm, L(counter, 0, 3.75, -0.2), Vector3.new(26.6, 0.3, 3.2), hex("#D8D2C2"), M.Marble).Name = "CounterTop"
 	for i = 0, 5 do
-		Props.build("diner_counter_stool", bm, L(counter, -11 + i * 4.4, 0, -3.2), { seat = true, seed = "dstool" .. i })
+		Props.build(
+			"diner_counter_stool",
+			bm,
+			L(counter, -11 + i * 4.4, 0, -3.2),
+			{ seat = true, seed = "dstool" .. i }
+		)
 	end
 	for i, x in { -15, -6.5, 2 } do
 		Props.build("diner_booth", bm, L(front, x, 0, 3.4), { seat = true, seed = "dbooth" .. i })
 	end
-	local back = Kit.detail(bm, L(front, -3, 9, depth - 0.15), Vector3.new(14, 3.6, 0.1), hex("#24262A"), M.SmoothPlastic)
+	local back =
+		Kit.detail(bm, L(front, -3, 9, depth - 0.15), Vector3.new(14, 3.6, 0.1), hex("#24262A"), M.SmoothPlastic)
 	local mg = Paint.surface(back, Enum.NormalId.Front, 30, { glow = true, brightness = 0.9 })
 	Art.menu(mg, "NIGHT OWL MENU", Text.dinerMenu, hex("#24262A"), hex("#F4F1E6"), C.mustard)
 	-- the kitchen pass-through glows behind the counter
@@ -138,7 +155,15 @@ local function diner(m: Instance)
 	-- out back: grease bin and crates
 	Props.build("dumpster", m, Plan.cf(-142, WALK, 76, Plan.S), { seed = "diner-dump" })
 	Props.build("pallet_stack", m, Plan.cf(-126, WALK, 74, 12), { count = 2, seed = "diner-pallets" })
-	Geo.pipe(m, Plan.v(-118, WALK + 2, Z + s.d + 0.6), Plan.v(-118, WALK + s.h + 4, Z + s.d + 0.6), 1.2, C.steel, M.CorrodedMetal, false).Name =
+	Geo.pipe(
+		m,
+		Plan.v(-118, WALK + 2, Z + s.d + 0.6),
+		Plan.v(-118, WALK + s.h + 4, Z + s.d + 0.6),
+		1.2,
+		C.steel,
+		M.CorrodedMetal,
+		false
+	).Name =
 		"KitchenFlue"
 end
 
@@ -205,7 +230,8 @@ local function laundromat(m: Instance)
 	local cs = Kit.detail(bm, L(front, 12, 4.4, depth - 2.35), Vector3.new(1.8, 1, 0.05), hex("#E04040"), M.Neon)
 	cs.Transparency = 0.2
 	tubes(bm, front, sh - 0.4, { -6, 6 }, { 6, 15 }, { 1 })
-	local sign = Kit.detail(bm, L(front, 0, 7.4, depth - 0.12), Vector3.new(8, 1.4, 0.05), hex("#F4F1E6"), M.SmoothPlastic)
+	local sign =
+		Kit.detail(bm, L(front, 0, 7.4, depth - 0.12), Vector3.new(8, 1.4, 0.05), hex("#F4F1E6"), M.SmoothPlastic)
 	Kit.sign(sign, Text.dormInside.laundry, { font = Enum.Font.SpecialElite, color = C.ink, pixelsPerStud = 30 })
 end
 
@@ -249,13 +275,26 @@ local function pawn(m: Instance)
 	-- guitars on the back wall and a glass jewellery case
 	for i = 0, 3 do
 		local g = L(front, -7 + i * 4, 6.2, depth - 0.4) * CFrame.Angles(0, 0, math.rad(8 - i * 4))
-		Kit.detail(bm, g, Vector3.new(1.4, 1.8, 0.3), ({ hex("#8A3B1E"), hex("#2A2A2A"), hex("#C9A13B"), hex("#6E8088") })[i + 1], M.Wood)
+		Kit.detail(
+			bm,
+			g,
+			Vector3.new(1.4, 1.8, 0.3),
+			({ hex("#8A3B1E"), hex("#2A2A2A"), hex("#C9A13B"), hex("#6E8088") })[i + 1],
+			M.Wood
+		)
 		Kit.detail(bm, L(g, 0, 1.9, 0), Vector3.new(0.3, 2.2, 0.2), hex("#2A2622"), M.Wood)
 	end
 	Kit.block(bm, L(front, -3, 1.8, 7), Vector3.new(10, 3.6, 2.2), hex("#3A2E24"), M.Wood).Name = "Case"
 	local glass = Kit.detail(bm, L(front, -3, 4.2, 7), Vector3.new(10, 1.2, 2.2), hex("#AFC4CC"), M.Glass)
 	glass.Transparency = 0.5
-	Buildings.windowPoster(bm, L(front, -6, 6.6, -0.05), Vector3.new(4.4, 3, 0.05), "WE BUY GOLD", "Cash today · No questions", "pawn-poster")
+	Buildings.windowPoster(
+		bm,
+		L(front, -6, 6.6, -0.05),
+		Vector3.new(4.4, 3, 0.05),
+		"WE BUY GOLD",
+		"Cash today · No questions",
+		"pawn-poster"
+	)
 	Signs.neon(bm, L(front, 7, 9.6, -1.2), { text = "LOANS", color = hex("#3CFF8A"), width = 4.2, height = 1.4 })
 end
 
@@ -299,7 +338,8 @@ local function grind(m: Instance)
 		seed = "grind-front",
 	})
 	shopFloor(bm, front, w - 2.4, depth - 0.2, hex("#5A4636"), M.WoodPlanks)
-	local orderSign = Kit.detail(bm, L(front, bx, 8.3, -0.5), Vector3.new(5, 0.9, 0.08), hex("#ECE6DA"), M.SmoothPlastic)
+	local orderSign =
+		Kit.detail(bm, L(front, bx, 8.3, -0.5), Vector3.new(5, 0.9, 0.08), hex("#ECE6DA"), M.SmoothPlastic)
 	Kit.sign(orderSign, Text.grindWindow, { font = Enum.Font.Oswald, color = hex("#2F3A32"), pixelsPerStud = 40 })
 	-- the inside counter under the hatch, espresso machine, pastry case, menu board, and a few seats
 	Kit.block(bm, L(front, bx, 1.9, 1.4), Vector3.new(9, 3.8, 1.8), hex("#3E2A1E"), M.Wood).Name = "BarCounter"
@@ -325,7 +365,13 @@ local function grind(m: Instance)
 	end
 	local af = Plan.cf((s.x0 + s.x1) / 2 + 3, WALK, Z - 8, Plan.N)
 	for _, sd in { -1, 1 } do
-		local leaf = Kit.detail(bm, af * CFrame.new(0, 1.5, sd * 0.4) * CFrame.Angles(math.rad(12 * sd), 0, 0), Vector3.new(2, 3, 0.1), hex("#1E2420"), M.Wood)
+		local leaf = Kit.detail(
+			bm,
+			af * CFrame.new(0, 1.5, sd * 0.4) * CFrame.Angles(math.rad(12 * sd), 0, 0),
+			Vector3.new(2, 3, 0.1),
+			hex("#1E2420"),
+			M.Wood
+		)
 		if sd < 0 then
 			local g = Paint.surface(leaf, Enum.NormalId.Front, 40)
 			Core.label(g, "ALL-NIGHTER\n4 SHOTS\n$4.75", 0.08, 0.1, 0.84, 0.8, hex("#ECE6DA"), {
@@ -371,8 +417,22 @@ local function vacant(m: Instance)
 		grille = 1,
 		seed = "vacant-front",
 	})
-	Buildings.windowPoster(bm, L(front, -8, 6, -0.95), Vector3.new(6, 4, 0.05), Text.vacant, Text.vacantSub, "lease-poster")
-	Dress.flyerSheet(bm, L(front, 9, 5.5, -0.9), 5, 4, { Text.flyers[5], Text.flyers[7], Text.flyers[11], Text.flyers[2] }, "vacant-flyers")
+	Buildings.windowPoster(
+		bm,
+		L(front, -8, 6, -0.95),
+		Vector3.new(6, 4, 0.05),
+		Text.vacant,
+		Text.vacantSub,
+		"lease-poster"
+	)
+	Dress.flyerSheet(
+		bm,
+		L(front, 9, 5.5, -0.9),
+		5,
+		4,
+		{ Text.flyers[5], Text.flyers[7], Text.flyers[11], Text.flyers[2] },
+		"vacant-flyers"
+	)
 	-- plywood over some upper windows
 	local rng = Deps.Rng.new("vacant-boards")
 	for _ = 1, 6 do
@@ -468,12 +528,31 @@ local function coop(m: Instance, mk: Instance)
 	})
 	Kit.block(bm, L(front, partitionX, sh / 2, depth / 2), Vector3.new(1, sh, depth), hex("#C9C2B0"), M.SmoothPlastic).Name =
 		"Partition"
-	Kit.block(bm, L(front, partitionX, sh / 2, -0.4), Vector3.new(1.4, sh, 0.9), Kit.shade(hex("#7A3B2E"), -0.1), M.Brick).Name =
+	Kit.block(
+		bm,
+		L(front, partitionX, sh / 2, -0.4),
+		Vector3.new(1.4, sh, 0.9),
+		Kit.shade(hex("#7A3B2E"), -0.1),
+		M.Brick
+	).Name =
 		"Pier"
 	-- the apartments' stair rising behind their glass door
-	Kit.stairs(bm, L(front, (CS.x1 + s.x1) / 2 - cx + 2, 0, 5) * CFrame.Angles(0, math.pi, 0), 5, 9, 1.2, 1.6, hex("#6A5A48"), M.WoodPlanks).Name =
+	Kit.stairs(
+		bm,
+		L(front, (CS.x1 + s.x1) / 2 - cx + 2, 0, 5) * CFrame.Angles(0, math.pi, 0),
+		5,
+		9,
+		1.2,
+		1.6,
+		hex("#6A5A48"),
+		M.WoodPlanks
+	).Name =
 		"AptStairs"
-	Signs.neon(bm, L(storeFront, -11, 6.8, 0.6), { text = Text.coopOpen, color = hex("#FF4F5E"), width = 4, height = 1.6 })
+	Signs.neon(
+		bm,
+		L(storeFront, -11, 6.8, 0.6),
+		{ text = Text.coopOpen, color = hex("#FF4F5E"), width = 4, height = 1.6 }
+	)
 	-- inside the store
 	shopFloor(bm, storeFront, shopW - 2.4, depth - 0.2, hex("#D9D4C6"), M.SmoothPlastic)
 	local rng = Deps.Rng.new("coop-shelves")
@@ -495,7 +574,8 @@ local function coop(m: Instance, mk: Instance)
 		Kit.detail(bm, L(sc, 0, 10.6, 0), Vector3.new(0.1, 1.6, 0.1), hex("#5A5A5A"), M.Metal)
 	end
 	-- a cooler wall along the back with glowing doors
-	local cooler = Kit.block(bm, L(storeFront, -1, 4, depth - 1.6), Vector3.new(shopW - 6, 8, 3), hex("#E9E7E2"), M.Metal)
+	local cooler =
+		Kit.block(bm, L(storeFront, -1, 4, depth - 1.6), Vector3.new(shopW - 6, 8, 3), hex("#E9E7E2"), M.Metal)
 	cooler.Name = "Cooler"
 	local cg, CW, CH = Paint.surface(cooler, Enum.NormalId.Front, 10, { glow = true, brightness = 1.1 })
 	Core.bg(cg, hex("#CFE6EE"))
@@ -509,7 +589,13 @@ local function coop(m: Instance, mk: Instance)
 			end
 		end
 	end
-	Kit.detail(bm, L(storeFront, -1, 8.6, depth - 3.15), Vector3.new(shopW - 6, 1.2, 0.1), hex("#2F5A3A"), M.SmoothPlastic).Name =
+	Kit.detail(
+		bm,
+		L(storeFront, -1, 8.6, depth - 3.15),
+		Vector3.new(shopW - 6, 1.2, 0.1),
+		hex("#2F5A3A"),
+		M.SmoothPlastic
+	).Name =
 		"CoolerSign"
 	-- the checkout counter by the door: the campus_store shop interact
 	local doorLocal = CS.doorX - (s.x0 + CS.x1) / 2
@@ -529,7 +615,13 @@ local function coop(m: Instance, mk: Instance)
 		local cr = L(storeFront, x, 0, -3)
 		Kit.block(bm, L(cr, 0, 1.2, 0), Vector3.new(3, 2.4, 2.2), hex("#7F6A55"), M.WoodPlanks).Name = "Crate" .. i
 		for k = 0, 5 do
-			Kit.ball(bm, L(cr, -1 + (k % 3), 2.6, -0.5 + (k // 3)), 0.8, if i == 1 then hex("#C8553D") else hex("#E2B93B"), M.SmoothPlastic).CanCollide =
+			Kit.ball(
+				bm,
+				L(cr, -1 + (k % 3), 2.6, -0.5 + (k // 3)),
+				0.8,
+				if i == 1 then hex("#C8553D") else hex("#E2B93B"),
+				M.SmoothPlastic
+			).CanCollide =
 				false
 		end
 	end
@@ -557,7 +649,8 @@ local function alley(m: Instance)
 	Props.build("chainlink_fence", m, Plan.cf(cx - 2.5, WALK, 72, 8), { length = 7, seed = "alley-gate" })
 	Dress.litter(m, a.x0, Z, a.x1, 84, 14, rng)
 	-- a steam vent and a lone pipe
-	Kit.detail(m, Plan.cf(cx, WALK + 0.04, 36), Vector3.new(2.4, 0.08, 2.4), hex("#2A2826"), M.DiamondPlate).Name = "Grate"
+	Kit.detail(m, Plan.cf(cx, WALK + 0.04, 36), Vector3.new(2.4, 0.08, 2.4), hex("#2A2826"), M.DiamondPlate).Name =
+		"Grate"
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -575,8 +668,14 @@ local function backAlley(m: Instance)
 	-- back doors and caged bulbs
 	for i, x in { -104, -66, -30, -4, 30, 58 } do
 		local d = Plan.cf(x + 3, WALK, b.z0, Plan.S)
-		Kit.detail(m, L(d, 0, 4.25, -0.12), Vector3.new(3.6, 8.5, 0.25), Geo.vary(hex("#4A4E52"), rng, 0.1), M.DiamondPlate).Name =
-			"BackDoor" .. i
+		Kit.detail(
+			m,
+			L(d, 0, 4.25, -0.12),
+			Vector3.new(3.6, 8.5, 0.25),
+			Geo.vary(hex("#4A4E52"), rng, 0.1),
+			M.DiamondPlate
+		).Name = "BackDoor"
+			.. i
 		if i % 2 == 1 then
 			Dress.lantern(m, L(d, 0, 10, 0), i ~= 3)
 		end

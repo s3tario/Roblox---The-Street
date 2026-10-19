@@ -53,7 +53,14 @@ local function shell(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local cg, CW, CH = Paint.surface(ceil, Enum.NormalId.Bottom, 1.5, { maxDistance = 0 })
 	-- water stains spreading from the leak over the foyer
 	for _ = 1, 8 do
-		Core.dot(cg, rng:range(CW * 0.4, CW * 0.6), rng:range(CH * 0.7, CH * 0.95), rng:range(8, 26), hex("#C9B98A"), 0.45)
+		Core.dot(
+			cg,
+			rng:range(CW * 0.4, CW * 0.6),
+			rng:range(CH * 0.7, CH * 0.95),
+			rng:range(8, 26),
+			hex("#C9B98A"),
+			0.45
+		)
 	end
 	-- exterior walls
 	Shell.wallX(m, F, Z0 - 0.5, X0 - 1, X1 + 1, PIT, H, 1, WALL)
@@ -90,7 +97,8 @@ local function hall(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	for i = 0, 4 do
 		local front = -42 + 7 * i
 		local top = PIT + 0.9 * (i + 1)
-		Shell.box(h, F, -30, PIT, front, 30, top, HALL.walk, Kit.shade(tierC, i * 0.02), M.WoodPlanks).Name = "Tier" .. i
+		Shell.box(h, F, -30, PIT, front, 30, top, HALL.walk, Kit.shade(tierC, i * 0.02), M.WoodPlanks).Name = "Tier"
+			.. i
 		-- half-steps down the centre aisle so nobody has to jump
 		Shell.box(h, F, -3, PIT, front - 1.4, 3, top - 0.45, front, Kit.shade(tierC, -0.05), M.WoodPlanks).Name =
 			"AisleStep"
@@ -121,10 +129,23 @@ local function hall(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Shell.box(h, F, -4, PIT, -48, 4, PIT + 0.3, -46.8, WOOD, M.WoodPlanks).Name = "StageStep"
 	local st = PIT + 0.6
 	Shell.box(h, F, -1.6, st, -51.8, 1.6, st + 3.8, -50.2, hex("#4A3022"), M.Wood).Name = "Lectern"
-	Kit.detail(h, F.cf(0, st + 4, -50.9) * CFrame.Angles(math.rad(18), 0, 0), Vector3.new(3.4, 0.25, 2), hex("#5A3A26"), M.Wood)
-	Kit.detail(h, F.cf(0.9, st + 4.6, -50.4) * CFrame.Angles(math.rad(-30), 0, 0), Vector3.new(0.12, 1.4, 0.12), hex("#2A2A2A"), M.Metal).Name =
+	Kit.detail(
+		h,
+		F.cf(0, st + 4, -50.9) * CFrame.Angles(math.rad(18), 0, 0),
+		Vector3.new(3.4, 0.25, 2),
+		hex("#5A3A26"),
+		M.Wood
+	)
+	Kit.detail(
+		h,
+		F.cf(0.9, st + 4.6, -50.4) * CFrame.Angles(math.rad(-30), 0, 0),
+		Vector3.new(0.12, 1.4, 0.12),
+		hex("#2A2A2A"),
+		M.Metal
+	).Name =
 		"Mic"
-	local seal = Kit.detail(h, F.cf(0, st + 2.2, -50.15, Shell.S), Vector3.new(2, 2, 0.05), hex("#C8BFA8"), M.SmoothPlastic)
+	local seal =
+		Kit.detail(h, F.cf(0, st + 2.2, -50.15, Shell.S), Vector3.new(2, 2, 0.05), hex("#C8BFA8"), M.SmoothPlastic)
 	if not Deps.logo(seal, Enum.NormalId.Front, "eastbridge_state") then
 		Kit.sign(seal, "ES", { font = Enum.Font.Garamond, color = hex("#5C2A21"), pixelsPerStud = 50 })
 	end
@@ -133,16 +154,33 @@ local function hall(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	for i, x in { -15, 15 } do
 		Props.build("chalkboard", h, F.cf(x, PIT + 2.2, Z0, Shell.S), { seed = "hall-chalk" .. i })
 	end
-	local screen = Kit.detail(h, F.cf(0, PIT + 6.2, Z0 + 0.15, Shell.S), Vector3.new(9, 6, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
+	local screen =
+		Kit.detail(h, F.cf(0, PIT + 6.2, Z0 + 0.15, Shell.S), Vector3.new(9, 6, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
 	screen.Name = "ProjectorScreen"
 	local sg = Paint.surface(screen, Enum.NormalId.Front, 20, { glow = true, brightness = 0.7 })
 	Core.bg(sg, hex("#EDEDE6"))
-	Core.label(sg, Text.lecture.course, 0.05, 0.05, 0.9, 0.18, hex("#1F2A44"), { font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center })
+	Core.label(
+		sg,
+		Text.lecture.course,
+		0.05,
+		0.05,
+		0.9,
+		0.18,
+		hex("#1F2A44"),
+		{ font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center }
+	)
 	Core.label(sg, Text.lecture.board, 0.08, 0.28, 0.84, 0.66, hex("#2A2622"), { font = Enum.Font.SourceSans })
 	for _, x in { -26, 0, 26 } do
 		Shell.window(h, F.cf(x, 10.5, Z0, Shell.S), 9, 7, rng, "campus")
 	end
-	Shell.sign(h, F.cf(-26, 3.5, Z0, Shell.S), 8, 1.4, Text.lecture.hall, { color = hex("#24262A"), ink = hex("#E3DCCA") })
+	Shell.sign(
+		h,
+		F.cf(-26, 3.5, Z0, Shell.S),
+		8,
+		1.4,
+		Text.lecture.hall,
+		{ color = hex("#24262A"), ink = hex("#E3DCCA") }
+	)
 	-- pendant lights on long rods
 	for i, x in { -18, 0, 18 } do
 		for k, z in { -48, -24 } do
@@ -162,8 +200,10 @@ end
 -- The foyer
 ---------------------------------------------------------------------------------------------------
 local function portrait(parent: Instance, cf: CFrame, name: string, i: number)
-	Kit.detail(parent, cf * CFrame.new(0, 0, -0.1), Vector3.new(4.4, 5.6, 0.2), hex("#6B4A1E"), M.Wood).Name = "PortraitFrame"
-	local canvas = Kit.detail(parent, cf * CFrame.new(0, 0.2, -0.22), Vector3.new(3.6, 4.4, 0.05), hex("#3A2E24"), M.SmoothPlastic)
+	Kit.detail(parent, cf * CFrame.new(0, 0, -0.1), Vector3.new(4.4, 5.6, 0.2), hex("#6B4A1E"), M.Wood).Name =
+		"PortraitFrame"
+	local canvas =
+		Kit.detail(parent, cf * CFrame.new(0, 0.2, -0.22), Vector3.new(3.6, 4.4, 0.05), hex("#3A2E24"), M.SmoothPlastic)
 	canvas.Name = "Portrait"
 	local g, W, Hh = Paint.surface(canvas, Enum.NormalId.Front, 30)
 	local bg = Core.bg(g, hex("#2E2620"))
@@ -186,7 +226,16 @@ local function foyer(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Core.checker(Core.frame(tg, 0, 0, 1, 1, hex("#BDB5A3")), 12, 9, hex("#BDB5A3"), hex("#A39A86"))
 	local med = Core.dot(tg, TW / 2, TH * 0.55, TH * 0.4, hex("#8E3B2E"), 0.1)
 	Core.stroke(med, P.street.brass, 6)
-	Core.label(tg, "ES · 1911", 0.35, 0.47, 0.3, 0.16, P.street.brass, { font = Enum.Font.Garamond, align = Enum.TextXAlignment.Center })
+	Core.label(
+		tg,
+		"ES · 1911",
+		0.35,
+		0.47,
+		0.3,
+		0.16,
+		P.street.brass,
+		{ font = Enum.Font.Garamond, align = Enum.TextXAlignment.Center }
+	)
 	-- the deans
 	local P3 = Text.lecture.portraits
 	portrait(f, F.cf(-23.85, 8, 18, Shell.E), P3[1], 1)
@@ -198,7 +247,13 @@ local function foyer(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	local glass = Kit.detail(f, tc * CFrame.new(0, 4.6, 0), Vector3.new(7, 3.2, 2.4), hex("#AFC4CC"), M.Glass)
 	glass.Transparency = 0.6
 	for k = -1, 1 do
-		Kit.detail(f, tc * CFrame.new(k * 2.2, 3.8 + (k + 1) * 0.2, 0), Vector3.new(0.6, 1.2 + k * 0.2, 0.6), P.street.gold, M.Metal).Name =
+		Kit.detail(
+			f,
+			tc * CFrame.new(k * 2.2, 3.8 + (k + 1) * 0.2, 0),
+			Vector3.new(0.6, 1.2 + k * 0.2, 0.6),
+			P.street.gold,
+			M.Metal
+		).Name =
 			"Trophy"
 	end
 	local plaque = Kit.detail(f, tc * CFrame.new(0, 2.2, -1.25), Vector3.new(5, 0.8, 0.05), P.street.brass, M.Metal)
@@ -226,7 +281,13 @@ local function foyer(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Shell.sign(f, F.cf(-23.9, 10.8, 30, Shell.E), 7, 0.9, "← " .. Text.lecture.library, { color = hex("#24262A") })
 	Shell.sign(f, F.cf(23.9, 10.8, 30, Shell.W), 7, 0.9, Text.lecture.club .. " →", { color = hex("#24262A") })
 	-- the way out to the quad (the arrival anchor stands just inside it)
-	Shell.exit(f, mk, "door_lecture_exit", F.cf(0, 0, Z1, Shell.N), { label = Text.exitTo.lecture, doorColor = hex("#3E2418") })
+	Shell.exit(
+		f,
+		mk,
+		"door_lecture_exit",
+		F.cf(0, 0, Z1, Shell.N),
+		{ label = Text.exitTo.lecture, doorColor = hex("#3E2418") }
+	)
 	for _, x in { -14, 14 } do
 		Shell.window(f, F.cf(x, 8.5, Z1, Shell.N), 6, 7, rng, "campus")
 	end
@@ -252,7 +313,13 @@ local function club(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 		end
 		-- an open laptop
 		Shell.box(c, F, x - 1.1, 3.1, Z0 + 1.2, x + 1.1, 3.18, Z0 + 2.6, hex("#9AA0A6"), M.Metal, false).Name = "Laptop"
-		local lid = Kit.detail(c, F.cf(x, 3.9, Z0 + 1.1) * CFrame.Angles(math.rad(-12), 0, 0), Vector3.new(2.2, 1.5, 0.08), hex("#9AA0A6"), M.Metal)
+		local lid = Kit.detail(
+			c,
+			F.cf(x, 3.9, Z0 + 1.1) * CFrame.Angles(math.rad(-12), 0, 0),
+			Vector3.new(2.2, 1.5, 0.08),
+			hex("#9AA0A6"),
+			M.Metal
+		)
 		local lg = Paint.surface(lid, Enum.NormalId.Back, 50, { glow = true })
 		local lbg = Core.bg(lg, hex("#0B1622"))
 		Core.lineChart(lbg, 6, 10, 98, 55, Core.series(rng, 24, 50, 1.5, 0.2), Core.UP, 2)
@@ -271,7 +338,8 @@ local function club(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 		Shell.chair(c, F.cf(X1 - 5, 0, z, Shell.E), hex("#2A2A2A"))
 	end
 	-- the pitch whiteboard, the ticker, the trophy shelf, the couch
-	local wb = Kit.detail(c, F.cf(HALL.x1 + 1.1, 6, -38, Shell.E), Vector3.new(12, 5, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
+	local wb =
+		Kit.detail(c, F.cf(HALL.x1 + 1.1, 6, -38, Shell.E), Vector3.new(12, 5, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
 	wb.Name = "PitchBoard"
 	local wg, WW, WH = Paint.surface(wb, Enum.NormalId.Front, 20)
 	Art.whiteboard(wg, WW, WH, rng)
@@ -289,7 +357,14 @@ local function club(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Props.build("mini_fridge", c, F.cf(70, 0, -13, Shell.N), { seed = "club-fridge" })
 	-- the club's name over the door (lounge side) and inside
 	Shell.sign(c, F.cf(56, 11, -10, Shell.S), 14, 1.8, Text.lecture.club, { color = hex("#1F2A44"), ink = C.mustard })
-	Shell.sign(c, F.cf(56, 11.6, -11, Shell.N), 22, 1.6, Text.lecture.clubSub, { color = hex("#1F2A44"), ink = C.mustard })
+	Shell.sign(
+		c,
+		F.cf(56, 11.6, -11, Shell.N),
+		22,
+		1.6,
+		Text.lecture.clubSub,
+		{ color = hex("#1F2A44"), ink = C.mustard }
+	)
 	for _, z in { -52, -24 } do
 		Shell.window(c, F.cf(X1, 8, z, Shell.W), 7, 6, rng, "campus")
 	end
@@ -301,9 +376,20 @@ end
 ---------------------------------------------------------------------------------------------------
 -- The library nook
 ---------------------------------------------------------------------------------------------------
-local BOOK_COLORS = { hex("#5C2A21"), hex("#1F2A44"), hex("#2F5A3A"), hex("#6B4E35"), hex("#8A2C2C"), hex("#3E4A52"), hex("#C9A13B") }
+local BOOK_COLORS =
+	{ hex("#5C2A21"), hex("#1F2A44"), hex("#2F5A3A"), hex("#6B4E35"), hex("#8A2C2C"), hex("#3E4A52"), hex("#C9A13B") }
 
-local function shelf(parent: Instance, F: Shell.Frame, x0: number, z0: number, x1: number, z1: number, faces: { Enum.NormalId }, label: string?, rng: Deps.RngT)
+local function shelf(
+	parent: Instance,
+	F: Shell.Frame,
+	x0: number,
+	z0: number,
+	x1: number,
+	z1: number,
+	faces: { Enum.NormalId },
+	label: string?,
+	rng: Deps.RngT
+)
 	local s = Shell.box(parent, F, x0, 0, z0, x1, 9, z1, WOOD, M.Wood)
 	s.Name = "Stack"
 	for _, face in faces do
@@ -321,7 +407,16 @@ local function shelf(parent: Instance, F: Shell.Frame, x0: number, z0: number, x
 			end
 		end
 		if label then
-			Core.label(g, label, 0.1, 0.0, 0.8, 0.06, P.street.brass, { font = Enum.Font.Garamond, align = Enum.TextXAlignment.Center })
+			Core.label(
+				g,
+				label,
+				0.1,
+				0.0,
+				0.8,
+				0.06,
+				P.street.brass,
+				{ font = Enum.Font.Garamond, align = Enum.TextXAlignment.Center }
+			)
 		end
 	end
 	return s
@@ -343,7 +438,12 @@ local function library(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		for _, x in { -49.4, -40.6 } do
 			Shell.box(l, F, x - 0.25, 0, z - 2, x + 0.25, 2.8, z + 2, hex("#4A3022"), M.Wood, false)
 		end
-		Props.build("desk_lamp", l, F.cf(-45, 3.1, z - 1.6, 0), { color = hex("#2F5A3A"), lit = true, seed = "lib-lamp" .. i })
+		Props.build(
+			"desk_lamp",
+			l,
+			F.cf(-45, 3.1, z - 1.6, 0),
+			{ color = hex("#2F5A3A"), lit = true, seed = "lib-lamp" .. i }
+		)
 		Props.build("book_stack", l, F.cf(-48, 3.1, z + 1, 20), { seed = "lib-books" .. i })
 		Shell.chair(l, F.cf(-45, 0, z + 4, Shell.N), WOOD)
 		Shell.chair(l, F.cf(-45, 0, z - 4, Shell.S), WOOD)
@@ -351,9 +451,22 @@ local function library(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Props.build("globe", l, F.cf(-42, 3.1, -22, 0), { seed = "lib-globe" })
 	-- the card catalogue and the rolling ladder
 	Shell.box(l, F, -40, 0, -60, -37.2, 4.2, -54, hex("#6B4A2E"), M.Wood).Name = "CardCatalogue"
-	Kit.detail(l, F.cf(-71, 4.5, -36, Shell.E) * CFrame.Angles(math.rad(-12), 0, 0), Vector3.new(2, 9, 0.3), hex("#8A6A48"), M.Wood).Name =
+	Kit.detail(
+		l,
+		F.cf(-71, 4.5, -36, Shell.E) * CFrame.Angles(math.rad(-12), 0, 0),
+		Vector3.new(2, 9, 0.3),
+		hex("#8A6A48"),
+		M.Wood
+	).Name =
 		"Ladder"
-	Shell.sign(l, F.cf(-56, 11, -10, Shell.S), 14, 1.6, Text.lecture.library, { color = hex("#2A2622"), ink = hex("#D6CDB4"), font = Enum.Font.Garamond })
+	Shell.sign(
+		l,
+		F.cf(-56, 11, -10, Shell.S),
+		14,
+		1.6,
+		Text.lecture.library,
+		{ color = hex("#2A2622"), ink = hex("#D6CDB4"), font = Enum.Font.Garamond }
+	)
 	for _, z in { -40, -22 } do
 		Shell.window(l, F.cf(X0, 8, z, Shell.E), 6, 6, rng, "campus")
 	end
@@ -374,10 +487,22 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Props.build("vending_machine", l, F.cf(-40, 0, -8.4, Shell.S), { seed = "hh-vend" })
 	local nb = Kit.block(l, F.cf(X0 + 0.3, 6, 30, Shell.E), Vector3.new(10, 5, 0.4), hex("#9A7650"), M.Wood)
 	nb.Name = "NoticeBoard"
-	local nf = Kit.detail(l, F.cf(X0 + 0.55, 6, 30, Shell.E), Vector3.new(9.4, 4.4, 0.02), Color3.new(1, 1, 1), M.SmoothPlastic)
+	local nf = Kit.detail(
+		l,
+		F.cf(X0 + 0.55, 6, 30, Shell.E),
+		Vector3.new(9.4, 4.4, 0.02),
+		Color3.new(1, 1, 1),
+		M.SmoothPlastic
+	)
 	nf.Transparency = 1
 	local ng, NW, NH = Paint.surface(nf, Enum.NormalId.Front, 20)
-	Paint.flyers(ng, NW, NH, rng, { Text.flyers[1], Text.flyers[5], Text.flyers[7], Text.flyers[9], Text.flyers[10], Text.flyers[4] })
+	Paint.flyers(
+		ng,
+		NW,
+		NH,
+		rng,
+		{ Text.flyers[1], Text.flyers[5], Text.flyers[7], Text.flyers[9], Text.flyers[10], Text.flyers[4] }
+	)
 	for _, x in { -60, -40 } do
 		Shell.window(l, F.cf(x, 8, Z1, Shell.N), 7, 7, rng, "campus")
 	end
@@ -410,6 +535,110 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Lounge furniture: study tables (west), the Finance Club's recruiting corner (east), the foyer's pilasters
+---------------------------------------------------------------------------------------------------
+local function studyTable(parent: Instance, F: Shell.Frame, x: number, z: number, rng: Deps.RngT)
+	Kit.cylinder(parent, F.cf(x, 2.95, z), 0.25, 4.6, hex("#8A6A48"), M.Wood).Name = "StudyTable"
+	Kit.cylinder(parent, F.cf(x, 1.4, z), 2.8, 0.6, hex("#2A2A2A"), M.Metal).Name = "TablePedestal"
+	for k = 0, 3 do
+		local a = k * math.pi / 2 + math.pi / 4
+		local cx, cz = x + math.cos(a) * 3.4, z + math.sin(a) * 3.4
+		Shell.chair(parent, F.facing(cx, cz, x, z), hex("#5C2A21"))
+	end
+	if rng:chance(0.7) then
+		Props.build(
+			"book_stack",
+			parent,
+			F.cf(x + 0.6, 3.07, z - 0.4, rng:range(0, 90)),
+			{ seed = "hh-table-books" .. x .. z }
+		)
+	end
+end
+
+local function loungeExtras(m: Instance, F: Shell.Frame, rng: Deps.RngT)
+	local l = Kit.model(m, "LoungeExtras")
+	-- west: two round study tables and a rug between the lockers
+	studyTable(l, F, -38, 2, rng)
+	studyTable(l, F, -38, 18, rng)
+	Props.build("rug_office", l, F.cf(-38, 0, 10, 0), { color = hex("#5C2A21"), seed = "hh-rug" })
+	-- east: the Finance Club's recruiting table, an easel by the club door, a pair of sofas
+	Shell.box(l, F, 42, 2.7, -6.6, 50, 3, -3.4, hex("#D8CDB4"), M.SmoothPlastic).Name = "ClubTable"
+	for _, x in { 42.6, 49.4 } do
+		Shell.box(l, F, x - 0.15, 0, -6.2, x + 0.15, 2.7, -3.8, hex("#5A5F63"), M.Metal, false)
+	end
+	local cloth = Shell.box(l, F, 41.9, 0.6, -3.42, 50.1, 3, -3.3, hex("#1F2A44"), M.Fabric, false)
+	cloth.Name = "TableBanner"
+	local cg = Paint.surface(cloth, Enum.NormalId.Back, 20)
+	Core.bg(cg, hex("#1F2A44"))
+	Core.label(
+		cg,
+		Text.lecture.joinClub,
+		0.03,
+		0.08,
+		0.94,
+		0.5,
+		C.mustard,
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(cg, Text.lecture.joinClubSub, 0.03, 0.6, 0.94, 0.32, hex("#E9E2CF"), {
+		font = Enum.Font.SourceSansBold,
+		align = Enum.TextXAlignment.Center,
+	})
+	Props.build("pizza_box", l, F.cf(48, 3, -5, 8), { count = 1, seed = "hh-club-pizza" })
+	for i = 0, 3 do
+		Shell.box(
+			l,
+			F,
+			43 + i * 0.5,
+			3,
+			-5.6 + i * 0.1,
+			44.2 + i * 0.5,
+			3.04 + i * 0.02,
+			-4.2 + i * 0.1,
+			C.paper,
+			M.SmoothPlastic,
+			false
+		).Name =
+			"SignupSheet"
+	end
+	-- the easel
+	local easel = F.cf(64, 0, -5, Shell.S + 20)
+	for _, s in { -1, 1 } do
+		Kit.detail(
+			l,
+			easel * CFrame.new(s * 1.1, 2.9, 0) * CFrame.Angles(math.rad(-8), 0, math.rad(s * 6)),
+			Vector3.new(0.2, 5.8, 0.2),
+			hex("#6B4E35"),
+			M.Wood
+		)
+	end
+	local board = Kit.detail(
+		l,
+		easel * CFrame.new(0, 4.4, -0.35) * CFrame.Angles(math.rad(-8), 0, 0),
+		Vector3.new(3, 3.6, 0.1),
+		hex("#F4F1E6"),
+		M.SmoothPlastic
+	)
+	board.Name = "EaselBoard"
+	Kit.sign(
+		board,
+		Text.lecture.easel,
+		{ font = Enum.Font.PermanentMarker, color = hex("#1F4E8C"), pixelsPerStud = 40, padding = 0.1 }
+	)
+	-- sofas facing each other over a coffee table
+	Props.build("sofa_office", l, F.cf(62, 0, 14, Shell.N), { color = hex("#6E2E2A"), seed = "hh-sofa1" })
+	Props.build("sofa_office", l, F.cf(62, 0, 26, Shell.S), { color = hex("#4A5A3A"), seed = "hh-sofa2" })
+	Props.build("coffee_table", l, F.cf(62, 0, 20, 0), { seed = "hh-coffee" })
+	Props.build("trash_can", l, F.cf(27, 0, -8.2, 0), { seed = "hh-bin" })
+	-- pilasters down the foyer's side walls (it was a grand building once)
+	for _, x in { -23.4, 23.4 } do
+		for _, z in { 12, 24, 42.5 } do
+			Shell.box(l, F, x - 0.6, 0, z - 1, x + 0.6, H, z + 1, hex("#CFC5AE"), M.Concrete, false).Name = "Pilaster"
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 function Lecture.build(parent: Instance, mk: Instance, origin: Vector3): Model
 	local m = Kit.model(parent, "lecture")
 	m:SetAttribute("Interior", "lecture")
@@ -422,6 +651,7 @@ function Lecture.build(parent: Instance, mk: Instance, origin: Vector3): Model
 	club(m, F, mk, rng)
 	library(m, F, rng)
 	lounges(m, F, rng)
+	loungeExtras(m, F, rng)
 	Markers.anchor(mk, "lecture_entry", F.cf(Lecture.ENTRY.x, 3, Lecture.ENTRY.z, Shell.N))
 	return m
 end

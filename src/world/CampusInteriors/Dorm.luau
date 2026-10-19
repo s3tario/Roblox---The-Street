@@ -90,7 +90,14 @@ local function lobby(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	local mg, MW, MH = Paint.surface(mb, Enum.NormalId.Left, 10)
 	for cx = 0, 15 do
 		for cy = 0, 6 do
-			local box = Core.px(mg, 4 + cx * (MW - 8) / 16, 4 + cy * (MH - 8) / 7, (MW - 8) / 16 - 3, (MH - 8) / 7 - 3, hex("#B8AD8A"))
+			local box = Core.px(
+				mg,
+				4 + cx * (MW - 8) / 16,
+				4 + cy * (MH - 8) / 7,
+				(MW - 8) / 16 - 3,
+				(MH - 8) / 7 - 3,
+				hex("#B8AD8A")
+			)
 			Core.px(box, 2, 2, 8, 3, hex("#2A2622"))
 		end
 	end
@@ -101,13 +108,21 @@ local function lobby(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Shell.sign(l, F.cf(-HX, 8.2, 25, Shell.E), 8, 1.2, Text.dormInside.ra, { color = hex("#2C5E8A") })
 	Props.build("desk_lamp", l, F.cf(-HX + 3.3, 4.1, 28.4, Shell.E), { seed = "ra-lamp", lit = true })
 	-- the name over the door, notices, a bench and a bin
-	Shell.sign(l, F.cf(0, 12.8, HZ1, Shell.N), 18, 1.6, Text.dormInside.lobby, { color = hex("#24262A"), ink = hex("#E9E2CF") })
+	Shell.sign(
+		l,
+		F.cf(0, 12.8, HZ1, Shell.N),
+		18,
+		1.6,
+		Text.dormInside.lobby,
+		{ color = hex("#24262A"), ink = hex("#E9E2CF") }
+	)
 	Shell.sign(l, F.cf(14, 6.5, HZ1, Shell.N), 6, 1.6, Text.dormInside.quiet, {
 		color = hex("#E9E2CF"),
 		ink = C.ink,
 		font = Enum.Font.SpecialElite,
 	})
-	local fl = Kit.detail(l, F.cf(-14, 6, HZ1 - 0.05, Shell.N), Vector3.new(6, 4, 0.04), Color3.new(1, 1, 1), M.SmoothPlastic)
+	local fl =
+		Kit.detail(l, F.cf(-14, 6, HZ1 - 0.05, Shell.N), Vector3.new(6, 4, 0.04), Color3.new(1, 1, 1), M.SmoothPlastic)
 	fl.Transparency = 1
 	local flg, FLW, FLH = Paint.surface(fl, Enum.NormalId.Front, 20)
 	Paint.flyers(flg, FLW, FLH, rng, { Text.flyers[2], Text.flyers[11], Text.flyers[8], Text.flyers[6] })
@@ -116,7 +131,13 @@ local function lobby(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.RngT)
 	Props.build("trash_can", l, F.cf(-6, 0, 38, 0), { seed = "dorm-lobby-bin" })
 	Props.build("plant_floor", l, F.cf(20, 0, 37.5, 0), { seed = "dorm-plant", color = hex("#5A6A3A") })
 	Shell.box(l, F, -5, 0, 34, 5, 0.06, 39.4, hex("#3A3A38"), M.Fabric, false).Name = "DoorMat"
-	Shell.exit(l, mk, "door_dorm_exit", F.cf(0, 0, HZ1, Shell.N), { label = Text.exitTo.dorm, glass = true, doorColor = hex("#5A6A70") })
+	Shell.exit(
+		l,
+		mk,
+		"door_dorm_exit",
+		F.cf(0, 0, HZ1, Shell.N),
+		{ label = Text.exitTo.dorm, glass = true, doorColor = hex("#5A6A70") }
+	)
 	-- the wing signs over the corridor openings
 	Shell.sign(l, F.cf(-HX, WH + 1, 0, Shell.E), 11, 1.6, Text.dormInside.wingA, { color = hex("#2C5E8A") })
 	Shell.sign(l, F.cf(HX, WH + 1, 0, Shell.W), 11, 1.6, Text.dormInside.wingB, { color = hex("#2C5E8A") })
@@ -135,7 +156,16 @@ local function commonRoom(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.R
 	local tbg = Core.bg(tg, hex("#0B1622"))
 	Core.label(tbg, Text.dormInside.tv, 0.04, 0.02, 0.92, 0.14, hex("#FF5A5F"), { font = Enum.Font.GothamBold })
 	Core.candles(tbg, TW * 0.05, TH * 0.2, TW * 0.9, TH * 0.55, rng, 22)
-	Core.label(tbg, Core.tickerLine(rng, 6), 0.02, 0.82, 0.96, 0.14, hex("#E8EEF5"), { font = Enum.Font.Code, rich = true })
+	Core.label(
+		tbg,
+		Core.tickerLine(rng, 6),
+		0.02,
+		0.82,
+		0.96,
+		0.14,
+		hex("#E8EEF5"),
+		{ font = Enum.Font.Code, rich = true }
+	)
 	Kit.light(tv, "point", { Color = hex("#9FC2FF"), Range = 16, Brightness = 0.6 })
 	-- two tired couches facing the TV and a coffee table with takeout
 	for i, z in { -20, -14 } do
@@ -160,8 +190,18 @@ local function commonRoom(m: Instance, F: Shell.Frame, mk: Instance, rng: Deps.R
 	local mg = Paint.surface(mon, Enum.NormalId.Right, 50, { glow = true })
 	local mbg = Core.bg(mg, hex("#0B1622"))
 	Core.lineChart(mbg, 6, 22, 148, 70, Core.series(rng, 26, 80, 2, 0.15), Core.UP, 2)
-	Core.label(mbg, "MARLOW HOUSE PC · DO NOT INSTALL GAMES", 0.03, 0.02, 0.94, 0.14, Core.AMBER, { font = Enum.Font.Code })
-	local sticky = Kit.detail(c, F.cf(-HX + 1.15, 5.9, -26, Shell.E), Vector3.new(0.6, 0.6, 0.02), hex("#F2D95C"), M.SmoothPlastic)
+	Core.label(
+		mbg,
+		"MARLOW HOUSE PC · DO NOT INSTALL GAMES",
+		0.03,
+		0.02,
+		0.94,
+		0.14,
+		Core.AMBER,
+		{ font = Enum.Font.Code }
+	)
+	local sticky =
+		Kit.detail(c, F.cf(-HX + 1.15, 5.9, -26, Shell.E), Vector3.new(0.6, 0.6, 0.02), hex("#F2D95C"), M.SmoothPlastic)
 	sticky.Name = "StickyNote"
 	Shell.chair(c, F.cf(-HX + 5, 0, -27, Shell.W), hex("#2A2A2A"))
 	-- ping-pong, vending, a mini fridge, windows
@@ -181,12 +221,17 @@ end
 -- A wing: corridor, rooms both sides, the emergency exit at the end
 ---------------------------------------------------------------------------------------------------
 local function emergencyExit(parent: Instance, cf: CFrame)
-	Kit.detail(parent, cf * CFrame.new(0, 4.7, -0.1), Vector3.new(4.6, 9.4, 0.2), hex("#2A2826"), M.Metal).Name = "ExitFrame"
-	Kit.detail(parent, cf * CFrame.new(0, 4.5, -0.25), Vector3.new(4, 8.8, 0.2), hex("#8A2C2C"), M.Metal).Name = "ExitDoor"
-	Kit.detail(parent, cf * CFrame.new(0, 4, -0.42), Vector3.new(3.2, 0.25, 0.2), hex("#B8B8B0"), M.Metal).Name = "PushBar"
-	local sign = Kit.detail(parent, cf * CFrame.new(0, 6.6, -0.38), Vector3.new(3.4, 1.4, 0.05), hex("#C83A2A"), M.SmoothPlastic)
+	Kit.detail(parent, cf * CFrame.new(0, 4.7, -0.1), Vector3.new(4.6, 9.4, 0.2), hex("#2A2826"), M.Metal).Name =
+		"ExitFrame"
+	Kit.detail(parent, cf * CFrame.new(0, 4.5, -0.25), Vector3.new(4, 8.8, 0.2), hex("#8A2C2C"), M.Metal).Name =
+		"ExitDoor"
+	Kit.detail(parent, cf * CFrame.new(0, 4, -0.42), Vector3.new(3.2, 0.25, 0.2), hex("#B8B8B0"), M.Metal).Name =
+		"PushBar"
+	local sign =
+		Kit.detail(parent, cf * CFrame.new(0, 6.6, -0.38), Vector3.new(3.4, 1.4, 0.05), hex("#C83A2A"), M.SmoothPlastic)
 	Kit.sign(sign, Text.dormInside.alarm, { font = Enum.Font.Highway, color = hex("#F4F1E6"), pixelsPerStud = 40 })
-	local lit = Kit.detail(parent, cf * CFrame.new(0, 10.2, -0.2), Vector3.new(2.6, 0.9, 0.25), hex("#1A1A1A"), M.SmoothPlastic)
+	local lit =
+		Kit.detail(parent, cf * CFrame.new(0, 10.2, -0.2), Vector3.new(2.6, 0.9, 0.25), hex("#1A1A1A"), M.SmoothPlastic)
 	Kit.sign(lit, Text.exit, { font = Enum.Font.Highway, color = hex("#FF3B30"), pixelsPerStud = 40, glow = true })
 	lit:AddTag("InteriorLight")
 end
@@ -263,6 +308,75 @@ local function wing(m: Instance, F: Shell.Frame, side: number, firstUnit: number
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Lived-in clutter: the laundry room that is always closed, and odds and ends along the corridors
+---------------------------------------------------------------------------------------------------
+local function clutter(m: Instance, F: Shell.Frame, rng: Deps.RngT)
+	local c = Kit.model(m, "Clutter")
+	-- the laundry room door on the hub's east wall, taped shut
+	local door = F.cf(HX, 0, -28, Shell.W)
+	Kit.detail(c, door * CFrame.new(0, 4.7, -0.1), Vector3.new(4.6, 9.4, 0.2), hex("#2A2826"), M.Metal).Name =
+		"LaundryFrame"
+	Kit.detail(c, door * CFrame.new(0, 4.5, -0.25), Vector3.new(4, 8.8, 0.2), hex("#6B7A80"), M.Metal).Name =
+		"LaundryDoor"
+	local plate =
+		Kit.detail(c, door * CFrame.new(0, 10.2, -0.2), Vector3.new(3.4, 0.9, 0.1), hex("#24262A"), M.SmoothPlastic)
+	Kit.sign(
+		plate,
+		Text.dormInside.laundryDoor,
+		{ font = Enum.Font.Highway, color = hex("#E9E2CF"), pixelsPerStud = 40 }
+	)
+	local note = Kit.detail(
+		c,
+		door * CFrame.new(0.3, 5.6, -0.37) * CFrame.Angles(0, 0, math.rad(-4)),
+		Vector3.new(2.4, 1.6, 0.03),
+		C.paper,
+		M.SmoothPlastic
+	)
+	note.Name = "Note"
+	Kit.sign(
+		note,
+		Text.dormInside.laundry,
+		{ font = Enum.Font.PermanentMarker, color = hex("#8A2C2C"), pixelsPerStud = 50 }
+	)
+	-- along each wing's corridor
+	for _, side in { -1, 1 } do
+		local inner = side * (HX + 1)
+		local function x(k: number): number
+			return inner + side * k
+		end
+		Props.build("trash_can", c, F.cf(x(ROOM_W), 0, -(CW - 1.2), 0), {
+			color = hex("#2C5E8A"),
+			seed = "dorm-recycle" .. side,
+		})
+		Props.build("pizza_box", c, F.cf(x(ROOM_W * 4) + side * 1.5, 0, CW - 1.4, rng:range(0, 40)), {
+			count = 2,
+			seed = "dorm-hall-pizza" .. side,
+		})
+		-- a pair of sneakers left outside a door
+		local sx = x(ROOM_W * 2 + ROOM_W / 2) + 3.6
+		for k = 0, 1 do
+			Kit.detail(
+				c,
+				F.cf(sx + k * 0.7, 0.25, -(CW - 0.8), rng:range(-15, 15)),
+				Vector3.new(0.55, 0.5, 1.2),
+				rng:pick({
+					hex("#E9E2CF"),
+					hex("#C83A2A"),
+					hex("#2A2A2A"),
+				}),
+				M.Fabric
+			).Name =
+				"Sneaker"
+		end
+		-- a stuffed laundry bag slumped against the wall
+		local bag = Kit.ball(c, F.cf(x(ROOM_W * 5) - side * 0.5, 1.1, CW - 1.3), 2.4, hex("#4A5A6A"), M.Fabric)
+		bag.Name = "LaundryBag"
+		bag.Size = Vector3.new(2.2, 2.4, 2.2)
+		bag.CanCollide = false
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 function Dorm.build(parent: Instance, mk: Instance, origin: Vector3): Model
 	local m = Kit.model(parent, "dorm")
 	m:SetAttribute("Interior", "dorm")
@@ -274,6 +388,7 @@ function Dorm.build(parent: Instance, mk: Instance, origin: Vector3): Model
 	commonRoom(m, F, mk, rng)
 	wing(m, F, -1, 1, 101, rng)
 	wing(m, F, 1, 13, 113, rng)
+	clutter(m, F, rng)
 	Markers.anchor(mk, "dorm_entry", F.cf(Dorm.ENTRY.x, 3, Dorm.ENTRY.z, Shell.N))
 	return m
 end

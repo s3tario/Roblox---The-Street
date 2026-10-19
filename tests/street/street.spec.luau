@@ -487,6 +487,19 @@ return function(t)
 			t.expect(lights).toBeLessThan(160)
 		end)
 
+		t.it("gives every sign and screen a draw distance", function()
+			local guis = 0
+			for _, d in street():GetDescendants() do
+				if d:IsA("SurfaceGui") then
+					guis += 1
+					if d.MaxDistance <= 0 then
+						error(d:GetFullName() .. " renders at any distance")
+					end
+				end
+			end
+			t.expect(guis).toBeGreaterThan(100)
+		end)
+
 		t.it("parks taxis and town cars on the road", function()
 			local n = 0
 			for _, id in { "taxi", "town_car", "sedan", "city_bus" } do

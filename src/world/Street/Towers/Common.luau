@@ -398,6 +398,66 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Entrances and branding
 ---------------------------------------------------------------------------------------------------
+-- Shop windows along the ground storey of every side (and the back) that faces open ground, so a corner lot shows
+-- lit glass to the cross street instead of a blank stone wall. Faces against a neighbour stay plain.
+function Common.baseSides(ctx: Ctx, storey: number, trim: Color3)
+	local b = Common.box(-ctx.w / 2, ctx.w / 2, 0, ctx.d, 0, storey)
+	local hidden = Common.hidden(ctx, b)
+	local wh = math.min(storey - 5, 11)
+	if wh < 5 then
+		return
+	end
+	local look = Mass.look("limestone", {
+		glass = Look.glassSmoke,
+		pier = trim,
+		pierMat = M.Metal,
+		band = trim,
+		bandMat = M.Metal,
+		pierW = 0.7,
+		bandH = 0.7,
+		depth = 0.5,
+		bay = 7,
+		lit = 0.5,
+		litColor = Look.lampGlow,
+	})
+	for _, side in { "left", "right", "back" } do
+		if hidden[side] > 0 then
+			continue
+		end
+		local plane, width = Mass.faceCF(side, b, 0.11)
+		local gw = width - 10 -- solid stone at both corners
+		if gw < 8 then
+			continue
+		end
+		local face = ctx.frame * plane
+		local g = Mass.grid(
+			ctx.m,
+			face * CFrame.new(0, 2.4 + wh / 2 - storey / 2, 0),
+			gw,
+			wh,
+			look,
+			ctx.seed .. ":base:" .. side,
+			{ rows = 1 }
+		)
+		g.Name = "SideWindows"
+		-- granite base course under the windows and a stone sill band over them
+		Kit.detail(
+			ctx.m,
+			face * CFrame.new(0, 1.0 - storey / 2, -0.2),
+			Vector3.new(width, 2.0, 0.6),
+			Look.graniteDark,
+			M.Granite
+		)
+		Kit.detail(
+			ctx.m,
+			face * CFrame.new(0, 2.4 + wh + 0.9 - storey / 2, -0.3),
+			Vector3.new(gw + 1.4, 0.8, 0.8),
+			Look.limestoneDark,
+			M.Limestone
+		)
+	end
+end
+
 function Common.entrance(ctx: Ctx, spec: { [string]: any }): Entrance.Result
 	local s: { [string]: any } = table.clone(spec)
 	s.w = s.w or ctx.w
@@ -405,7 +465,9 @@ function Common.entrance(ctx: Ctx, spec: { [string]: any }): Entrance.Result
 	s.doorId = ctx.def.door or ("door_street_tower_" .. ctx.def.id)
 	s.anchorId = ctx.def.anchor or ("street_tower_" .. ctx.def.id .. "_front")
 	s.seed = ctx.seed
-	return Entrance.build(ctx.m, ctx.frame, (s :: any) :: Entrance.Spec)
+	local e = Entrance.build(ctx.m, ctx.frame, (s :: any) :: Entrance.Spec)
+	Common.baseSides(ctx, s.bh, s.trim or Look.bronze)
+	return e
 end
 
 -- The street the lot fronts, for its address.

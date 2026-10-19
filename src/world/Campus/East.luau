@@ -48,7 +48,15 @@ local function rivets(part: BasePart, face: Enum.NormalId, rng: Deps.RngT)
 	end
 	-- rust bleeding from the joints
 	for _ = 1, math.floor(W / 30) do
-		local s = Core.px(gui, rng:range(0, W), rng:range(0, H * 0.3), rng:range(3, 9), rng:range(H * 0.4, H), C.rust, rng:range(0.3, 0.6))
+		local s = Core.px(
+			gui,
+			rng:range(0, W),
+			rng:range(0, H * 0.3),
+			rng:range(3, 9),
+			rng:range(H * 0.4, H),
+			C.rust,
+			rng:range(0.3, 0.6)
+		)
 		local g = Instance.new("UIGradient")
 		g.Rotation = 90
 		g.Transparency = NumberSequence.new(0.1, 1)
@@ -79,11 +87,23 @@ local function viaduct(m: Instance, rng: Deps.RngT)
 		Core.px(tg, x, TH * 0.1, 3, TH * 0.8, hex("#3A2E24"))
 	end
 	for _, dz in { -2.5, 2.5 } do
-		Geo.lbox(v, V.x0, V.top + 0.3, V.trackZ + dz - 0.2, V.x1, V.top + 0.7, V.trackZ + dz + 0.2, hex("#7A7E80"), M.Metal, false).Name =
+		Geo.lbox(
+			v,
+			V.x0,
+			V.top + 0.3,
+			V.trackZ + dz - 0.2,
+			V.x1,
+			V.top + 0.7,
+			V.trackZ + dz + 0.2,
+			hex("#7A7E80"),
+			M.Metal,
+			false
+		).Name =
 			"Rail"
 	end
 	-- the bumper at the end of the line
-	Geo.lbox(v, V.x0 + 1, V.top, V.trackZ - 3, V.x0 + 3, V.top + 3, V.trackZ + 3, hex("#C9A227"), M.Metal).Name = "Bumper"
+	Geo.lbox(v, V.x0 + 1, V.top, V.trackZ - 3, V.x0 + 3, V.top + 3, V.trackZ + 3, hex("#C9A227"), M.Metal).Name =
+		"Bumper"
 	-- bents: column pairs and a cross beam (over the station they stand on its roof; in the river on the bed)
 	for i = 0, V.bents - 1 do
 		local x = V.x0 + (i + 0.5) * len / V.bents
@@ -94,10 +114,21 @@ local function viaduct(m: Instance, rng: Deps.RngT)
 			foot = -15
 		end
 		for _, z in { V.z0 + 1.5, V.z1 - 1.5 } do
-			local col = Geo.lbox(v, x - 0.9, foot, z - 0.9, x + 0.9, V.bottom, z + 0.9, Geo.vary(GIRDER, rng, 0.05), M.CorrodedMetal)
+			local col = Geo.lbox(
+				v,
+				x - 0.9,
+				foot,
+				z - 0.9,
+				x + 0.9,
+				V.bottom,
+				z + 0.9,
+				Geo.vary(GIRDER, rng, 0.05),
+				M.CorrodedMetal
+			)
 			col.Name = "Column"
 			if foot == WALK then
-				Geo.lbox(v, x - 1.4, WALK, z - 1.4, x + 1.4, WALK + 1.2, z + 1.4, C.concreteDark, M.Concrete).Name = "Footing"
+				Geo.lbox(v, x - 1.4, WALK, z - 1.4, x + 1.4, WALK + 1.2, z + 1.4, C.concreteDark, M.Concrete).Name =
+					"Footing"
 			end
 		end
 		Geo.lbox(v, x - 0.7, V.bottom - 2.4, V.z0 + 1, x + 0.7, V.bottom, V.z1 - 1, GIRDER, M.CorrodedMetal, false).Name =
@@ -105,7 +136,8 @@ local function viaduct(m: Instance, rng: Deps.RngT)
 	end
 	-- sodium lamps bolted under the girders (only over the walkable side)
 	for i, x in { 196, 214 } do
-		local lamp = Geo.lbox(v, x - 0.6, V.bottom - 0.5, V.z1 - 3, x + 0.6, V.bottom, V.z1 - 1.5, C.sodium, M.Neon, false)
+		local lamp =
+			Geo.lbox(v, x - 0.6, V.bottom - 0.5, V.z1 - 3, x + 0.6, V.bottom, V.z1 - 1.5, C.sodium, M.Neon, false)
 		lamp.Name = "UnderLamp" .. i
 		lamp:AddTag("StreetLight")
 		Kit.light(lamp, "point", { Color = C.sodium, Range = 28, Brightness = 1.2 })
@@ -117,29 +149,63 @@ local function platform(m: Instance)
 	local V = Plan.viaduct
 	local p = Kit.model(m, "Platform")
 	Geo.lbox(p, PL.x0, V.top, PL.z0, PL.x1, PL.top, PL.z1, hex("#8A8780"), M.Concrete).Name = "PlatformDeck"
-	Kit.detail(p, Plan.cf((PL.x0 + PL.x1) / 2, PL.top + 0.02, PL.z0 + 0.5), Vector3.new(PL.x1 - PL.x0, 0.04, 1), hex("#C9A93E"), M.SmoothPlastic).Name =
+	Kit.detail(
+		p,
+		Plan.cf((PL.x0 + PL.x1) / 2, PL.top + 0.02, PL.z0 + 0.5),
+		Vector3.new(PL.x1 - PL.x0, 0.04, 1),
+		hex("#C9A93E"),
+		M.SmoothPlastic
+	).Name =
 		"Edge"
 	-- canopy on posts
 	local roofY = PL.top + 10
 	for x = PL.x0 + 4, PL.x1 - 4, 13 do
-		Kit.block(p, Plan.cf(x, (PL.top + roofY) / 2, PL.z1 - 2), Vector3.new(0.6, roofY - PL.top, 0.6), GIRDER, M.Metal).Name =
+		Kit.block(
+			p,
+			Plan.cf(x, (PL.top + roofY) / 2, PL.z1 - 2),
+			Vector3.new(0.6, roofY - PL.top, 0.6),
+			GIRDER,
+			M.Metal
+		).Name =
 			"Post"
 	end
-	Geo.lbox(p, PL.x0 + 2, roofY, PL.z0 - 1, PL.x1 - 2, roofY + 0.5, PL.z1 + 0.5, hex("#5F6366"), M.CorrodedMetal).Name = "Canopy"
+	Geo.lbox(p, PL.x0 + 2, roofY, PL.z0 - 1, PL.x1 - 2, roofY + 0.5, PL.z1 + 0.5, hex("#5F6366"), M.CorrodedMetal).Name =
+		"Canopy"
 	-- railing on the street side
 	Geo.lbox(p, PL.x0, PL.top, PL.z1 - 0.3, PL.x1, PL.top + 3.6, PL.z1, GIRDER, M.Metal, false).Name = "Railing"
 	-- station name boards and lamps
 	for i, x in { 150, 196 } do
-		local b = Kit.detail(p, Plan.cf(x, PL.top + 7, PL.z1 - 2.4, Plan.N), Vector3.new(10, 1.6, 0.2), hex("#1F2A44"), M.Metal)
+		local b = Kit.detail(
+			p,
+			Plan.cf(x, PL.top + 7, PL.z1 - 2.4, Plan.N),
+			Vector3.new(10, 1.6, 0.2),
+			hex("#1F2A44"),
+			M.Metal
+		)
 		b.Name = "NameBoard" .. i
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 			local g = Paint.surface(b, face, 24)
 			Core.bg(g, hex("#1F2A44"))
-			Core.label(g, "EASTBRIDGE", 0.03, 0.1, 0.94, 0.8, hex("#F4F1E6"), { font = Enum.Font.Highway, align = Enum.TextXAlignment.Center })
+			Core.label(
+				g,
+				"EASTBRIDGE",
+				0.03,
+				0.1,
+				0.94,
+				0.8,
+				hex("#F4F1E6"),
+				{ font = Enum.Font.Highway, align = Enum.TextXAlignment.Center }
+			)
 		end
 	end
 	for i, x in { 140, 172, 204 } do
-		local l = Kit.detail(p, Plan.cf(x, roofY - 0.3, (PL.z0 + PL.z1) / 2), Vector3.new(5, 0.25, 0.7), hex("#EDEBE0"), M.Neon)
+		local l = Kit.detail(
+			p,
+			Plan.cf(x, roofY - 0.3, (PL.z0 + PL.z1) / 2),
+			Vector3.new(5, 0.25, 0.7),
+			hex("#EDEBE0"),
+			M.Neon
+		)
 		l.Name = "PlatformLight" .. i
 		l:AddTag("StreetLight")
 		if i == 2 then
@@ -177,7 +243,11 @@ local function train(m: Instance, rng: Deps.RngT)
 			Core.px(bg, wx + BW * 0.1, 0, BW * 0.037, BH, hex("#5A5F63"))
 		end
 		local sign = Kit.detail(t, L(cf, 0, 9.6, -15.05), Vector3.new(4, 1, 0.1), hex("#141414"), M.SmoothPlastic)
-		Kit.sign(sign, "9 · DOWNTOWN", { font = Enum.Font.Code, color = hex("#FFB547"), pixelsPerStud = 40, glow = true })
+		Kit.sign(
+			sign,
+			"9 · DOWNTOWN",
+			{ font = Enum.Font.Code, color = hex("#FFB547"), pixelsPerStud = 40, glow = true }
+		)
 		Kit.detail(t, L(cf, 0, 6, 15.1), Vector3.new(2, 0.6, 0.3), hex("#2A2A2A"), M.Metal).Name = "Coupler"
 	end
 end
@@ -205,7 +275,13 @@ local function station(m: Instance, mk: Instance, rng: Deps.RngT)
 			-- the plaza side (+Z) of each wing
 			local gui, W, H = Paint.surface(p, Enum.NormalId.Back, 6)
 			gui.Name = "Facade_front"
-			Paint.windows(gui, W, H, rng, { cols = 1, rows = 1, top = 0.2, bottom = 0.25, winW = 0.6, winH = 0.8, lit = 0.6 })
+			Paint.windows(
+				gui,
+				W,
+				H,
+				rng,
+				{ cols = 1, rows = 1, top = 0.2, bottom = 0.25, winW = 0.6, winH = 0.8, lit = 0.6 }
+			)
 			Paint.grime(gui, W, H, rng, { streaks = 4 })
 		end
 	end
@@ -215,11 +291,23 @@ local function station(m: Instance, mk: Instance, rng: Deps.RngT)
 	Paint.graffiti(wg, WW, WH, rng, "EB 4 LIFE", { y = 0.7 })
 	-- the lintel over the hall and its two piers, a stone cornice and the name
 	Geo.lbox(st, Hl.x0, WALK + 14, Hl.z0, Hl.x1, WALK + h, S.z1, Geo.vary(brick, rng, 0.04), M.Brick).Name = "Lintel"
-	Geo.lbox(st, Hl.x0, WALK + 13.6, Hl.z0, Hl.x1, WALK + 14, S.z1, hex("#D8D2C2"), M.SmoothPlastic).Name = "HallCeiling"
+	Geo.lbox(st, Hl.x0, WALK + 13.6, Hl.z0, Hl.x1, WALK + 14, S.z1, hex("#D8D2C2"), M.SmoothPlastic).Name =
+		"HallCeiling"
 	for _, x in { 152, 164 } do
 		Geo.lbox(st, x - 1, WALK, S.z1 - 2, x + 1, WALK + 14, S.z1, Geo.vary(brick, rng, 0.04), M.Brick).Name = "Pier"
 	end
-	Geo.lbox(st, S.x0 - 0.5, WALK + h - 0.8, S.z0 - 0.5, S.x1 + 0.5, WALK + h, S.z1 + 0.6, hex("#A49C8C"), M.Concrete, false).Name =
+	Geo.lbox(
+		st,
+		S.x0 - 0.5,
+		WALK + h - 0.8,
+		S.z0 - 0.5,
+		S.x1 + 0.5,
+		WALK + h,
+		S.z1 + 0.6,
+		hex("#A49C8C"),
+		M.Concrete,
+		false
+	).Name =
 		"Cornice"
 	Signs.buildingName(st, Plan.cf(S.doorX, WALK + 15.2, S.z1 + 0.02, Plan.S), {
 		text = Text.station,
@@ -228,7 +316,13 @@ local function station(m: Instance, mk: Instance, rng: Deps.RngT)
 		width = 24,
 		seed = "station-name",
 	})
-	local sub = Kit.detail(st, Plan.cf(S.doorX, WALK + 14.4, S.z1 + 0.04, Plan.S), Vector3.new(20, 0.7, 0.05), hex("#24262A"), M.SmoothPlastic)
+	local sub = Kit.detail(
+		st,
+		Plan.cf(S.doorX, WALK + 14.4, S.z1 + 0.04, Plan.S),
+		Vector3.new(20, 0.7, 0.05),
+		hex("#24262A"),
+		M.SmoothPlastic
+	)
 	Kit.sign(sub, Text.stationSub, { font = Enum.Font.Highway, color = hex("#E9E2CF"), pixelsPerStud = 30 })
 	-- hall floor and white subway tile walls
 	Geo.lbox(st, Hl.x0, WALK, Hl.z0, Hl.x1, WALK + 0.08, S.z1, hex("#8E8A80"), M.Slate, true).Name = "HallFloor"
@@ -261,7 +355,8 @@ local function station(m: Instance, mk: Instance, rng: Deps.RngT)
 	for i = 0, 4 do
 		local x = Hl.x0 + 4 + i * 6
 		if math.abs(x - S.doorX) > 3 then
-			Kit.block(st, Plan.cf(x, WALK + 1.8, tz), Vector3.new(1.2, 3.6, 3), hex("#5A5F63"), M.Metal).Name = "Turnstile"
+			Kit.block(st, Plan.cf(x, WALK + 1.8, tz), Vector3.new(1.2, 3.6, 3), hex("#5A5F63"), M.Metal).Name =
+				"Turnstile"
 			Kit.detail(st, Plan.cf(x + 1.4, WALK + 3, tz), Vector3.new(1.8, 0.2, 0.2), hex("#B0B0A8"), M.Metal)
 		end
 	end
@@ -274,9 +369,19 @@ local function station(m: Instance, mk: Instance, rng: Deps.RngT)
 	gate.Name = "FareGate"
 	gate.Transparency = 0.5
 	Markers.door(mk, "door_campus_subway", Plan.cf(S.doorX, WALK + 5, tz + 2.2, Plan.S))
-	local over = Kit.detail(st, Plan.cf(S.doorX, WALK + 10.6, tz + 0.4, Plan.S), Vector3.new(9, 1.6, 0.3), hex("#141414"), M.Metal)
+	local over = Kit.detail(
+		st,
+		Plan.cf(S.doorX, WALK + 10.6, tz + 0.4, Plan.S),
+		Vector3.new(9, 1.6, 0.3),
+		hex("#141414"),
+		M.Metal
+	)
 	over.Name = "GateSign"
-	Kit.sign(over, "SUBWAY · DOWNTOWN · WALL ST", { font = Enum.Font.Highway, color = hex("#3CBF6A"), pixelsPerStud = 30, glow = true })
+	Kit.sign(
+		over,
+		"SUBWAY · DOWNTOWN · WALL ST",
+		{ font = Enum.Font.Highway, color = hex("#3CBF6A"), pixelsPerStud = 30, glow = true }
+	)
 	-- fare machines, a bench and the service advisory
 	for i = 0, 1 do
 		local fm = Plan.cf(Hl.x0 + 1.4, WALK, -72 + i * 4, Plan.E)
@@ -325,8 +430,26 @@ local function directoryKiosk(m: Instance)
 	local g, W, H = Paint.surface(screen, Enum.NormalId.Front, 50, { glow = true, brightness = 1 })
 	local bg = Core.bg(g, hex("#13243A"))
 	Core.gradient(bg, hex("#1A2E48"), hex("#0B1622"), 90)
-	Core.label(g, Text.directory, 0.06, 0.04, 0.88, 0.14, hex("#F4F1E6"), { font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center })
-	Core.label(g, Text.directorySub, 0.06, 0.18, 0.88, 0.08, C.mustard, { font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center })
+	Core.label(
+		g,
+		Text.directory,
+		0.06,
+		0.04,
+		0.88,
+		0.14,
+		hex("#F4F1E6"),
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(
+		g,
+		Text.directorySub,
+		0.06,
+		0.18,
+		0.88,
+		0.08,
+		C.mustard,
+		{ font = Enum.Font.SourceSansBold, align = Enum.TextXAlignment.Center }
+	)
 	-- a little map of the line and the Street's blocks
 	Core.px(g, W * 0.1, H * 0.5, W * 0.8, 4, hex("#3CBF6A"))
 	for i = 0, 3 do
@@ -377,7 +500,16 @@ local function storage(m: Instance, rng: Deps.RngT)
 		for y = 4, H, 5 do
 			Core.px(door, 0, y, W, 1, hex("#9A3E2A"), 0.3)
 		end
-		Core.label(door, tostring(100 + i), 0.2, 0.02, 0.6, 0.1, hex("#F4F1E6"), { font = Enum.Font.Highway, align = Enum.TextXAlignment.Center })
+		Core.label(
+			door,
+			tostring(100 + i),
+			0.2,
+			0.02,
+			0.6,
+			0.1,
+			hex("#F4F1E6"),
+			{ font = Enum.Font.Highway, align = Enum.TextXAlignment.Center }
+		)
 	end
 	Signs.buildingName(bm, L(front, 0, 14, -0.2), {
 		text = Text.storage,
@@ -390,7 +522,14 @@ local function storage(m: Instance, rng: Deps.RngT)
 	Kit.sign(sub, Text.storageSub, { font = Enum.Font.Oswald, color = hex("#F4F1E6"), pixelsPerStud = 30 })
 	-- the drive in front, gated with barbed chain-link
 	Dress.chainRun(m, Plan.v(S.x0, WALK, S.z1 + 6), Plan.v(170, WALK, S.z1 + 6), 8, rng, { barbed = true })
-	Dress.chainRun(m, Plan.v(184, WALK, S.z1 + 6), Plan.v(S.x1, WALK, S.z1 + 6), 8, rng, { barbed = true, signs = { "NO TRESPASSING" } })
+	Dress.chainRun(
+		m,
+		Plan.v(184, WALK, S.z1 + 6),
+		Plan.v(S.x1, WALK, S.z1 + 6),
+		8,
+		rng,
+		{ barbed = true, signs = { "NO TRESPASSING" } }
+	)
 	Kit.detail(m, Plan.cf(177, WALK + 4, S.z1 + 6), Vector3.new(14, 0.3, 0.3), C.chainlink, M.Metal).Name = "GateBar"
 end
 
@@ -410,7 +549,12 @@ local function hardware(m: Instance)
 		shop = { depth = 14, height = 13 },
 		windows = { cols = 6, from = 2, to = 3, lit = 0.1, ac = 0.2 },
 		painted = {
-			Buildings.face("left", 6, 2, { lit = 0.1, ghost = { "EASTBRIDGE HARDWARE", "PAINT · TOOLS · KEYS CUT" } }),
+			Buildings.face(
+				"left",
+				6,
+				2,
+				{ lit = 0.1, ghost = { "EASTBRIDGE HARDWARE", "PAINT · TOOLS · KEYS CUT" } }
+			),
 			Buildings.face("back", 6, 2),
 		},
 		roof = { tanks = 1, ac = 2, vents = 3, hatch = true },
@@ -427,12 +571,28 @@ local function hardware(m: Instance)
 		seed = "hardware-front",
 	})
 	for i, x in { -6, 6, 16 } do
-		Buildings.windowPoster(bm, L(front, x, 5.2, 0.15), Vector3.new(6, 3.2, 0.05), "EVERYTHING MUST GO", "Store closing · 70% off", "hw-poster" .. i)
+		Buildings.windowPoster(
+			bm,
+			L(front, x, 5.2, 0.15),
+			Vector3.new(6, 3.2, 0.05),
+			"EVERYTHING MUST GO",
+			"Store closing · 70% off",
+			"hw-poster" .. i
+		)
 	end
 	local banner = Kit.detail(bm, L(front, 0, 17.5, -0.4), Vector3.new(30, 3, 0.1), hex("#F2D95C"), M.Fabric)
 	local bg = Paint.surface(banner, Enum.NormalId.Front, 12)
 	Core.bg(bg, hex("#F2D95C"))
-	Core.label(bg, Text.hardwareSub, 0.02, 0.1, 0.96, 0.8, hex("#8A2C2C"), { font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center })
+	Core.label(
+		bg,
+		Text.hardwareSub,
+		0.02,
+		0.1,
+		0.96,
+		0.8,
+		hex("#8A2C2C"),
+		{ font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center }
+	)
 end
 
 local function court(m: Instance, rng: Deps.RngT)
@@ -555,8 +715,26 @@ local function overlook(m: Instance, rng: Deps.RngT)
 	local board = Kit.detail(o, L(sign, 0, 4.6, 0), Vector3.new(5.6, 2.4, 0.2), hex("#2F5A3A"), M.Wood)
 	local bg = Paint.surface(board, Enum.NormalId.Front, 30)
 	Core.bg(bg, hex("#2F5A3A"))
-	Core.label(bg, Text.overlook, 0.05, 0.08, 0.9, 0.45, hex("#F4F1E6"), { font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center })
-	Core.label(bg, Text.overlookSub, 0.05, 0.55, 0.9, 0.35, C.mustard, { font = Enum.Font.SourceSansItalic, align = Enum.TextXAlignment.Center })
+	Core.label(
+		bg,
+		Text.overlook,
+		0.05,
+		0.08,
+		0.9,
+		0.45,
+		hex("#F4F1E6"),
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(
+		bg,
+		Text.overlookSub,
+		0.05,
+		0.55,
+		0.9,
+		0.35,
+		C.mustard,
+		{ font = Enum.Font.SourceSansItalic, align = Enum.TextXAlignment.Center }
+	)
 	Dress.lamp(o, O.x0 + 10, 20, Plan.S, { seed = "ov-lamp" })
 	Dress.litter(o, O.x0, O.z0, O.x1, O.z1, 8, rng)
 end

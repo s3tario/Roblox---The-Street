@@ -97,13 +97,15 @@ function Room.build(parent: Instance, rc: CFrame, unit: number, number: number, 
 	Kit.detail(m, at(rc, 4, 0.8, 11.8), Vector3.new(0.3, 1.6, 0.3), hex("#5A5A5A"), M.Metal).Name = "ChairLeg"
 
 	-- the window over the desk: a painted view and a sill
-	local view = Kit.detail(m, at(rc, 2.6, 7.4, D - 0.12) * FACE_DOOR, Vector3.new(5, 4, 0.1), hex("#9AA2A6"), M.SmoothPlastic)
+	local view =
+		Kit.detail(m, at(rc, 2.6, 7.4, D - 0.12) * FACE_DOOR, Vector3.new(5, 4, 0.1), hex("#9AA2A6"), M.SmoothPlastic)
 	view.Name = "WindowView"
 	view.CastShadow = false
 	local vg, VW, VH = Paint.surface(view, Enum.NormalId.Front, 10, { maxDistance = 120 })
 	Paint.view(vg, VW, VH, rng, if unit % 3 == 0 then "night" else "campus")
 	Paint.muntins(vg, 2, 2, hex("#E9E4D8"), 0.04)
-	Kit.detail(m, at(rc, 2.6, 5.25, D - 0.35), Vector3.new(5.8, 0.3, 0.6), hex("#E9E4D8"), M.SmoothPlastic).Name = "Sill"
+	Kit.detail(m, at(rc, 2.6, 5.25, D - 0.35), Vector3.new(5.8, 0.3, 0.6), hex("#E9E4D8"), M.SmoothPlastic).Name =
+		"Sill"
 
 	-- the full-length mirror (wardrobe) on the right wall, just inside the door
 	Kit.detail(m, at(rc, W2 - 0.15, 4, 4) * FACE_LEFT, Vector3.new(2.8, 6.6, 0.2), hex("#4A3A2C"), M.Wood).Name =
@@ -128,10 +130,16 @@ function Room.build(parent: Instance, rc: CFrame, unit: number, number: number, 
 	})
 
 	-- the nameplate on the corridor side of the door wall (front face toward the corridor)
-	Markers.nameplate(m, at(rc, 4.3, 6.6, -1.06) * FACE_DOOR, Vector3.new(2.6, 0.9, 0.1), string.format(Text.dormInside.room, number), {
-		color = hex("#2A2622"),
-		ink = hex("#E9E2CF"),
-	})
+	Markers.nameplate(
+		m,
+		at(rc, 4.3, 6.6, -1.06) * FACE_DOOR,
+		Vector3.new(2.6, 0.9, 0.1),
+		string.format(Text.dormInside.room, number),
+		{
+			color = hex("#2A2622"),
+			ink = hex("#E9E2CF"),
+		}
+	)
 
 	-- the door, left open against the right side of the doorway, and the ceiling light
 	Kit.detail(m, at(rc, 3.15, 4.5, 3), Vector3.new(0.2, 8.8, 5.8), hex("#6B4E35"), M.Wood).Name = "DoorLeaf"

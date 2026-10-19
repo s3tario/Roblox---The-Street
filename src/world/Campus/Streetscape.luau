@@ -81,7 +81,12 @@ local function cars(m: Instance, rng: Deps.RngT)
 		{ x = 182, z = 10.5, yaw = Plan.E, color = hex("#B8B09A") },
 	}
 	for i, c in list do
-		Props.build("sedan", m, Plan.cf(c.x, 0, c.z, c.yaw + rng:range(-2, 2)), { color = c.color, seed = "parked" .. i })
+		Props.build(
+			"sedan",
+			m,
+			Plan.cf(c.x, 0, c.z, c.yaw + rng:range(-2, 2)),
+			{ color = c.color, seed = "parked" .. i }
+		)
 	end
 end
 
@@ -105,8 +110,16 @@ local function furniture(m: Instance, rng: Deps.RngT)
 	Kit.sign(sign, "BUS\n9", { font = Enum.Font.Highway, color = hex("#F4F1E6"), pixelsPerStud = 40 })
 	-- street names and the blinking signal at the Mill Street crossing
 	local mill = Plan.mill
-	Signs.streetName(m, Plan.cf(mill.walkW[1] + 1, WALK, -24.5, 0), { text = Text.streets.avenue, text2 = Text.streets.mill })
-	Signs.streetName(m, Plan.cf(mill.walkE[2] - 1, WALK, 24.5, 180), { text = Text.streets.avenue, text2 = Text.streets.mill })
+	Signs.streetName(
+		m,
+		Plan.cf(mill.walkW[1] + 1, WALK, -24.5, 0),
+		{ text = Text.streets.avenue, text2 = Text.streets.mill }
+	)
+	Signs.streetName(
+		m,
+		Plan.cf(mill.walkE[2] - 1, WALK, 24.5, 180),
+		{ text = Text.streets.avenue, text2 = Text.streets.mill }
+	)
 	Props.build("traffic_light", m, Plan.cf(mill.walkW[2] - 1, WALK, -15.4, Plan.S), { seed = "signal1" })
 	Props.build("traffic_light", m, Plan.cf(mill.walkE[1] + 1, WALK, 15.4, Plan.N), { seed = "signal2" })
 	-- tree pits with dead trees on the north walk
@@ -122,8 +135,18 @@ local function barricades(m: Instance)
 	local mill = Plan.mill
 	local av = Plan.avenue
 	local function closed(cf: CFrame, span: number, seed: string)
-		Props.build("jersey_barrier", m, cf * CFrame.new(-span / 4, 0, 0), { length = span / 2 - 0.5, seed = seed .. "a" })
-		Props.build("jersey_barrier", m, cf * CFrame.new(span / 4, 0, 0), { length = span / 2 - 0.5, seed = seed .. "b" })
+		Props.build(
+			"jersey_barrier",
+			m,
+			cf * CFrame.new(-span / 4, 0, 0),
+			{ length = span / 2 - 0.5, seed = seed .. "a" }
+		)
+		Props.build(
+			"jersey_barrier",
+			m,
+			cf * CFrame.new(span / 4, 0, 0),
+			{ length = span / 2 - 0.5, seed = seed .. "b" }
+		)
 		-- a sawhorse sign on the town side
 		local s = cf * CFrame.new(0, 0, -3)
 		for _, dx in { -2.2, 2.2 } do

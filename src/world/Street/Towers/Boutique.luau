@@ -6,7 +6,6 @@ local Deps = require(script.Parent.Parent.Deps)
 local Look = require(script.Parent.Parent.Look)
 local Mass = require(script.Parent.Parent.Mass)
 local Brand = require(script.Parent.Parent.Brand)
-local Text = require(script.Parent.Parent.Text)
 local C = require(script.Parent.Common)
 
 local Kit = Deps.Kit
@@ -111,7 +110,8 @@ function Boutique.elite(ctx: C.Ctx)
 	ELITE[((ctx.variant - 1) % #ELITE) + 1](ctx)
 end
 
--- Sterling & Vance: modest brick over a limestone base, a navy canopy and a rooftop name sign on a steel frame.
+-- Regional banks (Sterling & Vance): modest brick over a limestone base, a canopy in the company colour and a
+-- rooftop name sign on a steel frame.
 function Boutique.regional(ctx: C.Ctx)
 	local primary = Brand.colors(ctx.def.company)
 	local e = C.entrance(ctx, {
@@ -146,7 +146,7 @@ function Boutique.regional(ctx: C.Ctx)
 	local board =
 		Kit.detail(ctx.m, ctx.frame * CFrame.new(0, y + 5.5, 3.6), Vector3.new(signW, 6, 0.3), primary, M.Metal)
 	board.Name = "RoofSign"
-	Kit.sign(board, Text.get("sv_roof"), {
+	Kit.sign(board, string.upper(Brand.name(ctx.def.company, ctx.def.label)), {
 		color = Look.white,
 		font = Enum.Font.GothamBlack,
 		pixelsPerStud = 24,

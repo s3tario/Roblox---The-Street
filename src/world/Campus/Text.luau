@@ -37,7 +37,8 @@ Text.pawnSub = "WE BUY GOLD · CASH FOR TEXTBOOKS"
 Text.grind = "THE GRIND HOUSE"
 Text.grindSub = "COFFEE · BAGELS · FREE WIFI"
 Text.grindWindow = "ORDER HERE"
-Text.grindMenu = { "DRIP  1.50", "LATTE  3.25", "COLD BREW  3.00", "EVERYTHING BAGEL  2.00", "ALL-NIGHTER (4 SHOTS)  4.75" }
+Text.grindMenu =
+	{ "DRIP  1.50", "LATTE  3.25", "COLD BREW  3.00", "EVERYTHING BAGEL  2.00", "ALL-NIGHTER (4 SHOTS)  4.75" }
 Text.vacant = "FOR LEASE"
 Text.vacantSub = "RETAIL SPACE AVAILABLE · CALL 555-0142"
 Text.coop = "EASTBRIDGE CO-OP"
@@ -135,6 +136,37 @@ Text.cc = {
 		"FOLLOW UP IN 24 HRS",
 	},
 	hours = "OPEN MON–FRI · 9–5 · WALK-INS WELCOME",
+	study = "QUIET STUDY",
+	firms = "ON CAMPUS THIS FALL",
+	firmsSub = "FIRMS RECRUITING EASTBRIDGE STATE STUDENTS",
+	nowServing = "NOW SERVING",
+	ticket = "A-047",
+	takeNumber = "TAKE A\nNUMBER",
+	alumni = "WHERE ARE THEY NOW?",
+	alumniList = {
+		"D. PARK '04 · MANAGING DIRECTOR",
+		"S. ALVAREZ '11 · VICE PRESIDENT",
+		"M. BROOKS '15 · ASSOCIATE",
+		"T. NWOSU '19 · ANALYST",
+		"K. LINDQVIST '01 · PARTNER",
+		"A. ROSSI '22 · ANALYST",
+	},
+	brochures = "TAKE ONE",
+	-- the firms board falls back to these when Config/Companies is unavailable
+	firmsFallback = {
+		"STERLING & VANCE",
+		"EASTBRIDGE CAPITAL",
+		"HARROW WILLIAMS",
+		"BLAIRMONT & CO.",
+		"HOULTON LOCKEY",
+		"MG FREEMAN",
+		"GOLDFIELD SAXE",
+		"MORROW STANTON",
+		"MERRIWEATHER LYNCH",
+		"EVERMOOR",
+		"LAZARO FRÈRES",
+		"CENTERLINE",
+	},
 }
 
 -- Halvorsen Hall
@@ -151,6 +183,9 @@ Text.lecture = {
 	trophies = "FINANCE CLUB · REGIONAL STOCK PITCH · 3RD PLACE 2019",
 	portraits = { "DEAN HALVORSEN · 1911", "DEAN MARLOW · 1958", "DEAN KESSLER · 1990" },
 	stacks = { "ACCOUNTING", "ECONOMICS", "FINANCE", "STATISTICS", "BUSINESS LAW", "REFERENCE" },
+	joinClub = "JOIN THE FINANCE CLUB",
+	joinClubSub = "PITCH NIGHT THURSDAY · ALL MAJORS",
+	easel = "STOCK PITCH\nTHURSDAY 7 PM\nROOM 210",
 }
 
 -- Marlow House (dorm)
@@ -169,6 +204,7 @@ Text.dormInside = {
 	room = "ROOM %d",
 	panel = "ROOM %d\nCUSTOMIZE",
 	vacant = "ROOM %d · VACANT",
+	laundryDoor = "LAUNDRY",
 }
 
 -- Route 9 subway car

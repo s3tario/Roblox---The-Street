@@ -37,34 +37,6 @@ local FLOOR = hex("#CFC8B6")
 
 CareerCenter.ENTRY = { x = 0, z = 33 }
 
-local RARITY_FALLBACK = {
-	hex("#9AA0A6"),
-	hex("#4CAF50"),
-	hex("#3D7BD9"),
-	hex("#9C4DD9"),
-	hex("#E3B341"),
-	hex("#FF6FD8"),
-}
-
--- Tier colours from Config/Rarity (careerCore) when it is present, else the documented grey..prismatic set.
-local function rarityColors(): { Color3 }
-	local config = game:GetService("ReplicatedStorage").Shared:FindFirstChild("Config")
-	local mod = if config then config:FindFirstChild("Rarity") else nil
-	if mod and mod:IsA("ModuleScript") then
-		local ok, R = pcall(require, mod)
-		if ok and type(R) == "table" and type((R :: any).list) == "table" then
-			local out: { Color3 } = {}
-			for i, def in (R :: any).list do
-				out[i] = if typeof(def.color) == "Color3" then def.color else RARITY_FALLBACK[i]
-			end
-			if #out == 6 then
-				return out
-			end
-		end
-	end
-	return RARITY_FALLBACK
-end
-
 ---------------------------------------------------------------------------------------------------
 local function shell(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local floor = Shell.box(m, F, X0 - 1, -1, Z0 - 1, X1 + 1, 0, Z1 + 1, FLOOR, M.SmoothPlastic)
@@ -116,7 +88,6 @@ local function shell(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	-- windows onto the campus (faked views)
 	local windows = {
 		{ cf = F.cf(X1, 6.5, 22, Shell.W), w = 8 },
-		{ cf = F.cf(X1, 6.5, -20, Shell.W), w = 8 },
 		{ cf = F.cf(X1, 6.5, -45, Shell.W), w = 8 },
 		{ cf = F.cf(-12, 6.5, Z0, Shell.S), w = 8 },
 		{ cf = F.cf(12, 6.5, Z0, Shell.S), w = 8 },
@@ -134,7 +105,7 @@ end
 local function lifeRoll(m: Instance, F: Shell.Frame)
 	local k = Kit.model(m, "LifeRollKiosk")
 	local c = F.cf(0, 0, 12)
-	local colors = rarityColors()
+	local colors = Deps.rarityColors()
 	Kit.cylinder(k, c * CFrame.new(0, 0.3, 0), 0.6, 15, hex("#2A2C30"), M.SmoothPlastic).Name = "Dais"
 	Kit.cylinder(k, c * CFrame.new(0, 0.62, 0), 0.05, 12.6, hex("#3A3D42"), M.Metal).CanCollide = false
 	-- six tier arcs round the edge, each in its rarity colour
@@ -160,7 +131,16 @@ local function lifeRoll(m: Instance, F: Shell.Frame)
 	local g = Paint.surface(screen, Enum.NormalId.Front, 40, { glow = true, brightness = 1.3, maxDistance = 0 })
 	local bg = Core.bg(g, hex("#13243A"))
 	Core.gradient(bg, hex("#22385A"), hex("#0B1622"), 90)
-	Core.label(g, Text.cc.lifeRoll, 0.05, 0.04, 0.9, 0.16, C.mustard, { font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center })
+	Core.label(
+		g,
+		Text.cc.lifeRoll,
+		0.05,
+		0.04,
+		0.9,
+		0.16,
+		C.mustard,
+		{ font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center }
+	)
 	Core.label(g, Text.cc.lifeRollSub, 0.05, 0.2, 0.9, 0.08, hex("#E8EEF5"), {
 		font = Enum.Font.SourceSansBold,
 		align = Enum.TextXAlignment.Center,
@@ -169,7 +149,16 @@ local function lifeRoll(m: Instance, F: Shell.Frame)
 		local y = 0.32 + (i - 1) * 0.105
 		local bar = Core.frame(g, 0.1, y, 0.8, 0.085, colors[i], 0.15)
 		Core.round(bar, 0.3)
-		Core.label(bar, tier, 0.05, 0.05, 0.9, 0.9, hex("#0B1622"), { font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center })
+		Core.label(
+			bar,
+			tier,
+			0.05,
+			0.05,
+			0.9,
+			0.9,
+			hex("#0B1622"),
+			{ font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center }
+		)
 	end
 	Kit.light(screen, "point", { Color = hex("#9FC2FF"), Range = 18, Brightness = 1.1 })
 	-- the lever
@@ -204,7 +193,16 @@ local function services(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local face = Shell.box(s, F, 33.9, 0.6, 9, 33.95, 3.2, 27, hex("#1F2A44"), M.SmoothPlastic, false)
 	local fg = Paint.surface(face, Enum.NormalId.Left, 20)
 	Core.bg(fg, hex("#1F2A44"))
-	Core.label(fg, Text.cc.services, 0.03, 0.15, 0.94, 0.7, C.mustard, { font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center })
+	Core.label(
+		fg,
+		Text.cc.services,
+		0.03,
+		0.15,
+		0.94,
+		0.7,
+		C.mustard,
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
 	Shell.sign(s, F.cf(X1, 10.8, 18, Shell.W), 18, 2.2, Text.cc.services .. "\n" .. Text.cc.servicesSub, {
 		color = hex("#1F2A44"),
 		ink = C.mustard,
@@ -218,7 +216,19 @@ local function services(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		Props.build("filing_cabinet", s, F.cf(62.6, 0, z, Shell.W), { seed = "cc-file" .. i })
 	end
 	for i = 0, 4 do
-		Shell.box(s, F, 34.6 + rng:range(-0.1, 0.1), 4.1 + i * 0.12, 24 + rng:range(-0.2, 0.2), 36, 4.2 + i * 0.12, 25.6, C.paper, M.SmoothPlastic, false).Name =
+		Shell.box(
+			s,
+			F,
+			34.6 + rng:range(-0.1, 0.1),
+			4.1 + i * 0.12,
+			24 + rng:range(-0.2, 0.2),
+			36,
+			4.2 + i * 0.12,
+			25.6,
+			C.paper,
+			M.SmoothPlastic,
+			false
+		).Name =
 			"Resumes"
 	end
 	Props.build("plant_floor", s, F.cf(38, 0, 33, 0), { seed = "cc-plant1" })
@@ -240,7 +250,13 @@ local function lobby(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Markers.interact(board, "bulletin")
 	local bg = Paint.surface(board, Enum.NormalId.Front, 20)
 	Core.bg(bg, hex("#A07C55"))
-	local pins = Kit.detail(l, F.cf(X0 + 0.62, 5.9, 18, Shell.E), Vector3.new(17, 5.2, 0.02), Color3.new(1, 1, 1), M.SmoothPlastic)
+	local pins = Kit.detail(
+		l,
+		F.cf(X0 + 0.62, 5.9, 18, Shell.E),
+		Vector3.new(17, 5.2, 0.02),
+		Color3.new(1, 1, 1),
+		M.SmoothPlastic
+	)
 	pins.Transparency = 1
 	local pg, PW, PH = Paint.surface(pins, Enum.NormalId.Front, 20)
 	local postings = table.clone(Text.recruitingPins)
@@ -257,7 +273,12 @@ local function lobby(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	end
 	Props.build("coffee_table", l, F.cf(X0 + 5, 0, 18, Shell.W), { seed = "cc-table" })
 	-- the wardrobe clinic mannequin by the doors
-	local mq = Deps.NpcRig.build({ preset = "mannequin", humanoid = false, face = false, cframe = F.cf(-40, 0.4, 34, Shell.N) })
+	local mq = Deps.NpcRig.build({
+		preset = "mannequin",
+		humanoid = false,
+		face = false,
+		cframe = F.cf(-40, 0.4, 34, Shell.N),
+	})
 	mq.Name = "Mannequin"
 	mq.Parent = l
 	Kit.cylinder(l, F.cf(-40, 0.2, 34), 0.4, 3.4, hex("#2A2A2A"), M.Metal).Name = "MannequinBase"
@@ -272,7 +293,14 @@ local function lobby(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		seed = "cc-wardrobe-poster",
 	})
 	-- welcome sign over the doors, a clock, plants, the water cooler
-	Shell.sign(l, F.cf(0, 11.4, Z1, Shell.N), 26, 1.8, Text.cc.welcome, { color = hex("#24262A"), ink = hex("#F4F1E6") })
+	Shell.sign(
+		l,
+		F.cf(0, 11.4, Z1, Shell.N),
+		26,
+		1.8,
+		Text.cc.welcome,
+		{ color = hex("#24262A"), ink = hex("#F4F1E6") }
+	)
 	Props.build("wall_clock", l, F.cf(14, 9, Z1, Shell.N), { seed = "cc-clock" })
 	Props.build("plant_floor", l, F.cf(-8, 0, 37.6, 0), { seed = "cc-plant2" })
 	Props.build("water_cooler", l, F.cf(-62.6, 0, 33, Shell.E), { seed = "cc-cooler" })
@@ -311,7 +339,12 @@ local function carrels(m: Instance, F: Shell.Frame)
 		desk.Name = "CarrelDesk"
 		Markers.interact(desk, "work_desk")
 		Shell.box(c, F, X0, 0, z - 3, X0 + 0.4, 2.8, z + 3, hex("#6B5A40"), M.Wood).Name = "Modesty"
-		Props.build("desk_lamp", c, F.cf(X0 + 0.9, 3.1, z + 2, Shell.E), { seed = "carrel-lamp" .. i, lit = i % 2 == 0 })
+		Props.build(
+			"desk_lamp",
+			c,
+			F.cf(X0 + 0.9, 3.1, z + 2, Shell.E),
+			{ seed = "carrel-lamp" .. i, lit = i % 2 == 0 }
+		)
 		Props.build("book_stack", c, F.cf(X0 + 1, 3.1, z - 1.8, Shell.E), { seed = "carrel-books" .. i })
 		Shell.chair(c, F.cf(X0 + 4, 0, z, Shell.W), hex("#5C2A21"))
 	end
@@ -330,17 +363,32 @@ local function lab(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		local mon = Shell.box(l, F, x - 1.6, 3.4, Z0 + 0.6, x + 1.6, 5.6, Z0 + 0.9, hex("#1A1A1A"), M.SmoothPlastic)
 		mon.Name = if working then "TerminalScreen" else "DeadMonitor"
 		Shell.box(l, F, x - 0.3, 3.1, Z0 + 0.7, x + 0.3, 3.4, Z0 + 1.2, hex("#2A2A2A"), M.Metal, false)
-		Shell.box(l, F, x + 2.2, 3.1, Z0 + 0.4, x + 3.2, 5.4, Z0 + 2.4, hex("#D8D2C2"), M.SmoothPlastic, false).Name = "Tower"
+		Shell.box(l, F, x + 2.2, 3.1, Z0 + 0.4, x + 3.2, 5.4, Z0 + 2.4, hex("#D8D2C2"), M.SmoothPlastic, false).Name =
+			"Tower"
 		local sg = Paint.surface(mon, Enum.NormalId.Back, 50, { glow = working, brightness = 1.1 })
 		if working then
 			Markers.interact(mon, "terminal")
 			local bgs = Core.bg(sg, hex("#0B1622"))
 			Core.lineChart(bgs, 8, 20, 140, 60, Core.series(rng, 30, 100, 2, 0.1), Core.UP, 2)
-			Core.label(bgs, "EASTBRIDGE STATE · MARKET TERMINAL", 0.04, 0.02, 0.92, 0.14, Core.AMBER, { font = Enum.Font.Code })
+			Core.label(
+				bgs,
+				"EASTBRIDGE STATE · MARKET TERMINAL",
+				0.04,
+				0.02,
+				0.92,
+				0.14,
+				Core.AMBER,
+				{ font = Enum.Font.Code }
+			)
 		else
 			Core.bg(sg, hex("#121212"))
-			local note = Kit.detail(l, F.cf(x, 4.4, Z0 + 0.95, Shell.S), Vector3.new(1.6, 1, 0.02), C.paper, M.SmoothPlastic)
-			Kit.sign(note, "OUT OF\nORDER", { font = Enum.Font.PermanentMarker, color = hex("#8A2C2C"), pixelsPerStud = 60 })
+			local note =
+				Kit.detail(l, F.cf(x, 4.4, Z0 + 0.95, Shell.S), Vector3.new(1.6, 1, 0.02), C.paper, M.SmoothPlastic)
+			Kit.sign(
+				note,
+				"OUT OF\nORDER",
+				{ font = Enum.Font.PermanentMarker, color = hex("#8A2C2C"), pixelsPerStud = 60 }
+			)
 		end
 		Props.build("keyboard_mouse", l, F.cf(x, 3.1, Z0 + 2.2, Shell.S), { seed = "lab-kb" .. i })
 		Shell.chair(l, F.cf(x, 0, Z0 + 5, Shell.N), hex("#2A2A2A"))
@@ -373,7 +421,16 @@ local function pizza(m: Instance, F: Shell.Frame, mk: Instance)
 	local ban = Kit.detail(p, F.cf(0, 11, Z0 + 0.12, Shell.S), Vector3.new(14, 2.4, 0.1), hex("#C8553D"), M.Fabric)
 	local bg = Paint.surface(ban, Enum.NormalId.Front, 20)
 	Core.bg(bg, hex("#C8553D"))
-	Core.label(bg, Text.cc.pizza, 0.03, 0.1, 0.94, 0.8, hex("#F4F1E6"), { font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center })
+	Core.label(
+		bg,
+		Text.cc.pizza,
+		0.03,
+		0.1,
+		0.94,
+		0.8,
+		hex("#F4F1E6"),
+		{ font = Enum.Font.Bangers, align = Enum.TextXAlignment.Center }
+	)
 	Props.build("vending_machine", p, F.cf(20, 0, Z0 + 1.6, Shell.S), { seed = "cc-vend" })
 	Props.build("trash_can", p, F.cf(23.5, 0, Z0 + 1.4, 0), { seed = "cc-bin2" })
 end
@@ -411,7 +468,8 @@ local function suite(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		for _, dx in { -2.4, 2.4 } do
 			Shell.chair(s, F.cf(rx + dx, 0, -42, Shell.N), hex("#3C4A5E"))
 		end
-		local wb = Kit.detail(s, F.cf(rx, 6.2, Z0 + 0.1, Shell.S), Vector3.new(8, 4.4, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
+		local wb =
+			Kit.detail(s, F.cf(rx, 6.2, Z0 + 0.1, Shell.S), Vector3.new(8, 4.4, 0.1), hex("#F4F4F0"), M.SmoothPlastic)
 		wb.Name = "Whiteboard"
 		local wg, WW, WH = Paint.surface(wb, Enum.NormalId.Front, 20)
 		Art.whiteboard(wg, WW, WH, rng)
@@ -424,11 +482,189 @@ local function suite(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Shell.box(s, F, 49.8, 0, -29.2, 50.2, 6.4, -28.8, hex("#2A2A2A"), M.Metal).Name = "CoatRack"
 	local sched = Kit.detail(s, F.cf(48, 6.2, -33.5, 180), Vector3.new(6, 5, 0.1), hex("#F4F1E6"), M.SmoothPlastic)
 	sched.Name = "SuperdaySchedule"
-	Kit.sign(sched, Text.cc.superday, { font = Enum.Font.SpecialElite, color = C.ink, pixelsPerStud = 30, padding = 0.06 })
+	Kit.sign(
+		sched,
+		Text.cc.superday,
+		{ font = Enum.Font.SpecialElite, color = C.ink, pixelsPerStud = 30, padding = 0.06 }
+	)
 	Shell.sign(s, F.cf(45, 12, -33.55, 180), 30, 1.8, Text.cc.suite .. " · " .. Text.cc.suiteSub, {
 		color = hex("#1F2A44"),
 		ink = C.mustard,
 	})
+end
+
+---------------------------------------------------------------------------------------------------
+-- Structure: concrete columns on the old grid, the glass partition round the quiet-study corner
+---------------------------------------------------------------------------------------------------
+local COLUMNS = { { -46, -8 }, { -20, -8 }, { 20, -8 }, { 46, -8 }, { -20, 26 }, { 20, 26 } }
+
+local function structure(m: Instance, F: Shell.Frame, rng: Deps.RngT)
+	local s = Kit.model(m, "Structure")
+	for i, c in COLUMNS do
+		local col = Shell.box(s, F, c[1] - 1.2, 0, c[2] - 1.2, c[1] + 1.2, H, c[2] + 1.2, WALL, M.Concrete)
+		col.Name = "Column"
+		col.Color = Kit.shade(WALL, rng:range(-0.06, 0.02))
+		-- a scuffed rubber base and a strip of old flyers taped round it at eye level
+		Shell.box(s, F, c[1] - 1.3, 0, c[2] - 1.3, c[1] + 1.3, 0.5, c[2] + 1.3, hex("#3A3632"), M.Rubber, false).Name =
+			"ColumnBase"
+		if i % 2 == 0 then
+			local tape = Kit.detail(
+				s,
+				F.cf(c[1], 5.2, c[2] + 1.22),
+				Vector3.new(2, 2.4, 0.04),
+				Color3.new(1, 1, 1),
+				M.SmoothPlastic
+			)
+			tape.Transparency = 1
+			local g, W, Hh = Paint.surface(tape, Enum.NormalId.Back, 30)
+			Paint.flyers(g, W, Hh, rng, { Text.flyers[4], Text.flyers[10] })
+		end
+	end
+	-- quiet study: a wood-and-glass partition between the carrels and the lounge, open at its east end
+	local z = -1
+	Shell.box(s, F, X0, 0, z - 0.2, -28, 3.4, z + 0.2, WAINSCOT, M.Wood).Name = "PartitionBase"
+	local glass = Shell.box(s, F, X0, 3.4, z - 0.08, -28, 9, z + 0.08, hex("#9FB3BC"), M.Glass)
+	glass.Name = "PartitionGlass"
+	glass.Transparency = 0.6
+	glass.Reflectance = 0.1
+	glass.CastShadow = false
+	Shell.box(s, F, X0, 9, z - 0.2, -28, 9.3, z + 0.2, hex("#3A3D40"), M.Metal).Name = "PartitionRail"
+	for x = -58, -30, 7 do
+		Shell.box(s, F, x - 0.1, 3.4, z - 0.12, x + 0.1, 9, z + 0.12, hex("#3A3D40"), M.Metal, false)
+	end
+	Shell.box(s, F, -28.3, 0, z - 0.3, -27.7, 9.3, z + 0.3, hex("#3A3D40"), M.Metal).Name = "PartitionPost"
+	Shell.sign(s, F.cf(-46, 10.6, z + 0.2, Shell.S), 10, 1.3, Text.cc.study, {
+		color = hex("#2F3A32"),
+		ink = hex("#ECE6DA"),
+	})
+end
+
+---------------------------------------------------------------------------------------------------
+-- The firms board (who recruits here this fall) on the east wall, from Config/Companies
+---------------------------------------------------------------------------------------------------
+local function firmsBoard(m: Instance, F: Shell.Frame)
+	local b = Kit.model(m, "FirmsBoard")
+	local zc, y = -17, 6.2
+	local back =
+		Kit.block(b, F.cf(X1 - 0.25, y, zc, Shell.W), Vector3.new(25, 7.4, 0.5), hex("#1F2A44"), M.SmoothPlastic)
+	back.Name = "FirmsBoardBack"
+	Kit.detail(b, F.cf(X1 - 0.3, y, zc, Shell.W), Vector3.new(25.6, 8, 0.3), P.street.brass, M.Metal).Name =
+		"FirmsBoardFrame"
+	Shell.sign(b, F.cf(X1, 11.2, zc, Shell.W), 25, 1.8, Text.cc.firms .. "\n" .. Text.cc.firmsSub, {
+		color = hex("#1F2A44"),
+		ink = C.mustard,
+	})
+	local firms = Deps.recruitingFirms(12, Text.cc.firmsFallback)
+	local cols, tileW, tileH = 6, 3.6, 2.8
+	for i, firm in firms do
+		local col = (i - 1) % cols
+		local row = (i - 1) // cols
+		local tz = zc - (cols - 1) * (tileW + 0.3) / 2 + col * (tileW + 0.3)
+		local ty = y + 1.6 - row * (tileH + 0.5)
+		local tile = Kit.detail(
+			b,
+			F.cf(X1 - 0.56, ty, tz, Shell.W),
+			Vector3.new(tileW, tileH, 0.1),
+			hex("#F4F1E6"),
+			M.SmoothPlastic
+		)
+		tile.Name = "FirmTile"
+		local drawn = firm.id ~= nil
+			and Deps.logo(tile, Enum.NormalId.Front, firm.id :: string, { background = true, maxDistance = 120 })
+		if not drawn then
+			tile.Color = firm.primary
+			Kit.sign(tile, string.upper(firm.name), {
+				font = Enum.Font.Oswald,
+				color = firm.text,
+				pixelsPerStud = 40,
+				padding = 0.1,
+			})
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
+-- The queue at Career Services, the alumni wall, the brochure rack and the lobby odds and ends
+---------------------------------------------------------------------------------------------------
+local function lobbyExtras(m: Instance, F: Shell.Frame, rng: Deps.RngT)
+	local e = Kit.model(m, "LobbyExtras")
+	-- take-a-number dispenser by the counter, NOW SERVING over it
+	Shell.box(e, F, 30.8, 0, 3.8, 31.2, 4.2, 4.2, hex("#2A2A2A"), M.Metal).Name = "TicketPost"
+	local disp = Kit.detail(e, F.cf(31, 4.6, 4, Shell.W), Vector3.new(1, 1.2, 0.7), hex("#C83A2A"), M.SmoothPlastic)
+	disp.Name = "TicketDispenser"
+	Kit.sign(disp, Text.cc.takeNumber, { font = Enum.Font.GothamBold, color = hex("#F4F1E6"), pixelsPerStud = 60 })
+	local now = Kit.detail(e, F.cf(35.3, 9.6, 12, Shell.W), Vector3.new(5, 1.6, 0.3), hex("#141414"), M.SmoothPlastic)
+	now.Name = "NowServing"
+	now:AddTag("InteriorLight")
+	local ng = Paint.surface(now, Enum.NormalId.Front, 40, { glow = true, brightness = 1.2 })
+	Core.bg(ng, hex("#141414"))
+	Core.label(ng, Text.cc.nowServing, 0.04, 0.05, 0.92, 0.42, hex("#E9E2CF"), {
+		font = Enum.Font.Highway,
+		align = Enum.TextXAlignment.Center,
+	})
+	Core.label(ng, Text.cc.ticket, 0.04, 0.48, 0.92, 0.48, hex("#FF5A3C"), {
+		font = Enum.Font.Code,
+		align = Enum.TextXAlignment.Center,
+	})
+	for _, dz in { -2, 2 } do
+		Kit.detail(e, F.cf(35.3, 11.8, 12 + dz), Vector3.new(0.08, 2.8, 0.08), hex("#5A5A5A"), M.Metal)
+	end
+	-- the alumni wall on the east wall by the doors
+	local wall = Kit.detail(e, F.cf(X1 - 0.12, 6.4, 34, Shell.W), Vector3.new(9, 5.6, 0.2), hex("#2A2622"), M.Wood)
+	wall.Name = "AlumniWall"
+	local ag = Paint.surface(wall, Enum.NormalId.Front, 24)
+	Core.bg(ag, hex("#2A2622"))
+	Core.label(
+		ag,
+		Text.cc.alumni,
+		0.04,
+		0.02,
+		0.92,
+		0.14,
+		C.mustard,
+		{ font = Enum.Font.Oswald, align = Enum.TextXAlignment.Center }
+	)
+	for i, line in Text.cc.alumniList do
+		local col = (i - 1) % 3
+		local row = (i - 1) // 3
+		local x, y = 0.04 + col * 0.32, 0.2 + row * 0.4
+		local photo = Core.frame(ag, x, y, 0.28, 0.27, hex("#E9E2CF"))
+		local inner = Core.frame(photo, 0.06, 0.06, 0.88, 0.88, hex("#8FC1E3"))
+		Deps.Gui.Art.photo(inner, 9 * 24 * 0.28 * 0.88, 5.6 * 24 * 0.27 * 0.88, rng)
+		Core.label(ag, line, x - 0.01, y + 0.28, 0.3, 0.1, hex("#E9E2CF"), {
+			font = Enum.Font.SourceSansBold,
+			align = Enum.TextXAlignment.Center,
+		})
+	end
+	-- a wire brochure rack by the doors
+	local rack = F.cf(-16, 0, 38.6, Shell.N)
+	Kit.block(e, rack * CFrame.new(0, 2.3, 0), Vector3.new(3, 4.6, 0.6), hex("#5A5F63"), M.Metal).Name = "BrochureRack"
+	local face = Kit.detail(
+		e,
+		rack * CFrame.new(0, 2.6, -0.32),
+		Vector3.new(2.8, 3.8, 0.05),
+		Color3.new(1, 1, 1),
+		M.SmoothPlastic
+	)
+	face.Transparency = 1
+	local bg = Paint.surface(face, Enum.NormalId.Front, 30)
+	local pam = { hex("#1F2A44"), C.mustard, hex("#8E3B2E"), hex("#2F5A3A"), hex("#E9E2CF"), hex("#3D7BD9") }
+	for k = 0, 5 do
+		local x, y = (k % 2) * 0.5 + 0.06, (k // 2) * 0.32 + 0.04
+		local p = Core.frame(bg, x, y, 0.38, 0.27, pam[k + 1])
+		Core.label(p, Text.cc.brochures, 0.05, 0.6, 0.9, 0.3, hex("#F4F1E6"), { font = Enum.Font.SourceSansBold })
+	end
+	-- the opening hours by the doors, a fire extinguisher, a drinking fountain, a lounge rug
+	Shell.sign(e, F.cf(-9.5, 7.6, Z1, Shell.N), 5, 1.6, Text.cc.hours, {
+		color = hex("#E9E2CF"),
+		ink = C.ink,
+		font = Enum.Font.SourceSansBold,
+	})
+	Kit.cylinder(e, F.cf(10.5, 3.4, Z1 - 0.5), 2.2, 0.8, hex("#C83A2A"), M.Metal).Name = "Extinguisher"
+	Shell.box(e, F, -2, 2.4, Z0, 0.4, 3, Z0 + 1.4, hex("#B8B8B0"), M.Metal).Name = "DrinkingFountain"
+	Shell.box(e, F, -1.2, 0, Z0, -0.4, 2.4, Z0 + 0.8, hex("#9A9A92"), M.Metal, false)
+	Props.build("rug_office", e, F.cf(X0 + 7, 0, 18, Shell.W), { color = hex("#4A3A2C"), seed = "cc-rug" })
+	Props.build("plant_floor", e, F.cf(-26, 0, 2, 0), { seed = "cc-plant3" })
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -446,8 +682,17 @@ function CareerCenter.build(parent: Instance, mk: Instance, origin: Vector3): Mo
 	lab(m, F, rng)
 	pizza(m, F, mk)
 	suite(m, F, rng)
+	structure(m, F, rng)
+	firmsBoard(m, F)
+	lobbyExtras(m, F, rng)
 	Markers.anchor(mk, "career_center_entry", F.cf(CareerCenter.ENTRY.x, 3, CareerCenter.ENTRY.z, Shell.N))
-	Shell.exit(m, mk, "door_career_center_exit", F.cf(0, 0, Z1, Shell.N), { label = Text.exitTo.career_center, glass = true })
+	Shell.exit(
+		m,
+		mk,
+		"door_career_center_exit",
+		F.cf(0, 0, Z1, Shell.N),
+		{ label = Text.exitTo.career_center, glass = true }
+	)
 	Markers.npc(mk, "npc_advisor", F.cf(40.5, 3, 18, Shell.W))
 	Markers.npc(mk, "npc_recruiter", F.cf(40, 3, -24, Shell.S))
 	return m

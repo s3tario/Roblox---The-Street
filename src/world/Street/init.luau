@@ -25,6 +25,32 @@ local function settle(root: Instance)
 	end
 end
 
+-- Draw distance for every sign and screen that didn't choose one: a SurfaceGui stops rendering beyond MaxDistance,
+-- so the ~400 boards, plaques and shop signs cost nothing from across the district, while big faces (fascias,
+-- crown logos, billboards) stay readable down the avenues.
+local GUI_MIN, GUI_MAX, GUI_PER_STUD = 150, 1200, 35
+
+local function faceSpan(part: BasePart, face: Enum.NormalId): number
+	local s = part.Size
+	if face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+		return math.max(s.X, s.Y)
+	elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then
+		return math.max(s.Z, s.Y)
+	end
+	return math.max(s.X, s.Z)
+end
+
+local function cullGuis(root: Instance)
+	for _, d in root:GetDescendants() do
+		if d:IsA("SurfaceGui") and d.MaxDistance <= 0 then
+			local part = d.Parent
+			if part and part:IsA("BasePart") then
+				d.MaxDistance = math.clamp(faceSpan(part, d.Face) * GUI_PER_STUD, GUI_MIN, GUI_MAX)
+			end
+		end
+	end
+end
+
 function Street.build(parent: Instance): Model
 	local model = Kit.model(parent, "Street")
 	local rects = Plan.rects(Deps.World.towers)
@@ -36,6 +62,7 @@ function Street.build(parent: Instance): Model
 	Fillers.build(model, rects)
 	Backdrop.build(model, rects)
 	Life.build(model)
+	cullGuis(model)
 	settle(model)
 	return model
 end

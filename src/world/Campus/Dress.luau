@@ -3,6 +3,7 @@
 --
 --   Dress.lamp(parent, x, z, yaw, opts?)            sodium cobra-head lamp (Props; lens tagged "StreetLight").
 --                                                   opts.lit = false for a dead lamp, opts.y for raised ground
+--                                                   (the prop marks about a quarter of its lenses Flicker = true)
 --   Dress.lantern(parent, cf, lit?)                 wall lantern on a bracket (cf = on the wall, LookVector out)
 --   Dress.pole(parent, x, z, rng, o?) -> Vector3    creosote utility pole with a crossarm, insulators, a transformer
 --                                                   and stapled flyers; returns the wire attachment point
@@ -131,7 +132,15 @@ export type Gate = { x: number, w: number }
 
 -- Wrought-iron fence along X at z: brick piers at both ends of every gate opening and at the fence ends, iron rails
 -- between them, and the pickets painted on an invisible collision panel (both faces).
-function Dress.ironFence(parent: Instance, x0: number, x1: number, z: number, h: number, gates: { Gate }, rng: Deps.RngT)
+function Dress.ironFence(
+	parent: Instance,
+	x0: number,
+	x1: number,
+	z: number,
+	h: number,
+	gates: { Gate },
+	rng: Deps.RngT
+)
 	local m = Kit.model(parent, "IronFence")
 	local iron = hex("#1F2122")
 	table.sort(gates, function(a, b)
@@ -267,7 +276,8 @@ function Dress.chainRun(parent: Instance, a: Vector3, b: Vector3, h: number, rng
 	local signs = opts.signs
 	for i, t in signs or {} :: { string } do
 		local x = -len / 2 + len * (i - 0.5) / #(signs :: { string })
-		local sgn = Kit.detail(m, frame * CFrame.new(x, h * 0.55, -0.2), Vector3.new(3, 1.6, 0.06), hex("#E9E2CF"), M.Metal)
+		local sgn =
+			Kit.detail(m, frame * CFrame.new(x, h * 0.55, -0.2), Vector3.new(3, 1.6, 0.06), hex("#E9E2CF"), M.Metal)
 		Kit.sign(sgn, t, { font = Enum.Font.Highway, color = hex("#8A2C2C"), pixelsPerStud = 40, padding = 0.1 })
 	end
 	return m

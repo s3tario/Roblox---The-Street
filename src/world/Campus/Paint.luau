@@ -133,12 +133,28 @@ function Paint.grime(gui: Instance, W: number, H: number, rng: Deps.RngT, o: Gri
 	end
 	-- damp / efflorescence patches
 	for _ = 1, rng:int(1, 3) do
-		local d = frame(gui, rng:range(0, 0.85), rng:range(0.5, 0.85), rng:range(0.06, 0.15), rng:range(0.05, 0.12), hex("#D8D2C2"), 0.8)
+		local d = frame(
+			gui,
+			rng:range(0, 0.85),
+			rng:range(0.5, 0.85),
+			rng:range(0.06, 0.15),
+			rng:range(0.05, 0.12),
+			hex("#D8D2C2"),
+			0.8
+		)
 		Core.round(d, 0.5)
 	end
 end
 
-export type GraffitiOpts = { x: number?, y: number?, w: number?, h: number?, color: Color3?, outline: Color3?, font: Enum.Font? }
+export type GraffitiOpts = {
+	x: number?,
+	y: number?,
+	w: number?,
+	h: number?,
+	color: Color3?,
+	outline: Color3?,
+	font: Enum.Font?,
+}
 
 function Paint.graffiti(gui: Instance, W: number, H: number, rng: Deps.RngT, text: string, o: GraffitiOpts?)
 	local opts: GraffitiOpts = o or {}
@@ -199,7 +215,17 @@ export type SkylineOpts = {
 	maxHeight: number?, -- tallest tower as a fraction of the canvas height
 }
 
-local function tower(parent: Instance, x: number, w: number, h: number, base: number, col: Color3, rng: Deps.RngT, lit: number, litCol: Color3)
+local function tower(
+	parent: Instance,
+	x: number,
+	w: number,
+	h: number,
+	base: number,
+	col: Color3,
+	rng: Deps.RngT,
+	lit: number,
+	litCol: Color3
+)
 	local f = px(parent, x, base - h, w, h, col)
 	f.Name = "Tower"
 	local kind = rng:int(1, 6)
@@ -308,7 +334,15 @@ function Paint.townscape(gui: Instance, W: number, H: number, rng: Deps.RngT, o:
 			local h = rng:range(16, 40)
 			px(gui, x, horizon - h, 3, h, tcol)
 			for _ = 1, 4 do
-				Core.line(gui, x + 1, horizon - h * rng:range(0.4, 0.9), x + rng:range(-14, 14), horizon - h - rng:range(0, 10), 2, tcol)
+				Core.line(
+					gui,
+					x + 1,
+					horizon - h * rng:range(0.4, 0.9),
+					x + rng:range(-14, 14),
+					horizon - h - rng:range(0, 10),
+					2,
+					tcol
+				)
 			end
 		end
 	end
@@ -332,7 +366,12 @@ function Paint.view(gui: Instance, W: number, H: number, rng: Deps.RngT, kind: s
 	end
 	local night = kind == "night"
 	local sky = Core.bg(gui, if night then hex("#1B2230") else hex("#9AA2A6"))
-	Core.gradient(sky, if night then hex("#141A26") else hex("#8A949B"), if night then hex("#3A3A44") else hex("#C9C6BC"), 90)
+	Core.gradient(
+		sky,
+		if night then hex("#141A26") else hex("#8A949B"),
+		if night then hex("#3A3A44") else hex("#C9C6BC"),
+		90
+	)
 	if kind == "river" then
 		Paint.skyline(gui, W, H * 0.8, rng, {
 			horizon = 0.95,
@@ -427,7 +466,14 @@ function Paint.flyers(gui: Instance, W: number, H: number, rng: Deps.RngT, texts
 		local r = (i - 1) // cols
 		local w = 1 / cols
 		local h = 1 / rows
-		local f = frame(gui, c * w + w * rng:range(0.03, 0.1), r * h + h * rng:range(0.03, 0.1), w * 0.82, h * 0.82, rng:pick(papers))
+		local f = frame(
+			gui,
+			c * w + w * rng:range(0.03, 0.1),
+			r * h + h * rng:range(0.03, 0.1),
+			w * 0.82,
+			h * 0.82,
+			rng:pick(papers)
+		)
 		f.Rotation = rng:range(-7, 7)
 		f.Name = "Flyer"
 		label(f, text, 0.08, 0.08, 0.84, 0.84, C.ink, {

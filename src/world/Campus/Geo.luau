@@ -120,7 +120,13 @@ function Geo.bareTree(parent: Instance, base: Vector3, rng: Deps.RngT, scale: nu
 	end
 	-- a few dead leaves clinging on
 	if rng:chance(0.5) then
-		Kit.detail(m, CFrame.new(top + Vector3.new(0, 1, 0)), Vector3.new(2.4, 1.2, 2.2) * s, hex("#6B5A3A"), Enum.Material.Grass).Transparency =
+		Kit.detail(
+			m,
+			CFrame.new(top + Vector3.new(0, 1, 0)),
+			Vector3.new(2.4, 1.2, 2.2) * s,
+			hex("#6B5A3A"),
+			Enum.Material.Grass
+		).Transparency =
 			0.35
 	end
 	return m

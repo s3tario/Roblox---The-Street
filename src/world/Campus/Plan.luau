@@ -98,7 +98,8 @@ Plan.halvorsen = { x0 = -240, x1 = -172, z0 = -178, z1 = -32, h = 44, front = "E
 Plan.careerCenter = { x0 = -140, x1 = -30, z0 = -234, z1 = -182, h = 30, front = "S", doorX = -85 }
 Plan.dorm = { x0 = 2, x1 = 62, z0 = -170, z1 = -40, h = 56, front = "W", doorZ = -105 }
 -- The quad's iron fence along the avenue and its openings (x centre, width)
-Plan.quadFence = { z = -30, x0 = -172, x1 = 62, gates = { { x = -85, w = 16 }, { x = -167, w = 10 }, { x = -3, w = 10 } } }
+Plan.quadFence =
+	{ z = -30, x0 = -172, x1 = 62, gates = { { x = -85, w = 16 }, { x = -167, w = 10 }, { x = -3, w = 10 } } }
 
 ---------------------------------------------------------------------------------------------------
 -- The commercial strip (south side of the avenue; storefronts face north at z = 26)

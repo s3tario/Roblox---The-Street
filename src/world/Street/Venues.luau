@@ -50,38 +50,6 @@ local function ctxFor(
 	}
 end
 
--- Glazing across the ground storey of a facade that backs onto a street (lot back face, z = d).
-local function rearGlazing(ctx: C.Ctx, height: number)
-	local hidden = C.hidden(ctx, C.box(-ctx.w / 2, ctx.w / 2, 0, ctx.d, 0, height))
-	if hidden.back > 0 then
-		return
-	end
-	local look = Mass.look("limestone", {
-		glass = Look.glassSmoke,
-		pier = Look.steelDark,
-		pierMat = M.Metal,
-		band = Look.steelDark,
-		bandMat = M.Metal,
-		pierW = 0.8,
-		bandH = 0.8,
-		depth = 0.5,
-		bay = 8,
-		lit = 0.35,
-		litColor = Look.lampGlow,
-	})
-	local h = height - 4
-	local cf = ctx.frame * CFrame.new(0, 2 + h / 2, ctx.d + 0.11) * CFrame.Angles(0, math.pi, 0)
-	Mass.grid(ctx.m, cf, ctx.w - 10, h, look, ctx.seed .. ":rear", { rows = if h > 16 then 2 else 1 })
-	Mass.slab(
-		ctx.m,
-		ctx.frame,
-		C.box(-ctx.w / 2, ctx.w / 2, ctx.d - 0.05, ctx.d + 0.5, 0, 1.4),
-		Look.graniteDark,
-		M.Granite,
-		false
-	)
-end
-
 local function plate(ctx: C.Ctx, cf: CFrame, w: number, h: number, text: string, bg: Color3, ink: Color3)
 	local p =
 		Kit.detail(ctx.m, ctx.frame * cf * CFrame.new(0, h / 2, -0.08), Vector3.new(w, h, 0.16), bg, M.SmoothPlastic)
@@ -130,7 +98,6 @@ local function careerServices(parent: Instance, rects: { Plan.Rect })
 		)
 	end
 	Mass.roofKit(ctx.m, ctx.frame, b, ctx.seed .. ":roof", Look.limestoneDark)
-	rearGlazing(ctx, e.top)
 	Brand.title(
 		ctx.m,
 		ctx.frame * e.fascia * CFrame.new(0, 0, -0.05),
@@ -465,7 +432,7 @@ local function galleria(parent: Instance, rects: { Plan.Rect })
 			Props.build("lamp_floor", ctx.m, f * CFrame.new(cx + bw * 0.22, 2, 2.6), { seed = "galleria-lamp" })
 		end
 	end
-	rearGlazing(ctx, gh)
+	C.baseSides(ctx, gh, trim)
 	-- planters at the ends of the frontage
 	for _, sx in { -1, 1 } do
 		Props.build(

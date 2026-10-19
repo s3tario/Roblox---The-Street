@@ -262,7 +262,7 @@ function Exchange.build(parent: Instance, rects: { Plan.Rect }): Model
 		do
 			Gui.Core.frame(gui, edge[1], edge[2], edge[3], edge[4], Look.gold)
 		end
-		Gui.Core.label(gui, "ME", 0.15, 0.06, 0.7, 0.22, Look.gold, {
+		Gui.Core.label(gui, Text.get("exchange_monogram"), 0.15, 0.06, 0.7, 0.22, Look.gold, {
 			font = Enum.Font.Bodoni,
 			align = Enum.TextXAlignment.Center,
 		})

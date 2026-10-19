@@ -33,7 +33,8 @@ local YELLOW = hex("#C9A227")
 
 ---------------------------------------------------------------------------------------------------
 local function ground(m: Instance, rng: Deps.RngT)
-	local dirt = Geo.lbox(m, T.x0 + 0.5, WALK - 0.3, T.z0 + 0.5, T.x1 - 0.5, WALK + 0.06, T.z1 - 0.5, hex("#5E4C38"), M.Ground)
+	local dirt =
+		Geo.lbox(m, T.x0 + 0.5, WALK - 0.3, T.z0 + 0.5, T.x1 - 0.5, WALK + 0.06, T.z1 - 0.5, hex("#5E4C38"), M.Ground)
 	dirt.Name = "Dirt"
 	local gui, W, H = Paint.surface(dirt, Enum.NormalId.Top, 3)
 	-- tyre ruts from the gate to the frame, gravel patches
@@ -58,7 +59,12 @@ local function ground(m: Instance, rng: Deps.RngT)
 	end
 	-- puddles in the ruts
 	for i, pd in { { -80, 130, 2.6 }, { 0, 150, 1.8 }, { -120, 170, 2.2 } } do
-		Props.build("puddle", m, Plan.cf(pd[1], WALK + 0.07, pd[2], rng:range(0, 180)), { size = pd[3], seed = "lot-puddle" .. i })
+		Props.build(
+			"puddle",
+			m,
+			Plan.cf(pd[1], WALK + 0.07, pd[2], rng:range(0, 180)),
+			{ size = pd[3], seed = "lot-puddle" .. i }
+		)
 	end
 end
 
@@ -78,7 +84,16 @@ local function fences(m: Instance, rng: Deps.RngT)
 	Core.px(art, W * 0.05, H * 0.2, W * 0.15, H * 0.62, hex("#3E5E73"))
 	Core.px(art, W * 0.08, H * 0.24, W * 0.09, H * 0.54, hex("#8FB3C9"))
 	Core.px(art, 0, H * 0.75, W * 0.3, H * 0.1, hex("#3F6B3A"))
-	Core.label(gui, Text.lotHoarding, 0.34, 0.12, 0.62, 0.42, hex("#1F2A44"), { font = Enum.Font.GothamBlack, weight = Enum.FontWeight.Bold })
+	Core.label(
+		gui,
+		Text.lotHoarding,
+		0.34,
+		0.12,
+		0.62,
+		0.42,
+		hex("#1F2A44"),
+		{ font = Enum.Font.GothamBlack, weight = Enum.FontWeight.Bold }
+	)
 	Core.label(gui, "LIVE · WORK · INVEST", 0.34, 0.58, 0.4, 0.14, hex("#C9A13B"), { font = Enum.Font.GothamBlack })
 	-- fly-posting and tags over the top of it
 	Paint.flyers(Core.frame(gui, 0.7, 0.5, 0.28, 0.45, Color3.new(1, 1, 1), 1), W * 0.28, H * 0.45, rng, {
@@ -90,12 +105,24 @@ local function fences(m: Instance, rng: Deps.RngT)
 	Paint.graffiti(gui, W, H, rng, "WALL ST OR BUST", { x = 0.5, y = 0.74, w = 0.3, h = 0.2 })
 	Paint.grime(gui, W, H, rng, { streaks = 12, soot = 0.15 })
 	for i, t in Text.lotWarnings do
-		local s = Kit.detail(m, Plan.cf(hx0 + 25 + (i - 1) * 45, y + 4.5, T.z0 - 0.35), Vector3.new(4, 2, 0.06), hex("#E9E2CF"), M.Metal)
+		local s = Kit.detail(
+			m,
+			Plan.cf(hx0 + 25 + (i - 1) * 45, y + 4.5, T.z0 - 0.35),
+			Vector3.new(4, 2, 0.06),
+			hex("#E9E2CF"),
+			M.Metal
+		)
 		Kit.sign(s, t, { font = Enum.Font.Highway, color = hex("#8A2C2C"), pixelsPerStud = 30 })
 	end
 	-- the hoarding's back face (inside the lot) is bare plywood with bracing
 	for x = hx0 + 6, hx1 - 6, 12 do
-		Kit.detail(m, Plan.cf(x, y + h / 2, T.z0 + 1.2) * CFrame.Angles(math.rad(-25), 0, 0), Vector3.new(0.4, h, 0.4), hex("#6B5A40"), M.Wood).Name =
+		Kit.detail(
+			m,
+			Plan.cf(x, y + h / 2, T.z0 + 1.2) * CFrame.Angles(math.rad(-25), 0, 0),
+			Vector3.new(0.4, h, 0.4),
+			hex("#6B5A40"),
+			M.Wood
+		).Name =
 			"Brace"
 	end
 	local gap0, gap1 = T.gapX - 3, T.gapX + 3
@@ -144,32 +171,86 @@ local function frame(m: Instance, rng: Deps.RngT)
 		for iz = 0, 2 do
 			local x = x0 + (x1 - x0) * ix / 3
 			local z = z0 + (z1 - z0) * iz / 2
-			Geo.lbox(f, x - 0.8, WALK + 0.8, z - 0.8, x + 0.8, WALK + slabY, z + 0.8, Geo.vary(con, rng, 0.05), M.Concrete).Name =
+			Geo.lbox(
+				f,
+				x - 0.8,
+				WALK + 0.8,
+				z - 0.8,
+				x + 0.8,
+				WALK + slabY,
+				z + 0.8,
+				Geo.vary(con, rng, 0.05),
+				M.Concrete
+			).Name =
 				"Column"
 			-- the upper storey is only half done: some columns, the rest is rebar
 			if (ix + iz) % 2 == 0 then
-				Geo.lbox(f, x - 0.8, WALK + slabY + 1, z - 0.8, x + 0.8, WALK + slabY + 1 + rng:range(6, 11), z + 0.8, Geo.vary(con, rng, 0.05), M.Concrete).Name =
+				Geo.lbox(
+					f,
+					x - 0.8,
+					WALK + slabY + 1,
+					z - 0.8,
+					x + 0.8,
+					WALK + slabY + 1 + rng:range(6, 11),
+					z + 0.8,
+					Geo.vary(con, rng, 0.05),
+					M.Concrete
+				).Name =
 					"Column"
 			else
 				for _, d in { -0.4, 0.4 } do
-					Kit.detail(f, Plan.cf(x + d, WALK + slabY + 3, z + d), Vector3.new(0.15, 4, 0.15), C.rust, M.CorrodedMetal).Name =
+					Kit.detail(
+						f,
+						Plan.cf(x + d, WALK + slabY + 3, z + d),
+						Vector3.new(0.15, 4, 0.15),
+						C.rust,
+						M.CorrodedMetal
+					).Name =
 						"Rebar"
 				end
 			end
 		end
 	end
-	local slab = Geo.lbox(f, x0 - 1.5, WALK + slabY, z0 - 1.5, x1 + 1.5, WALK + slabY + 1, z1 + 1.5, Geo.vary(con, rng, 0.04), M.Concrete)
+	local slab = Geo.lbox(
+		f,
+		x0 - 1.5,
+		WALK + slabY,
+		z0 - 1.5,
+		x1 + 1.5,
+		WALK + slabY + 1,
+		z1 + 1.5,
+		Geo.vary(con, rng, 0.04),
+		M.Concrete
+	)
 	slab.Name = "Slab"
 	-- formwork and a tarp flapping on the edge
-	Kit.detail(f, Plan.cf(x1 + 1.6, WALK + slabY - 1, (z0 + z1) / 2), Vector3.new(0.3, 2, z1 - z0), hex("#7F6A55"), M.WoodPlanks).Name =
+	Kit.detail(
+		f,
+		Plan.cf(x1 + 1.6, WALK + slabY - 1, (z0 + z1) / 2),
+		Vector3.new(0.3, 2, z1 - z0),
+		hex("#7F6A55"),
+		M.WoodPlanks
+	).Name =
 		"Formwork"
-	local tarp = Kit.detail(f, Plan.cf(x0 + 8, WALK + slabY - 3, z1 + 1.7) * CFrame.Angles(math.rad(8), 0, 0), Vector3.new(14, 6, 0.1), C.tarp, M.Fabric)
+	local tarp = Kit.detail(
+		f,
+		Plan.cf(x0 + 8, WALK + slabY - 3, z1 + 1.7) * CFrame.Angles(math.rad(8), 0, 0),
+		Vector3.new(14, 6, 0.1),
+		C.tarp,
+		M.Fabric
+	)
 	tarp.Name = "Tarp"
 	-- scaffold up the north face, so the slab can actually be reached
 	Props.build("scaffold", f, Plan.cf(-82, WALK, z0 - 4.5, 0), { bays = 3, levels = 2, seed = "lot-scaffold" })
 	-- rebar bundles on the ground
 	for i = 0, 5 do
-		Kit.detail(f, Plan.cf(-52, WALK + 0.2 + (i % 2) * 0.2, 150 + i * 0.4), Vector3.new(16, 0.18, 0.18), C.rust, M.CorrodedMetal).Name =
+		Kit.detail(
+			f,
+			Plan.cf(-52, WALK + 0.2 + (i % 2) * 0.2, 150 + i * 0.4),
+			Vector3.new(16, 0.18, 0.18),
+			C.rust,
+			M.CorrodedMetal
+		).Name =
 			"RebarBundle"
 	end
 end
@@ -191,10 +272,22 @@ local function excavator(m: Instance, rng: Deps.RngT)
 	glass.Reflectance = 0.2
 	-- boom, stick and bucket resting in the dirt
 	local boomBase = L(cf, 1.4, 4.5, -2)
-	Kit.block(e, boomBase * CFrame.Angles(math.rad(35), 0, 0) * CFrame.new(0, 0, -5), Vector3.new(1.4, 1.6, 10.5), paint, M.Metal).Name =
+	Kit.block(
+		e,
+		boomBase * CFrame.Angles(math.rad(35), 0, 0) * CFrame.new(0, 0, -5),
+		Vector3.new(1.4, 1.6, 10.5),
+		paint,
+		M.Metal
+	).Name =
 		"Boom"
 	local elbow = boomBase * CFrame.Angles(math.rad(35), 0, 0) * CFrame.new(0, 0, -10)
-	Kit.block(e, elbow * CFrame.Angles(math.rad(-110), 0, 0) * CFrame.new(0, 0, -3.6), Vector3.new(1.2, 1.2, 7.4), paint, M.Metal).Name =
+	Kit.block(
+		e,
+		elbow * CFrame.Angles(math.rad(-110), 0, 0) * CFrame.new(0, 0, -3.6),
+		Vector3.new(1.2, 1.2, 7.4),
+		paint,
+		M.Metal
+	).Name =
 		"Stick"
 	Kit.wedge(e, L(cf, 1.4, 1.2, -12.4), Vector3.new(3, 2.4, 2.6), dark, M.CorrodedMetal).Name = "Bucket"
 	-- rust and mud
@@ -231,7 +324,8 @@ local function crane(m: Instance, rng: Deps.RngT)
 	cab.Name = "CraneCab"
 	local yaw = CFrame.Angles(0, math.rad(-58), 0)
 	local jibLen, cjLen = 70, 22
-	local jib = Kit.detail(c, top * yaw * CFrame.new(0, 3.2, -jibLen / 2), Vector3.new(2.4, 2.4, jibLen), yellow, M.Metal)
+	local jib =
+		Kit.detail(c, top * yaw * CFrame.new(0, 3.2, -jibLen / 2), Vector3.new(2.4, 2.4, jibLen), yellow, M.Metal)
 	jib.Name = "Jib"
 	jib.Transparency = 1
 	for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
@@ -246,16 +340,30 @@ local function crane(m: Instance, rng: Deps.RngT)
 		Kit.detail(c, top * yaw * CFrame.new(0, dy, -jibLen / 2), Vector3.new(0.4, 0.4, jibLen), yellow, M.Metal).Name =
 			"JibChord"
 	end
-	Kit.detail(c, top * yaw * CFrame.new(0, 3.2, cjLen / 2), Vector3.new(2.4, 1, cjLen), yellow, M.Metal).Name = "CounterJib"
+	Kit.detail(c, top * yaw * CFrame.new(0, 3.2, cjLen / 2), Vector3.new(2.4, 1, cjLen), yellow, M.Metal).Name =
+		"CounterJib"
 	Kit.block(c, top * yaw * CFrame.new(0, 2.6, cjLen - 3), Vector3.new(3.4, 3.4, 4), C.concreteDark, M.Concrete).Name =
 		"Counterweight"
 	Kit.detail(c, top * yaw * CFrame.new(0, 7, 0), Vector3.new(0.5, 6, 0.5), yellow, M.Metal).Name = "Apex"
 	local trolleyAt = -jibLen * 0.62
-	Kit.detail(c, top * yaw * CFrame.new(0, 1.6, trolleyAt), Vector3.new(1.6, 0.6, 1.6), hex("#2A2A2A"), M.Metal).Name = "Trolley"
+	Kit.detail(c, top * yaw * CFrame.new(0, 1.6, trolleyAt), Vector3.new(1.6, 0.6, 1.6), hex("#2A2A2A"), M.Metal).Name =
+		"Trolley"
 	local hookY = 30
-	Kit.detail(c, top * yaw * CFrame.new(0, 1.3 - hookY / 2, trolleyAt), Vector3.new(0.12, hookY, 0.12), hex("#1A1A1A"), M.Metal).Name =
+	Kit.detail(
+		c,
+		top * yaw * CFrame.new(0, 1.3 - hookY / 2, trolleyAt),
+		Vector3.new(0.12, hookY, 0.12),
+		hex("#1A1A1A"),
+		M.Metal
+	).Name =
 		"Cable"
-	Kit.detail(c, top * yaw * CFrame.new(0, 1.3 - hookY - 0.6, trolleyAt), Vector3.new(1, 1.2, 0.6), hex("#C83A2A"), M.Metal).Name =
+	Kit.detail(
+		c,
+		top * yaw * CFrame.new(0, 1.3 - hookY - 0.6, trolleyAt),
+		Vector3.new(1, 1.2, 0.6),
+		hex("#C83A2A"),
+		M.Metal
+	).Name =
 		"Hook"
 	-- aircraft warning lights
 	for _, z in { -jibLen + 0.5, cjLen - 0.5 } do
@@ -280,7 +388,8 @@ local function trailer(m: Instance, rng: Deps.RngT)
 		Kit.detail(t, L(cf, x, 6.4, -5.15), Vector3.new(5.2, 0.15, 0.1), hex("#5A5F63"), M.Metal)
 	end
 	Kit.detail(t, L(cf, 1, 5.2, -5.05), Vector3.new(3.4, 7.2, 0.1), hex("#6E7173"), M.Metal).Name = "Door"
-	Kit.stairs(t, L(cf, 1, 0, -8.3) * CFrame.Angles(0, math.pi, 0), 4, 2, 0.5, 1.2, hex("#8E7A5A"), M.WoodPlanks).Name = "Steps"
+	Kit.stairs(t, L(cf, 1, 0, -8.3) * CFrame.Angles(0, math.pi, 0), 4, 2, 0.5, 1.2, hex("#8E7A5A"), M.WoodPlanks).Name =
+		"Steps"
 	local s = Kit.detail(t, L(cf, 1, 9.6, -5.06), Vector3.new(6, 1.2, 0.05), hex("#1F2A44"), M.Metal)
 	Kit.sign(s, "SITE OFFICE", { font = Enum.Font.Highway, color = hex("#E9E2CF"), pixelsPerStud = 30 })
 	local lamp = Kit.detail(t, L(cf, 1, 9.2, -5.4), Vector3.new(1.2, 0.5, 0.5), C.sodium, M.Neon)
@@ -313,8 +422,8 @@ local function clutter(m: Instance, rng: Deps.RngT)
 			3.2,
 			Geo.vary(C.concrete, rng, 0.05),
 			M.Concrete
-		).Name =
-			"Pipe" .. i
+		).Name = "Pipe"
+			.. i
 	end
 	Dress.litter(m, T.x0, T.z0, T.x1, T.z1, 26, rng)
 end

@@ -2,7 +2,8 @@
 -- Interior construction helpers for the Eastbridge venues (bake-safe). Every interior is built in a local frame around
 -- its slot origin (Config/World.slotOrigin): +X east, +Z south, floor top at y = 0, LookVector of yaw 0 = north (-Z).
 --
---   Shell.frame(origin) -> Frame                      F.v(x, y, z) -> Vector3, F.cf(x, y, z, yaw?) -> CFrame
+--   Shell.frame(origin) -> Frame                      F.v(x, y, z) -> Vector3, F.cf(x, y, z, yaw?) -> CFrame,
+--                                                      F.facing(x, z, tx, tz, y?) -> CFrame looking at (tx, tz)
 --   Shell.box(parent, F, x0, y0, z0, x1, y1, z1, color, mat?, solid?) -> Part     axis-aligned block (local corners)
 --   Shell.wallX(parent, F, z, x0, x1, y0, y1, t, color, mat?, gaps?) -> { Part }  wall along X centred on z
 --   Shell.wallZ(parent, F, x, z0, z1, y0, y1, t, color, mat?, gaps?) -> { Part }  wall along Z centred on x
@@ -30,6 +31,7 @@ export type Frame = {
 	origin: Vector3,
 	v: (x: number, y: number, z: number) -> Vector3,
 	cf: (x: number, y: number, z: number, yaw: number?) -> CFrame,
+	facing: (x: number, z: number, tx: number, tz: number, y: number?) -> CFrame,
 }
 
 export type Gap = { c: number, w: number, h: number }
@@ -45,7 +47,11 @@ function Shell.frame(origin: Vector3): Frame
 		end
 		return c
 	end
-	return { origin = origin, v = v, cf = cf }
+	local function facing(x: number, z: number, tx: number, tz: number, y: number?): CFrame
+		local p = origin + Vector3.new(x, y or 0, z)
+		return CFrame.lookAt(p, origin + Vector3.new(tx, y or 0, tz))
+	end
+	return { origin = origin, v = v, cf = cf, facing = facing }
 end
 
 -- Yaw (degrees) whose LookVector points along each compass direction (same as the exterior Plan).
@@ -176,10 +182,19 @@ function Shell.troffer(parent: Instance, cf: CFrame, size: Vector3?, light: bool
 	return p
 end
 
-function Shell.window(parent: Instance, cf: CFrame, w: number, h: number, rng: Deps.RngT, kind: string, frameColor: Color3?): Part
+function Shell.window(
+	parent: Instance,
+	cf: CFrame,
+	w: number,
+	h: number,
+	rng: Deps.RngT,
+	kind: string,
+	frameColor: Color3?
+): Part
 	local fc = frameColor or hex("#E9E4D8")
 	-- the view sits flush on the wall; frame and sill stand proud of it
-	local view = Kit.detail(parent, cf * CFrame.new(0, 0, -0.06), Vector3.new(w, h, 0.1), hex("#9AA2A6"), M.SmoothPlastic)
+	local view =
+		Kit.detail(parent, cf * CFrame.new(0, 0, -0.06), Vector3.new(w, h, 0.1), hex("#9AA2A6"), M.SmoothPlastic)
 	view.Name = "WindowView"
 	view.CastShadow = false
 	local gui, W, H = Paint.surface(view, Enum.NormalId.Front, 10, { maxDistance = 200 })
@@ -188,7 +203,13 @@ function Shell.window(parent: Instance, cf: CFrame, w: number, h: number, rng: D
 	Kit.detail(parent, cf * CFrame.new(0, -h / 2 - 0.2, -0.3), Vector3.new(w + 0.8, 0.3, 0.6), fc, M.SmoothPlastic).Name =
 		"Sill"
 	for _, sx in { -1, 1 } do
-		Kit.detail(parent, cf * CFrame.new(sx * (w / 2 + 0.15), 0, -0.15), Vector3.new(0.3, h + 0.4, 0.3), fc, M.SmoothPlastic)
+		Kit.detail(
+			parent,
+			cf * CFrame.new(sx * (w / 2 + 0.15), 0, -0.15),
+			Vector3.new(0.3, h + 0.4, 0.3),
+			fc,
+			M.SmoothPlastic
+		)
 	end
 	Kit.detail(parent, cf * CFrame.new(0, h / 2 + 0.15, -0.15), Vector3.new(w + 0.6, 0.3, 0.3), fc, M.SmoothPlastic)
 	return view
@@ -198,7 +219,13 @@ export type SignOpts = { color: Color3?, ink: Color3?, font: Enum.Font?, glow: b
 
 function Shell.sign(parent: Instance, cf: CFrame, w: number, h: number, text: string, o: SignOpts?): Part
 	local opts: SignOpts = o or {}
-	local p = Kit.detail(parent, cf * CFrame.new(0, 0, -0.06), Vector3.new(w, h, 0.12), opts.color or hex("#24262A"), M.SmoothPlastic)
+	local p = Kit.detail(
+		parent,
+		cf * CFrame.new(0, 0, -0.06),
+		Vector3.new(w, h, 0.12),
+		opts.color or hex("#24262A"),
+		M.SmoothPlastic
+	)
 	p.Name = "Sign"
 	Kit.sign(p, text, {
 		font = opts.font or Enum.Font.Oswald,
@@ -216,7 +243,8 @@ function Shell.chair(parent: Instance, cf: CFrame, color: Color3?, backColor: Co
 	seat.Name = "Chair"
 	Kit.detail(parent, cf * CFrame.new(0, 3.1, 0.85), Vector3.new(1.9, 2.4, 0.25), backColor or c, M.Fabric).Name =
 		"ChairBack"
-	Kit.detail(parent, cf * CFrame.new(0, 0.8, 0), Vector3.new(0.3, 1.6, 0.3), hex("#2A2A2A"), M.Metal).Name = "ChairLeg"
+	Kit.detail(parent, cf * CFrame.new(0, 0.8, 0), Vector3.new(0.3, 1.6, 0.3), hex("#2A2A2A"), M.Metal).Name =
+		"ChairLeg"
 	return seat
 end
 
@@ -243,7 +271,8 @@ function Shell.exit(parent: Instance, mk: Instance, doorId: string, cf: CFrame, 
 		Kit.detail(parent, cf * CFrame.new(s * 1.95, 4, -0.42), Vector3.new(3, 0.25, 0.2), hex("#B8B8B0"), M.Metal).Name =
 			"PushBar"
 	end
-	local sign = Kit.detail(parent, cf * CFrame.new(0, 10.8, -0.2), Vector3.new(4.4, 1.2, 0.25), hex("#1A1A1A"), M.SmoothPlastic)
+	local sign =
+		Kit.detail(parent, cf * CFrame.new(0, 10.8, -0.2), Vector3.new(4.4, 1.2, 0.25), hex("#1A1A1A"), M.SmoothPlastic)
 	sign.Name = "ExitSign"
 	Kit.sign(sign, opts.label or Deps.Text.exit, {
 		font = Enum.Font.Highway,

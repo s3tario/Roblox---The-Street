@@ -14,6 +14,7 @@ Text.strings = {
 
 	-- the Metropolitan Exchange
 	exchange_name = "METROPOLITAN EXCHANGE",
+	exchange_monogram = "ME",
 	exchange_founded = "MDCCCXCII",
 	exchange_plaque_title = "THE METROPOLITAN EXCHANGE",
 	exchange_plaque_text = "Where the city has traded since 1892.\nTrading floor: members and staff only.",
@@ -64,7 +65,6 @@ Text.strings = {
 	tenant_floor = "Lobby  >",
 	address = "{n} {street}",
 	ghost_sign = "VENTURE ROW\nLOFTS & STUDIOS",
-	sv_roof = "STERLING & VANCE",
 
 	-- venues
 	galleria_name = "THE GALLERIA",

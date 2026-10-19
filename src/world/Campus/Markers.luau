@@ -90,7 +90,14 @@ function Markers.surfaceSlot(
 end
 
 -- Wall items hang from the slot's back face (+Z) and face its front (-Z). base = bottom-centre on the wall face.
-function Markers.wallSlot(parent: Instance, kind: string, id: string, base: CFrame, size: Vector3, limits: Limits?): Part
+function Markers.wallSlot(
+	parent: Instance,
+	kind: string,
+	id: string,
+	base: CFrame,
+	size: Vector3,
+	limits: Limits?
+): Part
 	return slotPart(parent, kind, id, base * CFrame.new(0, size.Y / 2, -size.Z / 2), size, limits)
 end
 
