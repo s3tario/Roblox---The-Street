@@ -107,7 +107,7 @@ local function collection(m: Instance, P: Boutique.PFn, rng: Deps.RngT)
 		local x = W * (0.03 + i * 0.194)
 		local w = W * 0.164
 		local niche = Core.px(gui, x, H * 0.08, w, H * 0.74, hex("#5A4030"))
-		Core.gradient(niche, hex("#8A6A48"), hex("#2A1C12"), 90)
+		Paint.gradient(niche, hex("#8A6A48"), hex("#2A1C12"), 90)
 		Core.stroke(niche, BRASS, 2)
 		-- the watch on its cushion
 		local cx, cy = x + w / 2, H * 0.4

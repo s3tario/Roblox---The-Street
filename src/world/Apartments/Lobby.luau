@@ -152,7 +152,7 @@ function Lobby.build(parent: Instance, mk: Instance, F: Shell.Frame, rng: Deps.R
 	dir.Name = "Directory"
 	local dg = Core.surface(dir, Enum.NormalId.Front, { pps = 40, glow = true, brightness = 1, maxDistance = 160 })
 	local dbg = Core.bg(dg, NAVY)
-	Core.gradient(dbg, hex("#24385A"), hex("#121C2C"), 90)
+	Paint.gradient(dbg, hex("#24385A"), hex("#121C2C"), 90)
 	Core.label(
 		dg,
 		Text.get("apt_directory_title"),

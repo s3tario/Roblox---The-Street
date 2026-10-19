@@ -37,6 +37,9 @@ Rooftop.ZONE = "rooftop"
 local X0, X1, Z0, Z1 = -60, 60, -50, 50
 local PARAPET = 3.2
 local RING_R = 178
+local HAZE_SOLID_Y = 40 -- the ring's painted haze is opaque up to here
+local HAZE_CLEAR_Y = 60 -- and fully faded into the real sky here
+local DECK_TOP = 0.12 -- the teak decking's walking surface (everything on the deck stands at this height)
 
 local TEAK = hex("#9A6B45")
 local STONE = hex("#B9B4AA")
@@ -93,7 +96,8 @@ end
 local function deck(m: Instance, F: Shell.Frame)
 	local d = Kit.model(m, "Deck")
 	Shell.box(d, F, X0 - 4, -1, Z0 - 4, X1 + 4, 0, Z1 + 4, STONE, M.Slate).Name = "RoofSlab"
-	local teak = Shell.box(d, F, X0 + 4, 0, Z0 + 4, X1 - 4, 0.12, Z1 - 4, TEAK, M.WoodPlanks, false)
+	-- the decking collides: guests (and the host) stand on the teak, not 0.12 studs inside it
+	local teak = Shell.box(d, F, X0 + 4, 0, Z0 + 4, X1 - 4, DECK_TOP, Z1 - 4, TEAK, M.WoodPlanks)
 	teak.Name = "Decking"
 	teak.CastShadow = false
 	local tg, TW, TH = Paint.surface(teak, Enum.NormalId.Top, 2, { maxDistance = 0 })
@@ -154,7 +158,10 @@ local function view(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	city.CastShadow = false
 	local cg, CW, CH = Paint.surface(city, Enum.NormalId.Top, 1, { maxDistance = 0 })
 	Paint.cityBelow(cg, CW, CH, rng, "day")
-	-- the skyline ring: transparent panels painted with towers (no sky, so the real sky shows above them)
+	-- the skyline ring: transparent panels painted with towers (no sky, so the real sky shows above them). Their haze is
+	-- painted solid from the horizon up to y ~ 40 and fades out by y ~ 60: the other venue slots stand 500+ studs away
+	-- (nearer than streaming's radius) at -4..+5 degrees from the deck, and the place has no fog to hide them, so the
+	-- band where they would show through between painted towers is opaque for every camera height the zoom allows.
 	local n = 16
 	local w = 2 * math.pi * RING_R / n + 1.5
 	local top, bottom = 72, -19
@@ -177,13 +184,16 @@ local function view(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 			3,
 			{ glow = true, brightness = 1, maxDistance = 0, name = "Skyline" }
 		)
-		Paint.skyline(
-			gui,
-			W,
-			H,
-			rng,
-			{ mood = "day", view = "high", sky = false, horizon = (top - 4) / (top - bottom), density = 1.2 }
-		)
+		local horizonY = 4
+		Paint.skyline(gui, W, H, rng, {
+			mood = "day",
+			view = "high",
+			sky = false,
+			horizon = (top - horizonY) / (top - bottom),
+			density = 1.2,
+			hazeHeight = (HAZE_CLEAR_Y - horizonY) / (top - bottom),
+			hazeSolid = (HAZE_SOLID_Y - horizonY) / (HAZE_CLEAR_Y - horizonY),
+		})
 	end
 	-- three neighbouring tower tops for parallax: a slim crown with a mast, a water-tower roof and a stepped spire
 	local towers = {
@@ -287,7 +297,7 @@ local function pavilion(m: Instance, mk: Instance, F: Shell.Frame)
 		Shell.box(p, F, x - 0.5, 0, pz0 - 0.5, x + 0.5, roofY, pz0 + 0.5, STEEL, M.Metal).Name = "PavilionPost"
 	end
 	Shell.box(p, F, -13, roofY, pz0 - 1, 13, roofY + 1.2, Z1 + 1.5, STEEL, M.Metal).Name = "PavilionRoof"
-	Shell.box(p, F, -12, 0.12, pz0, 12, 0.2, Z1, hex("#2B2D30"), M.Granite, false).Name = "PavilionFloor"
+	Shell.box(p, F, -12, DECK_TOP, pz0, 12, DECK_TOP + 0.08, Z1, hex("#2B2D30"), M.Granite).Name = "PavilionFloor"
 	Shell.glow(p, F.cf(0, roofY - 0.1, 43.5), Vector3.new(16, 0.1, 6), hex("#FFF1D6"), { range = 22, brightness = 0.8 })
 	Shell.exit(p, mk, "door_rooftop_exit", F.cf(0, 0, Z1, Shell.N), {
 		label = Text.get("roof_elevator"),

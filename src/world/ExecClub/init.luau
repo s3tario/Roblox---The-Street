@@ -172,7 +172,13 @@ local function entrance(m: Instance, mk: Instance, F: Shell.Frame)
 	-- the club's name and crest over the doors on the inside
 	local crest = Kit.detail(e, F.cf(0, 15.5, Z1 - 0.15), Vector3.new(4.2, 4.2, 0.2), WALNUT_DARK, M.Wood)
 	crest.Name = "Crest"
-	if not Deps.logo(crest, Enum.NormalId.Front, "brand_executive_club", { theme = "dark", padding = 0.08 }) then
+	local crestId = "brand_executive_club"
+	if
+		not (
+			Deps.hasLogo(crestId)
+			and Deps.logo(crest, Enum.NormalId.Front, crestId, { theme = "dark", padding = 0.08 })
+		)
+	then
 		Kit.sign(crest, "EC", { font = Enum.Font.Bodoni, color = GOLD_BRIGHT, pixelsPerStud = 40 })
 	end
 	local name = Shell.plate(e, F.cf(0, 13, Z1, Shell.N), 16, 1.4, Text.get("club_name"), {

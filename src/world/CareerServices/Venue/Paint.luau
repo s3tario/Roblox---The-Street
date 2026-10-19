@@ -5,7 +5,11 @@
 --   Paint.skyline(gui, W, H, rng, o?)                               the city seen through a window or past a parapet
 --       o = { mood = "day" | "dusk" | "night", horizon = 0..1 (from the top), sky = true (paint the sky; false keeps it
 --             clear so the real sky shows above a transparent backdrop), view = "high" (above the rooftops) |
---             "street" (looking across at facades), density = 0.5..1.5 }
+--             "street" (looking across at facades), density = 0.5..1.5,
+--             hazeHeight = fraction of H the horizon haze rises (default 0.22),
+--             hazeSolid = fraction of the haze, from the horizon up, painted fully opaque before it fades into the sky
+--             above (default: a soft, see-through glow). With sky = false this is what hides anything that stands
+--             behind a transparent backdrop near the horizon. }
 --   Paint.sky(gui, W, H, rng, mood?)                                a sky with soft clouds (skylights, lanterns)
 --   Paint.marble(gui, W, H, rng, vein, count?)                      fine marble veining over a part's own colour
 --   Paint.medallion(gui, W, H, colors)                              a floor inlay: rings and an eight-point star
@@ -13,6 +17,10 @@
 --   Paint.cityBelow(gui, W, H, rng, mood?)                          the street grid far below a roof
 --   Paint.facade(gui, W, H, rng, color, mood?)                      a curtain-wall face for a nearby tower
 --   Paint.fade(obj, keypoints, rotation)                            a transparency gradient on any GuiObject
+--   Paint.gradient(obj, a, b, rotation?) / Paint.stripes(obj, colors, bands, rotation)
+--                                                                   colour gradients that show their own colours: a
+--                                                                   UIGradient's colours MULTIPLY the frame's
+--                                                                   BackgroundColor3, so these set it to white first
 
 local Deps = require(script.Parent.Deps)
 
@@ -29,6 +37,8 @@ export type SkylineOpts = {
 	sky: boolean?,
 	view: string?,
 	density: number?,
+	hazeHeight: number?,
+	hazeSolid: number?,
 }
 
 function Paint.surface(part: BasePart, face: Enum.NormalId, pps: number, o: SurfOpts?): (SurfaceGui, number, number)
@@ -54,7 +64,20 @@ function Paint.fade(obj: GuiObject, keypoints: { { number } }, rotation: number)
 	return g
 end
 
+local WHITE = Color3.new(1, 1, 1)
+
+function Paint.gradient(obj: GuiObject, a: Color3, b: Color3, rotation: number?): UIGradient
+	obj.BackgroundColor3 = WHITE
+	return Core.gradient(obj, a, b, rotation)
+end
+
+function Paint.stripes(obj: GuiObject, colors: { Color3 }, bands: number, rotation: number): UIGradient
+	obj.BackgroundColor3 = WHITE
+	return Core.stripes(obj, colors, bands, rotation)
+end
+
 local function gradient3(obj: GuiObject, a: Color3, b: Color3, c: Color3, mid: number, rotation: number)
+	obj.BackgroundColor3 = WHITE
 	local g = Instance.new("UIGradient")
 	g.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, a),
@@ -170,10 +193,10 @@ local function tower(
 	body.Name = "Tower"
 	-- window columns and floor lines make the curtain wall; at night some floors stay lit
 	local cols = Core.px(gui, x + w * 0.07, top + w * 0.08, w * 0.86, bottom - top, mood.winLit, 0.6)
-	Core.stripes(cols, { mood.winLit, mood.winDark }, if near then 9 else rng:int(4, 8), 0)
+	Paint.stripes(cols, { mood.winLit, mood.winDark }, if near then 9 else rng:int(4, 8), 0)
 	if near then
 		local floors = Core.px(gui, x, top + w * 0.08, w, bottom - top, mood.winDark, 0.65)
-		Core.stripes(floors, { mood.winDark, color }, 9, 90)
+		Paint.stripes(floors, { mood.winDark, color }, 9, 90)
 		local shade = Core.px(gui, x, top, w, bottom - top, hex("#0E141C"), 0.5)
 		Paint.fade(shade, { { 0, 1 }, { 0.55, 0.9 }, { 1, 0.3 } }, 0)
 	end
@@ -231,12 +254,25 @@ function Paint.skyline(gui: Instance, W: number, H: number, rng: Deps.RngT, o: S
 			end
 		end
 	end
-	-- haze glowing just above the horizon
-	local haze = Core.px(gui, 0, hz - H * 0.22, W, H * 0.22 + 2, mood.haze)
-	Paint.fade(haze, { { 0, 1 }, { 0.7, 0.5 }, { 1, 0.2 } }, 90)
+	-- haze glowing just above the horizon (the gradient runs top to bottom: keypoint 0 is the haze's top edge)
+	local hh = H * math.clamp(opts.hazeHeight or 0.22, 0.02, 1)
+	local haze = Core.px(gui, 0, hz - hh, W, hh + 2, mood.haze)
+	if opts.hazeSolid then
+		-- an opaque band from the horizon up that fades into the sky colour, then into nothing
+		local solid = math.clamp(opts.hazeSolid, 0.05, 0.95)
+		haze.BackgroundColor3 = WHITE
+		local g = Paint.fade(haze, { { 0, 1 }, { 1 - solid, 0 }, { 1, 0 } }, 90)
+		g.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, mood.skyMid),
+			ColorSequenceKeypoint.new(1 - solid, mood.skyLow),
+			ColorSequenceKeypoint.new(1, mood.haze),
+		})
+	else
+		Paint.fade(haze, { { 0, 1 }, { 0.7, 0.5 }, { 1, 0.2 } }, 90)
+	end
 	-- the city below the horizon
 	local mass = Core.px(gui, 0, hz, W, H - hz, mood.mass)
-	Core.gradient(mass, mood.mass, mood.massLow, 90)
+	Paint.gradient(mass, mood.mass, mood.massLow, 90)
 	if mood.litShare > 0.3 then
 		for _ = 1, math.floor(26 * mood.litShare) do
 			Core.dot(gui, rng:range(0, W), rng:range(hz + 2, H), rng:range(1.5, 3.5), mood.winLit, rng:range(0.1, 0.5))
@@ -368,9 +404,9 @@ function Paint.facade(gui: Instance, W: number, H: number, rng: Deps.RngT, color
 	local mood = Paint.mood(moodId)
 	Core.bg(gui, color)
 	local cols = Core.px(gui, W * 0.03, 0, W * 0.94, H, mood.winLit, 0.55)
-	Core.stripes(cols, { mood.winLit, mood.winDark }, rng:int(6, 9), 0)
+	Paint.stripes(cols, { mood.winLit, mood.winDark }, rng:int(6, 9), 0)
 	local floors = Core.px(gui, 0, 0, W, H, mood.winDark, 0.6)
-	Core.stripes(floors, { mood.winDark, color }, 9, 90)
+	Paint.stripes(floors, { mood.winDark, color }, 9, 90)
 	local shade = Core.px(gui, 0, 0, W, H, hex("#0E141C"), 0.6)
 	Paint.fade(shade, { { 0, 0.95 }, { 1, 0.4 } }, 90)
 end

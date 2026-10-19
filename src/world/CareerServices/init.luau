@@ -193,7 +193,7 @@ end
 local function consultScreen(part: BasePart, n: number)
 	local gui = Core.surface(part, Enum.NormalId.Front, { pps = 60, glow = true, brightness = 1.1, maxDistance = 120 })
 	local bg = Core.bg(gui, hex("#13243A"))
-	Core.gradient(bg, hex("#1F3A5C"), hex("#0E1A28"), 90)
+	Paint.gradient(bg, hex("#1F3A5C"), hex("#0E1A28"), 90)
 	Core.dot(gui, 0.5 * 2.6 * 60, 0.32 * 1.6 * 60, 0.34 * 1.6 * 60, hex("#8FB8DE"), 0.1)
 	Core.label(gui, Text.get("cs_desk", { n = n }), 0.05, 0.56, 0.9, 0.16, hex("#F2E6C4"), {
 		font = Enum.Font.GothamBold,
@@ -402,7 +402,7 @@ local function library(m: Instance, F: Shell.Frame)
 		p.Name = "Poster"
 		local pg = Core.surface(p, Enum.NormalId.Front, { pps = 40, maxDistance = 140 })
 		local pb = Core.bg(pg, NAVY)
-		Core.gradient(pb, hex("#24385A"), hex("#121C2C"), 90)
+		Paint.gradient(pb, hex("#24385A"), hex("#121C2C"), 90)
 		Core.frame(pg, 0.08, 0.08, 0.84, 0.006, BRASS)
 		Core.label(
 			pg,
@@ -439,7 +439,7 @@ local function library(m: Instance, F: Shell.Frame)
 	screen.Name = "KioskScreen"
 	local sg = Core.surface(screen, Enum.NormalId.Front, { pps = 50, glow = true, brightness = 1.1, maxDistance = 100 })
 	local sb = Core.bg(sg, hex("#0E1116"))
-	Core.gradient(sb, hex("#1D2A3E"), hex("#0B0F16"), 90)
+	Paint.gradient(sb, hex("#1D2A3E"), hex("#0B0F16"), 90)
 	Core.label(
 		sg,
 		Text.get("cs_kiosk"),

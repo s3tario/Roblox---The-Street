@@ -464,6 +464,39 @@ return function(t)
 				end
 			end)
 
+			t.it(
+				"paints colour gradients over white frames (a UIGradient's colours multiply the frame's own)",
+				function()
+					local function white(c: Color3): boolean
+						return c.R > 0.999 and c.G > 0.999 and c.B > 0.999
+					end
+					local checked = 0
+					for _, g in venue(v.module):GetDescendants() do
+						if g:IsA("UIGradient") then
+							local coloured = false
+							for _, k in g.Color.Keypoints do
+								if not white(k.Value) then
+									coloured = true
+								end
+							end
+							local f = g.Parent
+							if coloured and f and f:IsA("Frame") and f.BackgroundTransparency < 1 then
+								checked += 1
+								if not white(f.BackgroundColor3) then
+									error(
+										("%s tints its gradient with %s: the painted colours come out darker"):format(
+											f:GetFullName(),
+											tostring(f.BackgroundColor3)
+										)
+									)
+								end
+							end
+						end
+					end
+					t.expect(checked).toBeGreaterThan(0)
+				end
+			)
+
 			if v.indoor then
 				t.it(
 					"is visually sealed: every sight line from the arrival ends on a wall or a painted view",

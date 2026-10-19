@@ -139,7 +139,7 @@ local function fittingRoom(m: Instance, P: Boutique.PFn)
 	local curtain = Boutique.box(f, P, 14.2, 0.3, 19.4, 15.8, 9.8, 19.7, hex("#6E1A1F"), M.Fabric, false)
 	curtain.Name = "Curtain"
 	local cg = Core.surface(curtain, Enum.NormalId.Back, { pps = 20, maxDistance = 120 })
-	Core.stripes(Core.bg(cg, hex("#6E1A1F")), { hex("#7E2228"), hex("#5A1418") }, 5, 0)
+	Paint.stripes(Core.bg(cg, hex("#6E1A1F")), { hex("#7E2228"), hex("#5A1418") }, 5, 0)
 	Boutique.box(f, P, 14.2, 9.8, 19.45, 21.9, 10, 19.65, BRASS, M.Metal, false).Name = "CurtainRail"
 	Shell.plate(f, P(18, 12, 19.3) * FACE_OUT, 7, 1, Text.get("gal_tailor_fitting"), {
 		color = NAVY,

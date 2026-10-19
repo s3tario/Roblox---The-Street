@@ -322,6 +322,61 @@ return function(t)
 			end
 		end)
 
+		t.it("stands guests on the teak decking, not inside it", function()
+			local deck: BasePart? = nil
+			for _, d in venue(M):GetDescendants() do
+				if d:IsA("BasePart") and d.Name == "Decking" then
+					deck = d
+				end
+			end
+			assert(deck, "no decking")
+			t.expect(deck.CanCollide).toBe(true)
+			local top = deck.CFrame.Position.Y + deck.Size.Y / 2
+			t.expect(top - originOf("rooftop").Y).toBeGreaterThan(0.1)
+			-- the host's floor (and every guest's on the deck) is the decking's top face
+			local host = withAttr(venue(M), "NpcId", "npc_mixer_host")[1] :: BasePart
+			local p = host.CFrame.Position
+			t.expect(solidAt(M, Vector3.new(p.X, top - 0.06, p.Z))).toBe(deck)
+			t.expect(solidAt(M, Vector3.new(p.X, top + 0.1, p.Z))).toBeNil()
+		end)
+
+		t.it("paints the ring's horizon haze solid where the other venue slots would show through", function()
+			-- the other interior slots stand 500+ studs out at about -4..+5 degrees from the deck (camera heights the
+			-- zoom allows), which lands between y ~ 3 and ~ 38 on the ring: that band must be opaque paint
+			local base = originOf("rooftop").Y
+			local panels = 0
+			for _, d in venue(M):GetDescendants() do
+				if d:IsA("BasePart") and d.Name == "SkylinePanel" then
+					panels += 1
+					local gui = d:FindFirstChildWhichIsA("SurfaceGui")
+					assert(gui, "SkylinePanel without its painting")
+					local pps = gui.PixelsPerStud
+					local topY = d.CFrame.Position.Y + d.Size.Y / 2 - base
+					local solidTop, solidBottom = nil, nil
+					for _, f in gui:GetChildren() do
+						local g = f:FindFirstChildWhichIsA("UIGradient")
+						-- the haze: clear at its top edge, solid from partway down to its foot on the horizon
+						local kps = if g then g.Transparency.Keypoints else {}
+						if f:IsA("Frame") and g and f.BackgroundTransparency == 0 and kps[1].Value == 1 then
+							for _, k in kps do
+								if k.Value == 0 and k.Time > 0 and k.Time < 1 then
+									solidTop = topY - (f.Position.Y.Offset + k.Time * f.Size.Y.Offset) / pps
+									solidBottom = topY - (f.Position.Y.Offset + f.Size.Y.Offset) / pps
+									break
+								end
+							end
+						end
+					end
+					assert(solidTop and solidBottom, d:GetFullName() .. " has no solid horizon haze")
+					t.expect(solidTop).toBeGreaterThanOrEqual(38)
+					-- it meets the painted city below the horizon, which is opaque down to the panel's foot
+					t.expect(solidBottom).toBeLessThanOrEqual(6)
+					t.expect(topY - d.Size.Y).toBeLessThan(-15)
+				end
+			end
+			t.expect(panels).toBe(16)
+		end)
+
 		t.it("turns the bar's menu board toward guests arriving from the elevator", function()
 			local menu = nil
 			for _, d in venue(M):GetDescendants() do

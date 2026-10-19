@@ -71,7 +71,7 @@ local function arcade(part: BasePart, face: Enum.NormalId)
 		local inset = ww * 0.08
 		Core.dot(gui, wx + r, top + r, ww - inset * 2, WINDOW_LIT)
 		local pane = Core.px(gui, wx + inset, top + r, ww - inset * 2, bottom - top - r - inset, WINDOW_LIT)
-		Core.gradient(pane, hex("#F7E3B8"), hex("#C99A5A"), 90)
+		Paint.gradient(pane, hex("#F7E3B8"), hex("#C99A5A"), 90)
 		Core.px(gui, wx + r - 1, top + inset, 3, bottom - top - inset * 2, IRON).Name = "Mullion"
 		Core.px(gui, wx + inset, top + r + (bottom - top) * 0.22, ww - inset * 2, 3, IRON).Name = "Transom"
 		-- keystone and the balustrade
@@ -96,7 +96,7 @@ local function lunette(part: BasePart, face: Enum.NormalId)
 	local r = R * pps
 	Core.dot(gui, cx, cy, r * 2, IRON)
 	local glass = Core.dot(gui, cx, cy, r * 2 - 8, hex("#DCEBF3"))
-	Core.gradient(glass, hex("#9CC2E2"), hex("#E8F1F5"), 90)
+	Paint.gradient(glass, hex("#9CC2E2"), hex("#E8F1F5"), 90)
 	for k = 1, 11 do
 		local a = math.rad(k * 15)
 		Core.line(gui, cx, cy, cx + math.cos(a) * r, cy - math.sin(a) * r, 3, IRON)
@@ -376,7 +376,7 @@ local function court(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	panel:AddTag("InteriorLight")
 	local pg = Core.surface(panel, Enum.NormalId.Front, { pps = 40, glow = true, brightness = 1, maxDistance = 160 })
 	local bg = Core.bg(pg, NAVY)
-	Core.gradient(bg, hex("#24385A"), hex("#121C2C"), 90)
+	Paint.gradient(bg, hex("#24385A"), hex("#121C2C"), 90)
 	Core.label(pg, Text.get("gal_directory_title"), 0.08, 0.05, 0.84, 0.1, GOLD_BRIGHT, {
 		font = Enum.Font.Bodoni,
 		align = Enum.TextXAlignment.Center,

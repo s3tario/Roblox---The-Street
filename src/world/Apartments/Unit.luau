@@ -197,7 +197,7 @@ function Unit.build(parent: Instance, frame: CFrame, n: number, level: number, r
 	Markers.interact(panel, "housing_panel", { Context = "apartment" })
 	local pg = Core.surface(panel, Enum.NormalId.Front, { pps = 60, glow = true, brightness = 1, maxDistance = 90 })
 	local pbg = Core.bg(pg, hex("#13243A"))
-	Core.gradient(pbg, hex("#1F3A5C"), hex("#0E1A24"), 90)
+	Paint.gradient(pbg, hex("#1F3A5C"), hex("#0E1A24"), 90)
 	Core.label(
 		pg,
 		Text.get("apt_panel"),
