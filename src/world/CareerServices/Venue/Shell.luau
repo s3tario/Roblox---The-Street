@@ -329,7 +329,8 @@ function Shell.window(parent: Instance, cf: CFrame, w: number, h: number, rng: D
 	local opts: WindowOpts = o or {}
 	local fc = opts.frame or hex("#2B2B2D")
 	local fm = opts.frameMaterial or M.Metal
-	local view = Kit.detail(parent, cf * CFrame.new(0, 0, -0.05), Vector3.new(w, h, 0.1), hex("#9AB4C8"), M.SmoothPlastic)
+	local view =
+		Kit.detail(parent, cf * CFrame.new(0, 0, -0.05), Vector3.new(w, h, 0.1), hex("#9AB4C8"), M.SmoothPlastic)
 	view.Name = "WindowView"
 	view.CastShadow = false
 	local gui, W, H = Paint.surface(view, Enum.NormalId.Front, opts.pps or 6, {
@@ -356,7 +357,8 @@ function Shell.window(parent: Instance, cf: CFrame, w: number, h: number, rng: D
 		Kit.detail(parent, cf * CFrame.new(s * (w / 2 + t / 2), 0, -0.2), Vector3.new(t, h + t * 2, 0.4), fc, fm).Name =
 			"WindowJamb"
 	end
-	Kit.detail(parent, cf * CFrame.new(0, h / 2 + t / 2, -0.2), Vector3.new(w + t * 2, t, 0.4), fc, fm).Name = "WindowHead"
+	Kit.detail(parent, cf * CFrame.new(0, h / 2 + t / 2, -0.2), Vector3.new(w + t * 2, t, 0.4), fc, fm).Name =
+		"WindowHead"
 	if opts.sill ~= false then
 		Kit.detail(parent, cf * CFrame.new(0, -h / 2 - 0.2, -0.45), Vector3.new(w + 1, 0.4, 0.9), fc, fm).Name =
 			"WindowSill"
@@ -372,7 +374,16 @@ function Shell.window(parent: Instance, cf: CFrame, w: number, h: number, rng: D
 	return view
 end
 
-function Shell.boundary(parent: Instance, F: Frame, x0: number, z0: number, x1: number, z1: number, y0: number, y1: number)
+function Shell.boundary(
+	parent: Instance,
+	F: Frame,
+	x0: number,
+	z0: number,
+	x1: number,
+	z1: number,
+	y0: number,
+	y1: number
+)
 	local t = 2
 	local function wall(a: Vector3, b: Vector3)
 		local mn = Vector3.new(math.min(a.X, b.X), math.min(a.Y, b.Y), math.min(a.Z, b.Z))

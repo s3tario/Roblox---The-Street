@@ -93,7 +93,13 @@ function Unit.build(parent: Instance, frame: CFrame, n: number, level: number, r
 		liner.CastShadow = false
 		Markers.theme(liner, "wall")
 	end
-	local back = Kit.block(m, P(0, CH / 2, D + Plan.BACK_T / 2), Vector3.new(Plan.UNIT_W + Plan.PARTY_T, CH, Plan.BACK_T), wallC, M.SmoothPlastic)
+	local back = Kit.block(
+		m,
+		P(0, CH / 2, D + Plan.BACK_T / 2),
+		Vector3.new(Plan.UNIT_W + Plan.PARTY_T, CH, Plan.BACK_T),
+		wallC,
+		M.SmoothPlastic
+	)
 	back.Name = "WindowWall"
 	Markers.theme(back, "wall")
 	local wallA = Kit.block(
@@ -120,13 +126,25 @@ function Unit.build(parent: Instance, frame: CFrame, n: number, level: number, r
 	-- the entry: the door leaf standing open, a head trim and the nameplate on the corridor side
 	Kit.detail(m, P(Plan.DOOR_UX - 2.9, 4.75, 3.1), Vector3.new(0.2, Plan.DOOR_H, 5.8), hex("#3E2C20"), M.Wood).Name =
 		"DoorLeaf"
-	Kit.detail(m, P(Plan.DOOR_UX, Plan.DOOR_H + 0.35, -Plan.FRONT_T - 0.1) * FACE_OUT, Vector3.new(Plan.DOOR_W + 1.2, 0.7, 0.2), hex("#B8933F"), M.Metal).Name =
+	Kit.detail(
+		m,
+		P(Plan.DOOR_UX, Plan.DOOR_H + 0.35, -Plan.FRONT_T - 0.1) * FACE_OUT,
+		Vector3.new(Plan.DOOR_W + 1.2, 0.7, 0.2),
+		hex("#B8933F"),
+		M.Metal
+	).Name =
 		"DoorHead"
-	Markers.nameplate(m, P(Plan.DOOR_UX + 4.9, 6.2, -Plan.FRONT_T - 0.06) * FACE_OUT, Vector3.new(2.8, 0.9, 0.1), Text.get("apt_unit", { n = n }), {
-		color = hex("#1C1E22"),
-		ink = hex("#E3C46F"),
-		font = Enum.Font.Bodoni,
-	})
+	Markers.nameplate(
+		m,
+		P(Plan.DOOR_UX + 4.9, 6.2, -Plan.FRONT_T - 0.06) * FACE_OUT,
+		Vector3.new(2.8, 0.9, 0.1),
+		Text.get("apt_unit", { n = n }),
+		{
+			color = hex("#1C1E22"),
+			ink = hex("#E3C46F"),
+			font = Enum.Font.Bodoni,
+		}
+	)
 
 	-- the window onto the city with its curtains
 	Shell.window(m, P(0, 7.4, D - 0.02) * FACE_OUT, Plan.UNIT_W - 2, 11.6, rng, {
@@ -158,22 +176,48 @@ function Unit.build(parent: Instance, frame: CFrame, n: number, level: number, r
 	-- the closet (mirror doors = wardrobe) and the home panel on the centre wall's front face
 	Kit.detail(m, P(-7, 4.8, WALL_A - 0.05) * FACE_OUT, Vector3.new(11, 9.6, 0.1), Kit.shade(cab, 0.05), M.Wood).Name =
 		"ClosetDoors"
-	local mirror = Kit.block(m, P(-6.5, 4.6, WALL_A - 0.15) * FACE_OUT, Vector3.new(3, 7.6, 0.1), hex("#D5DEE4"), M.Glass, {
-		CanCollide = false,
-	})
+	local mirror =
+		Kit.block(m, P(-6.5, 4.6, WALL_A - 0.15) * FACE_OUT, Vector3.new(3, 7.6, 0.1), hex("#D5DEE4"), M.Glass, {
+			CanCollide = false,
+		})
 	mirror.Name = "ClosetMirror"
 	mirror.Reflectance = 0.5
 	Markers.interact(mirror, "wardrobe")
-	local panel = Kit.block(m, P(0.6, 4.8, WALL_A - 0.08) * FACE_OUT, Vector3.new(1.5, 2.2, 0.16), hex("#14161A"), M.SmoothPlastic, {
-		CanCollide = false,
-	})
+	local panel = Kit.block(
+		m,
+		P(0.6, 4.8, WALL_A - 0.08) * FACE_OUT,
+		Vector3.new(1.5, 2.2, 0.16),
+		hex("#14161A"),
+		M.SmoothPlastic,
+		{
+			CanCollide = false,
+		}
+	)
 	panel.Name = "HomePanel"
 	Markers.interact(panel, "housing_panel", { Context = "apartment" })
 	local pg = Core.surface(panel, Enum.NormalId.Front, { pps = 60, glow = true, brightness = 1, maxDistance = 90 })
 	local pbg = Core.bg(pg, hex("#13243A"))
 	Core.gradient(pbg, hex("#1F3A5C"), hex("#0E1A24"), 90)
-	Core.label(pg, Text.get("apt_panel"), 0.1, 0.2, 0.8, 0.22, hex("#E3C46F"), { font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center })
-	Core.label(pg, Text.get("apt_panel_sub"), 0.1, 0.5, 0.8, 0.14, hex("#D9E2EC"), { font = Enum.Font.GothamMedium, align = Enum.TextXAlignment.Center })
+	Core.label(
+		pg,
+		Text.get("apt_panel"),
+		0.1,
+		0.2,
+		0.8,
+		0.22,
+		hex("#E3C46F"),
+		{ font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(
+		pg,
+		Text.get("apt_panel_sub"),
+		0.1,
+		0.5,
+		0.8,
+		0.14,
+		hex("#D9E2EC"),
+		{ font = Enum.Font.GothamMedium, align = Enum.TextXAlignment.Center }
+	)
 
 	-- the bed nook: bed against the centre wall's back face, a nightstand with its lamp
 	Furniture.bed(m, P(-9, 0, WALL_A + 1 + 4.5), 6, 8, {
@@ -200,7 +244,14 @@ function Unit.build(parent: Instance, frame: CFrame, n: number, level: number, r
 	Shell.glow(m, P(-7, CH - 0.06, 9), Vector3.new(2.2, 0.1, 2.2), hex("#FFF1DA"))
 
 	-- decor slots (same ids in every unit)
-	Markers.wallSlot(m, "wall_art", "wall_entry", P(3, 5.5, 0) * FACE_IN, Vector3.new(6, 4, 0.5), { width = 7, height = 5 })
+	Markers.wallSlot(
+		m,
+		"wall_art",
+		"wall_entry",
+		P(3, 5.5, 0) * FACE_IN,
+		Vector3.new(6, 4, 0.5),
+		{ width = 7, height = 5 }
+	)
 	Markers.wallSlot(m, "wall_art", "wall_bed", P(-9, 5.6, WALL_A + 1) * FACE_IN, Vector3.new(6, 3.6, 0.5), {
 		width = 7,
 		height = 4.5,

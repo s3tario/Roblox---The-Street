@@ -181,7 +181,15 @@ local function tower(
 		local lit = math.floor((if near then 7 else 3) * mood.litShare * rng:range(0.6, 1.4))
 		for _ = 1, lit do
 			local ww = w * rng:range(0.12, 0.3)
-			Core.px(gui, x + rng:range(w * 0.08, w * 0.9 - ww), rng:range(top + w * 0.1, bottom - 2), ww, w * 0.05 + 1, mood.winLit, 0.1)
+			Core.px(
+				gui,
+				x + rng:range(w * 0.08, w * 0.9 - ww),
+				rng:range(top + w * 0.1, bottom - 2),
+				ww,
+				w * 0.05 + 1,
+				mood.winLit,
+				0.1
+			)
 		end
 	end
 	-- crowns, setbacks and masts
@@ -212,7 +220,14 @@ function Paint.skyline(gui: Instance, W: number, H: number, rng: Deps.RngT, o: S
 			clouds(gui, W, H, rng, mood.cloud, hz / H * 0.7)
 		else
 			for _ = 1, 18 do
-				Core.dot(gui, rng:range(0, W), rng:range(0, hz * 0.6), rng:range(1, 2.4), hex("#E8ECFF"), rng:range(0.2, 0.6))
+				Core.dot(
+					gui,
+					rng:range(0, W),
+					rng:range(0, hz * 0.6),
+					rng:range(1, 2.4),
+					hex("#E8ECFF"),
+					rng:range(0.2, 0.6)
+				)
 			end
 		end
 	end

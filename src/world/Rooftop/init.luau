@@ -114,7 +114,19 @@ local function deck(m: Instance, F: Shell.Frame)
 		glass.Reflectance = 0.15
 		local rail = if alongX
 			then Shell.box(edge, F, cx0, PARAPET + 3, mz - 0.25, cx1, PARAPET + 3.3, mz + 0.25, STEEL, M.Metal, false)
-			else Shell.box(edge, F, mx - 0.25, PARAPET + 3, cz0, mx + 0.25, PARAPET + 3.3, cz1, STEEL, M.Metal, false)
+			else Shell.box(
+				edge,
+				F,
+				mx - 0.25,
+				PARAPET + 3,
+				cz0,
+				mx + 0.25,
+				PARAPET + 3.3,
+				cz1,
+				STEEL,
+				M.Metal,
+				false
+			)
 		rail.Name = "Handrail"
 	end
 	run(X0 - 1.5, Z0 - 1.5, X1 + 1.5, Z0)
@@ -149,12 +161,29 @@ local function view(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	for i = 0, n - 1 do
 		local a = (i + 0.5) / n * math.pi * 2
 		local pos = F.v(math.cos(a) * RING_R, (top + bottom) / 2, math.sin(a) * RING_R)
-		local panel = Kit.detail(v, CFrame.lookAt(pos, F.v(0, (top + bottom) / 2, 0)), Vector3.new(w, top - bottom, 0.2), hex("#8FA6B8"), M.SmoothPlastic)
+		local panel = Kit.detail(
+			v,
+			CFrame.lookAt(pos, F.v(0, (top + bottom) / 2, 0)),
+			Vector3.new(w, top - bottom, 0.2),
+			hex("#8FA6B8"),
+			M.SmoothPlastic
+		)
 		panel.Name = "SkylinePanel"
 		panel.Transparency = 1
 		panel.CastShadow = false
-		local gui, W, H = Paint.surface(panel, Enum.NormalId.Front, 3, { glow = true, brightness = 1, maxDistance = 0, name = "Skyline" })
-		Paint.skyline(gui, W, H, rng, { mood = "day", view = "high", sky = false, horizon = (top - 4) / (top - bottom), density = 1.2 })
+		local gui, W, H = Paint.surface(
+			panel,
+			Enum.NormalId.Front,
+			3,
+			{ glow = true, brightness = 1, maxDistance = 0, name = "Skyline" }
+		)
+		Paint.skyline(
+			gui,
+			W,
+			H,
+			rng,
+			{ mood = "day", view = "high", sky = false, horizon = (top - 4) / (top - bottom), density = 1.2 }
+		)
 	end
 	-- three neighbouring tower tops for parallax: a slim crown with a mast, a water-tower roof and a stepped spire
 	local towers = {
@@ -164,13 +193,37 @@ local function view(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	}
 	for i, t in towers do
 		local tm = Kit.model(v, "NeighbourTower" .. i)
-		local body = Shell.box(tm, F, t.x - t.w / 2, -19, t.z - t.d / 2, t.x + t.w / 2, t.h, t.z + t.d / 2, t.color, M.Concrete, false)
+		local body = Shell.box(
+			tm,
+			F,
+			t.x - t.w / 2,
+			-19,
+			t.z - t.d / 2,
+			t.x + t.w / 2,
+			t.h,
+			t.z + t.d / 2,
+			t.color,
+			M.Concrete,
+			false
+		)
 		body.Name = "TowerBody"
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right } do
 			local gui, W, H = Paint.surface(body, face, 1.5, { maxDistance = 0 })
 			Paint.facade(gui, W, H, rng, t.color, "day")
 		end
-		Shell.box(tm, F, t.x - t.w / 2 - 0.5, t.h, t.z - t.d / 2 - 0.5, t.x + t.w / 2 + 0.5, t.h + 1.5, t.z + t.d / 2 + 0.5, Kit.shade(t.color, -0.2), M.Concrete, false).Name =
+		Shell.box(
+			tm,
+			F,
+			t.x - t.w / 2 - 0.5,
+			t.h,
+			t.z - t.d / 2 - 0.5,
+			t.x + t.w / 2 + 0.5,
+			t.h + 1.5,
+			t.z + t.d / 2 + 0.5,
+			Kit.shade(t.color, -0.2),
+			M.Concrete,
+			false
+		).Name =
 			"Coping"
 		if t.kind == "mast" then
 			Kit.detail(tm, F.cf(t.x, t.h + 12, t.z), Vector3.new(0.8, 22, 0.8), hex("#C9CDD2"), M.Metal).Name = "Mast"
@@ -179,10 +232,34 @@ local function view(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		elseif t.kind == "water" then
 			Kit.cylinder(tm, F.cf(t.x + 6, t.h + 9, t.z - 2), 8, 8, hex("#6B4A32"), M.WoodPlanks).Name = "WaterTank"
 			Kit.cylinder(tm, F.cf(t.x + 6, t.h + 3, t.z - 2), 4, 6, STEEL, M.Metal).Name = "TankStand"
-			Shell.box(tm, F, t.x - 12, t.h + 1.5, t.z + 2, t.x - 4, t.h + 6, t.z + 9, Kit.shade(t.color, -0.1), M.Concrete, false).Name =
+			Shell.box(
+				tm,
+				F,
+				t.x - 12,
+				t.h + 1.5,
+				t.z + 2,
+				t.x - 4,
+				t.h + 6,
+				t.z + 9,
+				Kit.shade(t.color, -0.1),
+				M.Concrete,
+				false
+			).Name =
 				"Bulkhead"
 		else
-			Shell.box(tm, F, t.x - 8, t.h + 1.5, t.z - 8, t.x + 8, t.h + 12, t.z + 8, Kit.shade(t.color, 0.08), M.Glass, false).Name =
+			Shell.box(
+				tm,
+				F,
+				t.x - 8,
+				t.h + 1.5,
+				t.z - 8,
+				t.x + 8,
+				t.h + 12,
+				t.z + 8,
+				Kit.shade(t.color, 0.08),
+				M.Glass,
+				false
+			).Name =
 				"Setback"
 			Kit.detail(tm, F.cf(t.x, t.h + 24, t.z), Vector3.new(2, 24, 2), hex("#D9DDE0"), M.Metal).Name = "Spire"
 			outdoorLight(Kit.detail(tm, F.cf(t.x, t.h + 36.3, t.z), Vector3.new(1, 1, 1), hex("#FF3B30"), M.Neon)).Name =
@@ -222,7 +299,8 @@ local function pavilion(m: Instance, mk: Instance, F: Shell.Frame)
 	})
 	Markers.anchor(mk, "rooftop_entry", F.cf(0, 3, 42, Shell.N))
 	-- the SKYLINE sign on the roof's front edge, lit, facing the deck
-	local sign = Kit.detail(p, F.cf(0, roofY + 3.2, pz0 - 0.6), Vector3.new(22, 4, 0.4), hex("#14161A"), M.SmoothPlastic)
+	local sign =
+		Kit.detail(p, F.cf(0, roofY + 3.2, pz0 - 0.6), Vector3.new(22, 4, 0.4), hex("#14161A"), M.SmoothPlastic)
 	sign.Name = "SkylineSign"
 	Kit.sign(sign, Text.get("roof_name"), {
 		font = Enum.Font.Michroma,
@@ -232,7 +310,8 @@ local function pavilion(m: Instance, mk: Instance, F: Shell.Frame)
 		padding = 0.06,
 	})
 	outdoorLight(sign)
-	local sub = Kit.detail(p, F.cf(0, roofY + 0.6, pz0 - 1.05), Vector3.new(14, 0.9, 0.1), hex("#14161A"), M.SmoothPlastic)
+	local sub =
+		Kit.detail(p, F.cf(0, roofY + 0.6, pz0 - 1.05), Vector3.new(14, 0.9, 0.1), hex("#14161A"), M.SmoothPlastic)
 	sub.Name = "SkylineSub"
 	Kit.sign(sub, Text.get("roof_sub"), {
 		font = Enum.Font.GothamMedium,
@@ -261,18 +340,31 @@ local function lawn(m: Instance, mk: Instance, F: Shell.Frame)
 	local dj = Kit.model(l, "DJBooth")
 	local dc = F.cf(0, 0, lz0 - 4.5, Shell.S)
 	Kit.block(dj, dc * CFrame.new(0, 1.9, 0), Vector3.new(8, 3.8, 2.6), hex("#1A1C1F"), M.Metal).Name = "Booth"
-	local front = Kit.detail(dj, dc * CFrame.new(0, 1.9, -1.32), Vector3.new(7.6, 3.2, 0.06), hex("#14161A"), M.SmoothPlastic)
+	local front =
+		Kit.detail(dj, dc * CFrame.new(0, 1.9, -1.32), Vector3.new(7.6, 3.2, 0.06), hex("#14161A"), M.SmoothPlastic)
 	front.Name = "BoothFront"
-	Kit.sign(front, Text.get("roof_dj"), { font = Enum.Font.Michroma, color = hex("#7FD4FF"), pixelsPerStud = 30, glow = true })
+	Kit.sign(
+		front,
+		Text.get("roof_dj"),
+		{ font = Enum.Font.Michroma, color = hex("#7FD4FF"), pixelsPerStud = 30, glow = true }
+	)
 	outdoorLight(front)
 	for _, sx in { -1, 1 } do
 		Kit.detail(dj, dc * CFrame.new(sx * 1.9, 3.9, 0.2), Vector3.new(2.2, 0.15, 1.6), hex("#2B2D30"), M.Metal).Name =
 			"Deck"
 		Kit.block(dj, dc * CFrame.new(sx * 6, 2.6, 0.3), Vector3.new(2.2, 5.2, 2.2), hex("#141414"), M.SmoothPlastic).Name =
 			"Speaker"
-		Kit.cylinder(dj, dc * CFrame.new(sx * 6, 2, -0.82) * CFrame.Angles(math.rad(90), 0, 0), 0.1, 1.6, hex("#3A3A3A"), M.Metal, {
-			CanCollide = false,
-		}).Name =
+		Kit.cylinder(
+			dj,
+			dc * CFrame.new(sx * 6, 2, -0.82) * CFrame.Angles(math.rad(90), 0, 0),
+			0.1,
+			1.6,
+			hex("#3A3A3A"),
+			M.Metal,
+			{
+				CanCollide = false,
+			}
+		).Name =
 			"Cone"
 	end
 	-- patio heaters at the lawn corners
@@ -305,13 +397,19 @@ end
 local function bar(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local b = Kit.model(m, "HighNote")
 	local bx, bz = 46, -6
-	Props.build("bar_counter", b, F.cf(bx, 0.12, bz, Shell.W), { length = 22, color = hex("#2E2A26"), accent = BRASS, top = hex("#ECEAE6"), seed = "roof-bar" })
+	Props.build(
+		"bar_counter",
+		b,
+		F.cf(bx, 0.12, bz, Shell.W),
+		{ length = 22, color = hex("#2E2A26"), accent = BRASS, top = hex("#ECEAE6"), seed = "roof-bar" }
+	)
 	for i = 0, 5 do
 		Furniture.stool(b, F.cf(bx - 3.6, 0.12, bz - 9 + i * 3.6), 3.4, CUSHION_ALT, STEEL)
 	end
 	-- back bar: a low cabinet with bottles and an ice well, and the bar's name on a lit fascia
 	Shell.box(b, F, X1 - 3.2, 0, bz - 10, X1 - 0.6, 3.4, bz + 10, hex("#2E2A26"), M.Wood).Name = "BackBar"
-	local bottles = Kit.detail(b, F.cf(X1 - 1.9, 4.3, bz, Shell.W), Vector3.new(19, 1.8, 0.1), hex("#2E2A26"), M.SmoothPlastic)
+	local bottles =
+		Kit.detail(b, F.cf(X1 - 1.9, 4.3, bz, Shell.W), Vector3.new(19, 1.8, 0.1), hex("#2E2A26"), M.SmoothPlastic)
 	bottles.Name = "Bottles"
 	bottles.Transparency = 1
 	local gui, W, H = Core.surface(bottles, Enum.NormalId.Front, { pps = 16, glow = true, maxDistance = 140 })
@@ -335,25 +433,49 @@ local function bar(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	end
 	for i = 0, 7 do
 		local sx = px0 + 0.5 + i * (px1 - px0 - 1) / 7
-		Shell.box(b, F, sx - 0.25, ph + 1, pz0 - 1, sx + 0.25, ph + 1.6, pz1 + 1, TEAK, M.Wood, false).Name = "PergolaSlat"
+		Shell.box(b, F, sx - 0.25, ph + 1, pz0 - 1, sx + 0.25, ph + 1.6, pz1 + 1, TEAK, M.Wood, false).Name =
+			"PergolaSlat"
 	end
-	local fascia = Kit.detail(b, F.cf(px0 - 0.6, ph + 0.5, bz, Shell.W), Vector3.new(12, 1.2, 0.2), hex("#14161A"), M.SmoothPlastic)
+	local fascia = Kit.detail(
+		b,
+		F.cf(px0 - 0.6, ph + 0.5, bz, Shell.W),
+		Vector3.new(12, 1.2, 0.2),
+		hex("#14161A"),
+		M.SmoothPlastic
+	)
 	fascia.Name = "BarSign"
 	Kit.sign(fascia, Text.get("roof_bar"), { font = Enum.Font.Michroma, color = BULB, pixelsPerStud = 30, glow = true })
 	outdoorLight(fascia)
 	strand(b, F.v(px0, ph - 0.2, pz0), F.v(px0, ph - 0.2, pz1), 1.4, 12)
 	strand(b, F.v(px1, ph - 0.2, pz0), F.v(px0, ph - 0.2, pz1), 1.8, 12)
-	local glow = Shell.glow(b, F.cf(bx, ph - 0.2, bz), Vector3.new(0.4, 0.2, 0.4), BULB, { range = 26, brightness = 1, color = BULB })
+	local glow = Shell.glow(
+		b,
+		F.cf(bx, ph - 0.2, bz),
+		Vector3.new(0.4, 0.2, 0.4),
+		BULB,
+		{ range = 26, brightness = 1, color = BULB }
+	)
 	glow.Transparency = 1
 	glow:RemoveTag("InteriorLight")
 	outdoorLight(glow)
 	-- the menu board on an easel by the bar's south end
-	local menu = Kit.detail(b, F.cf(bx - 6, 3.6, bz + 15, 225), Vector3.new(3.2, 4.4, 0.2), hex("#1A1C1F"), M.Wood)
+	-- turned south-west, toward guests arriving from the elevator pavilion
+	local menu = Kit.detail(b, F.cf(bx - 6, 3.6, bz + 15, 135), Vector3.new(3.2, 4.4, 0.2), hex("#1A1C1F"), M.Wood)
 	menu.Name = "Menu"
-	Kit.detail(b, F.cf(bx - 6, 1.3, bz + 15, 225) * CFrame.new(0, 0, 0.3), Vector3.new(2.6, 2.6, 0.2), TEAK, M.Wood).Name = "Easel"
+	Kit.detail(b, F.cf(bx - 6, 1.3, bz + 15, 135) * CFrame.new(0, 0, 0.3), Vector3.new(2.6, 2.6, 0.2), TEAK, M.Wood).Name =
+		"Easel"
 	local mg = Core.surface(menu, Enum.NormalId.Front, { pps = 40, maxDistance = 100 })
 	Core.bg(mg, hex("#1A1C1F"))
-	Core.label(mg, Text.get("roof_menu_title"), 0.08, 0.06, 0.84, 0.14, BULB, { font = Enum.Font.Michroma, align = Enum.TextXAlignment.Center })
+	Core.label(
+		mg,
+		Text.get("roof_menu_title"),
+		0.08,
+		0.06,
+		0.84,
+		0.14,
+		BULB,
+		{ font = Enum.Font.Michroma, align = Enum.TextXAlignment.Center }
+	)
 	for i, line in Text.list("roof_menu") do
 		Core.label(mg, line, 0.08, 0.26 + (i - 1) * 0.16, 0.84, 0.1, hex("#F2E6C4"), { font = Enum.Font.GothamMedium })
 	end
@@ -403,11 +525,13 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		Furniture.planter(l, F.cf(x, 0.12, Z0 + 2.6), Vector3.new(8, 2.4, 3.2), { box = STONE_DARK })
 	end
 	-- compass plaques on the parapet naming what lies each way
-	for _, spec in {
-		{ key = "roof_compass_n", cf = F.cf(0, PARAPET - 0.6, Z0, Shell.S) },
-		{ key = "roof_compass_e", cf = F.cf(X1, PARAPET - 0.6, 30, Shell.W) },
-		{ key = "roof_compass_w", cf = F.cf(X0, PARAPET - 0.6, -38, Shell.E) },
-	} do
+	for _, spec in
+		{
+			{ key = "roof_compass_n", cf = F.cf(0, PARAPET - 0.6, Z0, Shell.S) },
+			{ key = "roof_compass_e", cf = F.cf(X1, PARAPET - 0.6, 30, Shell.W) },
+			{ key = "roof_compass_w", cf = F.cf(X0, PARAPET - 0.6, -38, Shell.E) },
+		}
+	do
 		Shell.plate(l, spec.cf, 6, 0.9, Text.get(spec.key), { color = hex("#2B2D30"), ink = BRASS, pps = 40 })
 	end
 end

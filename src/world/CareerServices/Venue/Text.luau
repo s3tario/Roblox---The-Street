@@ -42,7 +42,13 @@ Text.strings = {
 	club_dressing = "MEMBERS' DRESSING ROOM",
 	club_billiards = "BILLIARDS",
 	club_menu_title = "TONIGHT",
-	club_menu = { "Old Fashioned · 18", "Vesper Martini · 21", "Sazerac · 19", "Single Malt, 18 yr · 32", "Club Soda · 4" },
+	club_menu = {
+		"Old Fashioned · 18",
+		"Vesper Martini · 21",
+		"Sazerac · 19",
+		"Single Malt, 18 yr · 32",
+		"Club Soda · 4",
+	},
 	club_founders = "THE FOUNDERS",
 	club_portrait_1 = "A. T. Whitcombe, 1904",
 	club_portrait_2 = "E. M. Hartley, 1911",
@@ -104,6 +110,23 @@ Text.strings = {
 	gal_vignette_bedroom = "The Penthouse Suite",
 	gal_watch_case = "THE ASTRA COLLECTION",
 	gal_hours = "Open daily  ·  Complimentary alterations",
+	gal_welcome = "Welcome to The Galleria",
+	gal_since = "SINCE 1921",
+	gal_bespoke = "HARTWELL BESPOKE",
+	gal_new_season = "NEW SEASON",
+	gal_eyewear = "EYEWEAR",
+	gal_watch_lines = { "Meridian Steel", "Corso Bronze", "Halden Chrono", "Vanta Gold", "Astra Moonphase" },
+	gal_bench = "THE WATCHMAKER'S BENCH",
+	gal_bench_sub = "Servicing  ·  Straps  ·  Engraving",
+	gal_try_on = "PLEASE BE SEATED FOR A FITTING",
+	gal_shoe_care = "Shoe care  ·  Resoling  ·  Monograms",
+	gal_swatches = "FABRICS & FINISHES",
+	gal_design = "Complimentary design consultation",
+	-- monograms drawn when a shop's logo cannot be rendered
+	gal_mono_tailor = "HT",
+	gal_mono_watch = "VW",
+	gal_mono_shoes = "SS",
+	gal_mono_decor = "AM",
 } :: { [string]: any }
 
 function Text.get(key: string, vars: { [string]: any }?): string

@@ -38,9 +38,22 @@ local function structure(m: Instance, F: Shell.Frame)
 		"GroundSlab"
 	for level = 2, Plan.LEVELS do
 		local y = (level - 1) * LH
-		Shell.box(s, F, Plan.COR_X0 - 1, y - Plan.SLAB, -NZ, Plan.COR_X1 + 1, y, NZ, SLAB, M.SmoothPlastic).Name =
+		-- starts at the first party wall's outer face (x = -65): one stud further west its end face would sit flush
+		-- with the lobby's east wall and flicker through it
+		Shell.box(s, F, Plan.COR_X0, y - Plan.SLAB, -NZ, Plan.COR_X1 + 1, y, NZ, SLAB, M.SmoothPlastic).Name =
 			"FloorSlab"
-		Shell.box(s, F, Plan.NEAR_X0, y - Plan.SLAB, -Plan.STAIR_HALF, Plan.COR_X0, y, Plan.STAIR_HALF, SLAB, M.SmoothPlastic).Name =
+		Shell.box(
+			s,
+			F,
+			Plan.NEAR_X0,
+			y - Plan.SLAB,
+			-Plan.STAIR_HALF,
+			Plan.COR_X0,
+			y,
+			Plan.STAIR_HALF,
+			SLAB,
+			M.SmoothPlastic
+		).Name =
 			"LandingSlab"
 	end
 	Shell.box(s, F, Plan.STAIR_X0 - 1, TOP - Plan.SLAB, -NZ, Plan.COR_X1 + 1, TOP, NZ, SLAB, M.SmoothPlastic).Name =
@@ -50,7 +63,18 @@ local function structure(m: Instance, F: Shell.Frame)
 		local x = Plan.ROW_X0 + Plan.PITCH * i
 		for _, side in { -1, 1 } do
 			local z0, z1 = side * Plan.COR_HALF, side * NZ
-			Shell.box(s, F, x - Plan.PARTY_T / 2, 0, math.min(z0, z1), x + Plan.PARTY_T / 2, TOP, math.max(z0, z1), CORRIDOR_WALL, M.SmoothPlastic).Name =
+			Shell.box(
+				s,
+				F,
+				x - Plan.PARTY_T / 2,
+				0,
+				math.min(z0, z1),
+				x + Plan.PARTY_T / 2,
+				TOP,
+				math.max(z0, z1),
+				CORRIDOR_WALL,
+				M.SmoothPlastic
+			).Name =
 				"PartyWall"
 		end
 	end
@@ -74,10 +98,23 @@ local function corridors(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 				end
 			end
 			local z = side * (Plan.COR_HALF + Plan.FRONT_T / 2)
-			Shell.wallX(c, F, z, Plan.COR_X0, Plan.COR_X1, y, y + CH, Plan.FRONT_T, CORRIDOR_WALL, M.SmoothPlastic, gaps)
+			Shell.wallX(
+				c,
+				F,
+				z,
+				Plan.COR_X0,
+				Plan.COR_X1,
+				y,
+				y + CH,
+				Plan.FRONT_T,
+				CORRIDOR_WALL,
+				M.SmoothPlastic,
+				gaps
+			)
 		end
 		-- the runner carpet, a brass-edged base and the ceiling light strip
-		local runner = Shell.box(c, F, Plan.NEAR_X0 + 1, y, -3.2, Plan.COR_X1 - 0.5, y + 0.06, 3.2, RUNNER, M.Carpet, false)
+		local runner =
+			Shell.box(c, F, Plan.NEAR_X0 + 1, y, -3.2, Plan.COR_X1 - 0.5, y + 0.06, 3.2, RUNNER, M.Carpet, false)
 		runner.Name = "Runner"
 		runner.CastShadow = false
 		local rg, RW, RH = Paint.surface(runner, Enum.NormalId.Top, 2, { maxDistance = 120 })
@@ -90,29 +127,47 @@ local function corridors(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 				"DadoRail"
 			for i = 0, Plan.PER_SIDE do
 				local x = Plan.ROW_X0 + Plan.PITCH * i
-				local sconce = Shell.glow(c, F.cf(x, y + 7.5, z - side * 0.3), Vector3.new(0.6, 1.2, 0.4), hex("#FFD9A0"))
+				local sconce =
+					Shell.glow(c, F.cf(x, y + 7.5, z - side * 0.3), Vector3.new(0.6, 1.2, 0.4), hex("#FFD9A0"))
 				sconce.Name = "Sconce"
 			end
 		end
 		for i = 0, 3 do
 			local x = -48 + i * 32
-			Shell.glow(c, F.cf(x, y + CH - 0.06, 0), Vector3.new(10, 0.1, 1.6), hex("#FFF1DA"), if i % 2 == 0
-				then { range = 30, brightness = 0.75 }
-				else nil)
+			Shell.glow(
+				c,
+				F.cf(x, y + CH - 0.06, 0),
+				Vector3.new(10, 0.1, 1.6),
+				hex("#FFF1DA"),
+				if i % 2 == 0 then { range = 30, brightness = 0.75 } else nil
+			)
 		end
 		-- the corridor's end: a skyline photograph on the east wall and the floor's sign at the stairs
-		local photo = Kit.detail(c, F.cf(Plan.COR_X1 - 0.1, y + 6.5, 0, Shell.W), Vector3.new(8, 6, 0.2), hex("#1C1E22"), M.SmoothPlastic)
+		local photo = Kit.detail(
+			c,
+			F.cf(Plan.COR_X1 - 0.1, y + 6.5, 0, Shell.W),
+			Vector3.new(8, 6, 0.2),
+			hex("#1C1E22"),
+			M.SmoothPlastic
+		)
 		photo.Name = "SkylinePhoto"
 		local pg, PW, PH = Paint.surface(photo, Enum.NormalId.Front, 8, { maxDistance = 120 })
 		Paint.skyline(pg, PW, PH, rng, { mood = if level == 2 then "dusk" else "day", view = "high" })
 		Core.stroke(Core.bg(pg, hex("#000000"), 1), BRASS, 4)
 		local a, b = (level - 1) * 8 + 1, level * 8
-		Shell.plate(c, F.cf(-59, y + 11.4, -Plan.COR_HALF, Shell.S), 7, 1.2, Text.get("apt_floor", { n = level }) .. "  ·  " .. Text.get("apt_floor_units", { a = a, b = b }), {
-			color = NAVY,
-			ink = hex("#E3C46F"),
-			font = Enum.Font.Bodoni,
-			pps = 40,
-		})
+		Shell.plate(
+			c,
+			F.cf(-59, y + 11.4, -Plan.COR_HALF, Shell.S),
+			7,
+			1.2,
+			Text.get("apt_floor", { n = level }) .. "  ·  " .. Text.get("apt_floor_units", { a = a, b = b }),
+			{
+				color = NAVY,
+				ink = hex("#E3C46F"),
+				font = Enum.Font.Bodoni,
+				pps = 40,
+			}
+		)
 	end
 end
 
@@ -138,12 +193,31 @@ local function stairs(m: Instance, F: Shell.Frame)
 	for storey = 0, Plan.LEVELS - 2 do
 		local yb = storey * LH
 		-- flight 1: the north lane, rising west from the near landing
-		Kit.stairs(s, F.cf(Plan.NEAR_X0 - Plan.RUN / 2, yb, laneN, Shell.W), laneW, Plan.STEPS, Plan.RISE, Plan.RUN, stepC, M.Marble)
+		Kit.stairs(
+			s,
+			F.cf(Plan.NEAR_X0 - Plan.RUN / 2, yb, laneN, Shell.W),
+			laneW,
+			Plan.STEPS,
+			Plan.RISE,
+			Plan.RUN,
+			stepC,
+			M.Marble
+		)
 		-- the far landing (solid on the ground floor, a slab above it)
 		local farY0 = if storey == 0 then 0 else yb + Plan.STEPS * Plan.RISE - Plan.SLAB
-		Shell.box(s, F, X0, farY0, -HZ, Plan.FAR_X1, yb + Plan.STEPS * Plan.RISE, HZ, stepC, M.Marble).Name = "FarLanding"
+		Shell.box(s, F, X0, farY0, -HZ, Plan.FAR_X1, yb + Plan.STEPS * Plan.RISE, HZ, stepC, M.Marble).Name =
+			"FarLanding"
 		-- flight 2: the south lane, rising east back to the next floor's landing
-		Kit.stairs(s, F.cf(Plan.FAR_X1 + Plan.RUN / 2, yb + Plan.STEPS * Plan.RISE, laneS, Shell.E), laneW, Plan.STEPS, Plan.RISE, Plan.RUN, stepC, M.Marble)
+		Kit.stairs(
+			s,
+			F.cf(Plan.FAR_X1 + Plan.RUN / 2, yb + Plan.STEPS * Plan.RISE, laneS, Shell.E),
+			laneW,
+			Plan.STEPS,
+			Plan.RISE,
+			Plan.RUN,
+			stepC,
+			M.Marble
+		)
 		if storey == 0 then
 			-- nothing to see under the first flight 2: fill it so no one wanders into a low crawlspace
 			Shell.box(s, F, Plan.FAR_X1, 0, Plan.LANE_GAP, Plan.NEAR_X0, Plan.STEPS * Plan.RISE, HZ, stepC, M.Marble).Name =
@@ -163,21 +237,45 @@ local function stairs(m: Instance, F: Shell.Frame)
 	end
 	-- the top landing's guard rail across the north lane (nothing above flight 1 there)
 	local top = TOP - LH
-	Shell.box(s, F, Plan.NEAR_X0 - 0.4, top, -HZ, Plan.NEAR_X0, top + 3.6, -Plan.LANE_GAP, BRASS, M.Metal).Name = "GuardRail"
-	local glass = Shell.box(s, F, Plan.NEAR_X0 - 0.3, top + 0.4, -HZ, Plan.NEAR_X0 - 0.1, top + 3.4, -Plan.LANE_GAP, hex("#CFE0E8"), M.Glass, false)
+	Shell.box(s, F, Plan.NEAR_X0 - 0.4, top, -HZ, Plan.NEAR_X0, top + 3.6, -Plan.LANE_GAP, BRASS, M.Metal).Name =
+		"GuardRail"
+	local glass = Shell.box(
+		s,
+		F,
+		Plan.NEAR_X0 - 0.3,
+		top + 0.4,
+		-HZ,
+		Plan.NEAR_X0 - 0.1,
+		top + 3.4,
+		-Plan.LANE_GAP,
+		hex("#CFE0E8"),
+		M.Glass,
+		false
+	)
 	glass.Transparency = 0.6
 	-- a light on every landing and the floor signs on the north wall of each near landing
 	for level = 1, Plan.LEVELS do
 		local y = (level - 1) * LH
-		Shell.glow(s, F.cf((Plan.NEAR_X0 + Plan.STAIR_X1) / 2, y + CH - 0.06, 0), Vector3.new(4, 0.1, 4), hex("#FFF1DA"), if level == 2
-			then { range = 40, brightness = 0.8 }
-			else nil)
-		Shell.plate(s, F.cf((Plan.NEAR_X0 + Plan.STAIR_X1) / 2, y + 7, -HZ, Shell.S), 6.4, 1.6, Text.get("apt_floor", { n = level }), {
-			color = NAVY,
-			ink = hex("#E3C46F"),
-			font = Enum.Font.Bodoni,
-			pps = 40,
-		})
+		Shell.glow(
+			s,
+			F.cf((Plan.NEAR_X0 + Plan.STAIR_X1) / 2, y + CH - 0.06, 0),
+			Vector3.new(4, 0.1, 4),
+			hex("#FFF1DA"),
+			if level == 2 then { range = 40, brightness = 0.8 } else nil
+		)
+		Shell.plate(
+			s,
+			F.cf((Plan.NEAR_X0 + Plan.STAIR_X1) / 2, y + 7, -HZ, Shell.S),
+			6.4,
+			1.6,
+			Text.get("apt_floor", { n = level }),
+			{
+				color = NAVY,
+				ink = hex("#E3C46F"),
+				font = Enum.Font.Bodoni,
+				pps = 40,
+			}
+		)
 	end
 	Shell.glow(s, F.cf((X0 + Plan.FAR_X1) / 2, TOP - Plan.SLAB - 0.06, 0), Vector3.new(4, 0.1, 4), hex("#FFF1DA"), {
 		range = 40,

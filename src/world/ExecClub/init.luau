@@ -49,7 +49,8 @@ local CREAM = hex("#EFE6D2")
 ---------------------------------------------------------------------------------------------------
 local function shell(m: Instance, F: Shell.Frame)
 	local s = Kit.model(m, "Shell")
-	local floor = Shell.box(s, F, X0 - 1, -1, Z0 - 1, X1 + 1, 0, Z1 + 1, FLOOR, M.WoodPlanks)
+	-- the floor stops under the sill so it never overlaps the terrace slab seen through the glass
+	local floor = Shell.box(s, F, X0 - 1, -1, Z0 - 0.4, X1 + 1, 0, Z1 + 1, FLOOR, M.WoodPlanks)
 	floor.Name = "Floor"
 	Shell.box(s, F, X0 - 1, H, Z0 - 12, X1 + 1, H + 1, Z1 + 1, CEILING, M.Wood).Name = "Ceiling"
 	-- walls: walnut panelling below the picture rail, deep green silk above it
@@ -69,9 +70,12 @@ local function shell(m: Instance, F: Shell.Frame)
 		Shell.box(trim, F, X1 - 0.3, y, Z0, X1, y + t, Z1, GOLD, M.Metal, false)
 	end
 	-- raised walnut panels below the rail (one long inset per wall run)
-	Shell.box(trim, F, X0 + 1, 1.2, Z1 - 0.2, X1 - 1, PANEL_TOP - 1, Z1 - 0.1, WALNUT_DARK, M.Wood, false).Name = "Inset"
-	Shell.box(trim, F, X0 + 0.1, 1.2, Z0 + 1, X0 + 0.2, PANEL_TOP - 1, Z1 - 1, WALNUT_DARK, M.Wood, false).Name = "Inset"
-	Shell.box(trim, F, X1 - 0.2, 1.2, Z0 + 1, X1 - 0.1, PANEL_TOP - 1, Z1 - 1, WALNUT_DARK, M.Wood, false).Name = "Inset"
+	Shell.box(trim, F, X0 + 1, 1.2, Z1 - 0.2, X1 - 1, PANEL_TOP - 1, Z1 - 0.1, WALNUT_DARK, M.Wood, false).Name =
+		"Inset"
+	Shell.box(trim, F, X0 + 0.1, 1.2, Z0 + 1, X0 + 0.2, PANEL_TOP - 1, Z1 - 1, WALNUT_DARK, M.Wood, false).Name =
+		"Inset"
+	Shell.box(trim, F, X1 - 0.2, 1.2, Z0 + 1, X1 - 0.1, PANEL_TOP - 1, Z1 - 1, WALNUT_DARK, M.Wood, false).Name =
+		"Inset"
 	-- the coffered ceiling: walnut beams with gold fillets
 	local coffers = Kit.model(m, "Coffers")
 	for _, x in { -32, -16, 0, 16, 32 } do
@@ -87,7 +91,12 @@ local function shell(m: Instance, F: Shell.Frame)
 		do
 			local x = if side < 0 then X0 + 0.5 else X1 - 0.5
 			Kit.detail(coffers, F.cf(x, 11.5, z), Vector3.new(0.5, 1.4, 0.5), GOLD, M.Metal).Name = "Sconce"
-			Shell.glow(coffers, F.cf(x + (if side < 0 then 0.5 else -0.5), 12.6, z), Vector3.new(0.7, 1, 0.7), hex("#FFD9A0"))
+			Shell.glow(
+				coffers,
+				F.cf(x + (if side < 0 then 0.5 else -0.5), 12.6, z),
+				Vector3.new(0.7, 1, 0.7),
+				hex("#FFD9A0")
+			)
 		end
 	end
 end
@@ -121,14 +130,27 @@ local function windowWall(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Shell.box(w, F, X0 - 1, -1, Z0 - 12, X0, H + 1, Z0, hex("#0C1020"), M.SmoothPlastic).Name = "Closer"
 	Shell.box(w, F, X1, -1, Z0 - 12, X1 + 1, H + 1, Z0, hex("#0C1020"), M.SmoothPlastic).Name = "Closer"
 	-- the painted skyline: lit towers, a dusky horizon, the city glowing far below
-	local backdrop = Shell.box(w, F, X0 - 1, -1, Z0 - 13, X1 + 1, H + 1, Z0 - 12, hex("#0C1020"), M.SmoothPlastic, false)
+	local backdrop =
+		Shell.box(w, F, X0 - 1, -1, Z0 - 13, X1 + 1, H + 1, Z0 - 12, hex("#0C1020"), M.SmoothPlastic, false)
 	backdrop.Name = "Skyline"
 	backdrop.CastShadow = false
 	local gui, W, Hh = Paint.surface(backdrop, Enum.NormalId.Back, 5, { glow = true, brightness = 1, name = "Skyline" })
 	Paint.skyline(gui, W, Hh, rng, { mood = "night", view = "high", horizon = 0.66, density = 1.3 })
 	-- heavy drapes at the ends of the glass
 	for _, sx in { -1, 1 } do
-		Shell.box(w, F, sx * (X1 - 0.6) - 1.8, 0, Z0 + 0.6, sx * (X1 - 0.6) + 1.8, H - 0.8, Z0 + 1.6, OXBLOOD, M.Fabric, false).Name =
+		Shell.box(
+			w,
+			F,
+			sx * (X1 - 0.6) - 1.8,
+			0,
+			Z0 + 0.6,
+			sx * (X1 - 0.6) + 1.8,
+			H - 0.8,
+			Z0 + 1.6,
+			OXBLOOD,
+			M.Fabric,
+			false
+		).Name =
 			"Drape"
 	end
 end
@@ -170,9 +192,21 @@ local function entrance(m: Instance, mk: Instance, F: Shell.Frame)
 	local pc = F.cf(0, 0, 19, Shell.S)
 	Kit.block(p, pc * CFrame.new(0, 1.9, 0), Vector3.new(3.4, 3.8, 1.8), WALNUT_DARK, M.Wood).Name = "Podium"
 	Kit.detail(p, pc * CFrame.new(0, 3.86, -0.05), Vector3.new(3.6, 0.12, 2), GOLD, M.Metal).Name = "PodiumTop"
-	Kit.detail(p, pc * CFrame.new(-0.6, 4.0, 0.1) * CFrame.Angles(math.rad(-12), 0, 0), Vector3.new(1.6, 0.12, 1.2), CREAM, M.SmoothPlastic).Name =
+	Kit.detail(
+		p,
+		pc * CFrame.new(-0.6, 4.0, 0.1) * CFrame.Angles(math.rad(-12), 0, 0),
+		Vector3.new(1.6, 0.12, 1.2),
+		CREAM,
+		M.SmoothPlastic
+	).Name =
 		"ReservationBook"
-	Shell.glow(p, pc * CFrame.new(1, 4.5, 0.4), Vector3.new(0.7, 0.5, 0.7), hex("#FFD9A0"), { range = 10, brightness = 0.6 })
+	Shell.glow(
+		p,
+		pc * CFrame.new(1, 4.5, 0.4),
+		Vector3.new(0.7, 0.5, 0.7),
+		hex("#FFD9A0"),
+		{ range = 10, brightness = 0.6 }
+	)
 	Markers.npc(mk, "npc_club_host", F.cf(0, 3, 16.6, Shell.S))
 	-- house rules plaque by the doors
 	Shell.plate(e, F.cf(7.5, 5.5, Z1, Shell.N), 4.2, 2.2, Text.get("club_rules"), {
@@ -201,7 +235,12 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local f = Kit.model(m, "Fireside")
 	local fz = -4
 	Props.build("fireplace", f, F.cf(X0, 0, fz, Shell.E), { seed = "club-fire" })
-	Props.build("wall_art", f, F.cf(X0, 10.2, fz, Shell.E), { variant = 3, width = 8, height = 6, lit = true, color = GOLD, seed = "club-portrait" })
+	Props.build(
+		"wall_art",
+		f,
+		F.cf(X0, 10.2, fz, Shell.E),
+		{ variant = 3, width = 8, height = 6, lit = true, color = GOLD, seed = "club-portrait" }
+	)
 	Shell.plate(f, F.cf(X0 + 0.15, 9.75, fz, Shell.E), 3.6, 0.6, Text.get("club_portrait_1"), {
 		color = GOLD,
 		ink = WALNUT_DARK,
@@ -213,10 +252,16 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	end
 	Props.build("rug_round", f, F.cf(-36, 0.02, fz), { seed = "club-rug-f" })
 	for _, dz in { -4.2, 4.2 } do
-		Props.build("lounge_chair", f, F.cf(-35, 0, fz + dz) * CFrame.Angles(0, math.rad(90 + (if dz < 0 then -25 else 25)), 0), {
-			color = OXBLOOD,
-			seed = "club-lounge" .. dz,
-		})
+		-- both chairs face west toward the hearth, angled in toward its centre line
+		Props.build(
+			"lounge_chair",
+			f,
+			F.cf(-35, 0, fz + dz) * CFrame.Angles(0, math.rad(90 + (if dz < 0 then 25 else -25)), 0),
+			{
+				color = OXBLOOD,
+				seed = "club-lounge" .. dz,
+			}
+		)
 	end
 	Furniture.table(f, F.cf(-33, 0, fz), Vector3.new(2, 2.2, 2), WALNUT_DARK, GOLD)
 	Props.build("chandelier", f, F.cf(-32, H - 6, -4), { arms = 6, drop = 6, seed = "club-chand-w" })
@@ -235,10 +280,15 @@ local function lounges(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	-- south-east: the cigar nook
 	local c = Kit.model(m, "CigarNook")
 	Props.build("cigar_humidor", c, F.cf(X1 - 1.2, 0, 22, Shell.W), { seed = "club-humidor" })
-	Furniture.armchair(c, F.cf(38, 0, 26, 135), OXBLOOD, { material = M.Leather, accent = WALNUT_DARK })
+	Furniture.armchair(c, F.cf(38, 0, 26, 45), OXBLOOD, { material = M.Leather, accent = WALNUT_DARK })
 	Furniture.armchair(c, F.cf(32, 0, 21, 225), OXBLOOD, { material = M.Leather, accent = WALNUT_DARK })
 	Furniture.roundTable(c, F.cf(35, 0, 23.5), 2.4, 2.2, hex("#2F4A3C"), GOLD)
-	Props.build("wall_art", c, F.cf(X1, 5, 28, Shell.W), { variant = rng:int(1, 8), width = 5, height = 3.5, color = GOLD, seed = "club-art-se" })
+	Props.build(
+		"wall_art",
+		c,
+		F.cf(X1, 5, 28, Shell.W),
+		{ variant = rng:int(1, 8), width = 5, height = 3.5, color = GOLD, seed = "club-art-se" }
+	)
 	Props.build("plant_floor", c, F.cf(44.5, 0, 31, Shell.W), { seed = "club-plant-se" })
 end
 
@@ -248,7 +298,12 @@ end
 local function bar(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	local b = Kit.model(m, "LedgerBar")
 	local bz = -6
-	Props.build("bar_counter", b, F.cf(36, 0, bz, Shell.W), { length = 24, color = WALNUT, accent = GOLD, seed = "club-bar" })
+	Props.build(
+		"bar_counter",
+		b,
+		F.cf(36, 0, bz, Shell.W),
+		{ length = 24, color = WALNUT, accent = GOLD, seed = "club-bar" }
+	)
 	for i = 0, 4 do
 		Furniture.stool(b, F.cf(32.6, 0, bz - 9.6 + i * 4.8), 3.4, OXBLOOD, GOLD)
 	end
@@ -260,15 +315,24 @@ local function bar(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	mirror.Name = "BackBarMirror"
 	mirror.Reflectance = 0.45
 	for i, y in { 5.2, 7.6, 10 } do
-		local shelf = Shell.box(b, F, X1 - 1.6, y - 0.12, bz - 10.5, X1 - 0.3, y, bz + 10.5, hex("#D9E4E8"), M.Glass, false)
+		local shelf =
+			Shell.box(b, F, X1 - 1.6, y - 0.12, bz - 10.5, X1 - 0.3, y, bz + 10.5, hex("#D9E4E8"), M.Glass, false)
 		shelf.Name = "Shelf"
 		shelf.Transparency = 0.4
-		local bottles = Kit.detail(b, F.cf(X1 - 0.95, y + 0.85, bz, Shell.W), Vector3.new(20.6, 1.7, 0.1), WALNUT_DARK, M.SmoothPlastic)
+		local bottles = Kit.detail(
+			b,
+			F.cf(X1 - 0.95, y + 0.85, bz, Shell.W),
+			Vector3.new(20.6, 1.7, 0.1),
+			WALNUT_DARK,
+			M.SmoothPlastic
+		)
 		bottles.Name = "Bottles"
 		bottles.Transparency = 1
-		local gui, W, Hh = Core.surface(bottles, Enum.NormalId.Front, { pps = 16, glow = true, brightness = 1.1, maxDistance = 140 })
+		local gui, W, Hh =
+			Core.surface(bottles, Enum.NormalId.Front, { pps = 16, glow = true, brightness = 1.1, maxDistance = 140 })
 		local x = rng:range(2, 6)
-		local palette = { hex("#2F5A3A"), hex("#6E1A1F"), hex("#C9A54C"), hex("#D9E4E8"), hex("#8A5A2E"), hex("#3B2A5C") }
+		local palette =
+			{ hex("#2F5A3A"), hex("#6E1A1F"), hex("#C9A54C"), hex("#D9E4E8"), hex("#8A5A2E"), hex("#3B2A5C") }
 		while x < W - 6 do
 			local bw = rng:range(W * 0.012, W * 0.02)
 			local bh = rng:range(Hh * 0.55, Hh * 0.95)
@@ -278,9 +342,13 @@ local function bar(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 			Core.px(gui, x + bw * 0.15, Hh - bh * 0.6, bw * 0.7, bh * 0.25, CREAM, 0.3)
 			x += bw + rng:range(2, W * 0.01)
 		end
-		Shell.glow(b, F.cf(X1 - 0.95, y + 0.02, bz), Vector3.new(0.6, 0.04, 20.6), hex("#FFD9A0"), if i == 2
-			then { range = 16, brightness = 0.7, color = hex("#FFD9A0") }
-			else nil)
+		Shell.glow(
+			b,
+			F.cf(X1 - 0.95, y + 0.02, bz),
+			Vector3.new(0.6, 0.04, 20.6),
+			hex("#FFD9A0"),
+			if i == 2 then { range = 16, brightness = 0.7, color = hex("#FFD9A0") } else nil
+		)
 	end
 	Shell.box(b, F, X1 - 2, 12.6, bz - 12.2, X1, 13.6, bz + 12.2, WALNUT_DARK, M.Wood, false).Name = "Cornice"
 	Shell.plate(b, F.cf(X1 - 2, 13.1, bz, Shell.W), 12, 0.9, Text.get("club_bar"), {
@@ -384,10 +452,19 @@ local function dressingRoom(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	for i = 0, n - 1 do
 		local f = Core.px(lg, LW * (i / n) + 3, 3, LW / n - 6, LH - 6, WALNUT, 0)
 		Core.stroke(f, GOLD, 1.5, 0.3)
-		Core.label(lg, Text.get("club_locker") .. " " .. (101 + i), i / n + 0.02, 0.08, 1 / n - 0.04, 0.06, GOLD_BRIGHT, {
-			font = Enum.Font.Garamond,
-			align = Enum.TextXAlignment.Center,
-		})
+		Core.label(
+			lg,
+			Text.get("club_locker") .. " " .. (101 + i),
+			i / n + 0.02,
+			0.08,
+			1 / n - 0.04,
+			0.06,
+			GOLD_BRIGHT,
+			{
+				font = Enum.Font.Garamond,
+				align = Enum.TextXAlignment.Center,
+			}
+		)
 		Core.dot(lg, LW * (i / n + 0.8 / n), LH * 0.5, 5, GOLD)
 	end
 	Furniture.bench(d, F.cf(-39, 0, 23.5), 7, OXBLOOD, { material = M.Leather, legs = GOLD, depth = 1.8 })
@@ -396,7 +473,12 @@ local function dressingRoom(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	Kit.detail(d, F.cf(-34, 5.1, 30.5), Vector3.new(2.6, 0.3, 0.4), WALNUT_DARK, M.Wood).Name = "ValetShoulders"
 	Kit.detail(d, F.cf(-34, 4.1, 30.5), Vector3.new(2.2, 2, 0.6), hex("#1B2A44"), M.Fabric).Name = "ValetJacket"
 	Shell.glow(d, F.cf(-39, roomH - 0.1, 25), Vector3.new(4, 0.1, 4), hex("#FFE7C4"), { range = 18, brightness = 0.8 })
-	Props.build("wall_art", d, F.cf(DX0, 5.5, 31, Shell.E), { variant = rng:int(1, 8), width = 3.5, height = 3, color = GOLD, seed = "club-art-dress" })
+	Props.build(
+		"wall_art",
+		d,
+		F.cf(DX0, 5.5, 31, Shell.E),
+		{ variant = rng:int(1, 8), width = 3.5, height = 3, color = GOLD, seed = "club-art-dress" }
+	)
 end
 
 ---------------------------------------------------------------------------------------------------

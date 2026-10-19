@@ -7,6 +7,7 @@
 -- when one is missing or broken the venues still bake, with painted-text and dress-form fallbacks.
 --
 --   Deps.logo(part, face, logoId, opts?) -> boolean       true when Shared/Assets/Logos drew the mark
+--   Deps.hasLogo(logoId) -> boolean                        Logos has a designed mark (not just a generated monogram)
 --   Deps.known(equipped) -> equipped                       only the Catalog ids that exist
 --   Deps.mannequin(parent, cf, equipped, name) -> Model     an anchored, non-colliding display figure (NpcRig +
 --                                                          Wardrobe), or a plain dress form when rigs are missing
@@ -53,6 +54,17 @@ local Deps = {
 	Rarity = optional(Config, "Rarity"),
 	NpcRig = optional(Assets:FindFirstChild("Npc"), "Rig"),
 }
+
+-- True when Shared/Assets/Logos has a designed mark for logoId (it draws a generic monogram for unknown ids, so
+-- callers with their own fallback check this first).
+function Deps.hasLogo(logoId: string): boolean
+	local Logos = Deps.Logos
+	if Logos == nil or type(Logos.has) ~= "function" then
+		return false
+	end
+	local ok, has = pcall(Logos.has, logoId)
+	return ok and has == true
+end
 
 function Deps.logo(part: BasePart, face: Enum.NormalId, logoId: string, opts: { [string]: any }?): boolean
 	local Logos = Deps.Logos

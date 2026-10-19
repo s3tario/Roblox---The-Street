@@ -66,7 +66,13 @@ function Furniture.armchair(parent: Instance, cf: CFrame, color: Color3, o: Sofa
 	local mat = opts.material or M.Fabric
 	Kit.block(m, cf * CFrame.new(0, 0.85, 0), Vector3.new(3, 1.3, 3), color, mat).Name = "ChairSeat"
 	Kit.detail(m, cf * CFrame.new(0, 2.4, 1.15), Vector3.new(3, 2.2, 0.7), color, mat).Name = "ChairBack"
-	Kit.detail(m, cf * CFrame.new(0, 1.85, 0.1), Vector3.new(3.4, 0.8, 2.6), opts.accent or Kit.shade(color, -0.12), mat).Name =
+	Kit.detail(
+		m,
+		cf * CFrame.new(0, 1.85, 0.1),
+		Vector3.new(3.4, 0.8, 2.6),
+		opts.accent or Kit.shade(color, -0.12),
+		mat
+	).Name =
 		"ChairArms"
 	return m
 end
@@ -143,9 +149,21 @@ export type BedOpts = {
 function Furniture.bed(parent: Instance, cf: CFrame, width: number, length: number, o: BedOpts): Model
 	local m = Kit.model(parent, "Bed")
 	Kit.block(m, cf * CFrame.new(0, 0.6, 0), Vector3.new(width, 1.2, length), o.frame, M.Wood).Name = "BedFrame"
-	Kit.block(m, cf * CFrame.new(0, 1.55, 0.1), Vector3.new(width - 0.3, 0.7, length - 0.4), o.sheet or hex("#F1EEE8"), M.Fabric).Name =
+	Kit.block(
+		m,
+		cf * CFrame.new(0, 1.55, 0.1),
+		Vector3.new(width - 0.3, 0.7, length - 0.4),
+		o.sheet or hex("#F1EEE8"),
+		M.Fabric
+	).Name =
 		"Mattress"
-	Kit.detail(m, cf * CFrame.new(0, 1.97, -length * 0.14), Vector3.new(width - 0.1, 0.16, length * 0.68), o.duvet, M.Fabric).Name =
+	Kit.detail(
+		m,
+		cf * CFrame.new(0, 1.97, -length * 0.14),
+		Vector3.new(width - 0.1, 0.16, length * 0.68),
+		o.duvet,
+		M.Fabric
+	).Name =
 		"Duvet"
 	local pw = math.min(2.6, (width - 0.8) / 2)
 	for _, s in { -1, 1 } do
@@ -159,7 +177,13 @@ function Furniture.bed(parent: Instance, cf: CFrame, width: number, length: numb
 			"Pillow"
 	end
 	local hh = o.headboardHeight or 4.6
-	Kit.block(m, cf * CFrame.new(0, hh / 2, length / 2 + 0.25), Vector3.new(width + 0.6, hh, 0.5), o.headboard or o.frame, M.Fabric).Name =
+	Kit.block(
+		m,
+		cf * CFrame.new(0, hh / 2, length / 2 + 0.25),
+		Vector3.new(width + 0.6, hh, 0.5),
+		o.headboard or o.frame,
+		M.Fabric
+	).Name =
 		"Headboard"
 	return m
 end
@@ -213,7 +237,13 @@ function Furniture.kitchen(parent: Instance, cf: CFrame, length: number, o: Kitc
 	Kit.block(m, runC * CFrame.new(0, 1.55, 0), Vector3.new(run, 3.1, depth), o.cabinet, M.Wood).Name = "BaseCabinets"
 	Kit.detail(m, runC * CFrame.new(0, 3.22, -0.05), Vector3.new(run + 0.1, 0.24, depth + 0.15), o.counter, M.Marble).Name =
 		"Countertop"
-	Kit.detail(m, runC * CFrame.new(0, 4.6, depth / 2 - 0.05), Vector3.new(run, 2.5, 0.1), o.splash or hex("#E8E4DC"), M.Glass).Name =
+	Kit.detail(
+		m,
+		runC * CFrame.new(0, 4.6, depth / 2 - 0.05),
+		Vector3.new(run, 2.5, 0.1),
+		o.splash or hex("#E8E4DC"),
+		M.Glass
+	).Name =
 		"Backsplash"
 	if o.uppers ~= false then
 		Kit.detail(m, runC * CFrame.new(0, 7.4, depth / 2 - 0.75), Vector3.new(run, 3, 1.4), o.cabinet, M.Wood).Name =
@@ -229,7 +259,13 @@ function Furniture.kitchen(parent: Instance, cf: CFrame, length: number, o: Kitc
 	local fridgeC = cf * CFrame.new(length / 2 - 1.5, 0, depth / 2 + 0.1)
 	Kit.block(m, fridgeC * CFrame.new(0, 4.6, 0), Vector3.new(3, 9.2, depth + 0.2), o.fridge or hex("#BFC3C7"), M.Metal).Name =
 		"Fridge"
-	Kit.detail(m, fridgeC * CFrame.new(-1.1, 4.8, -depth / 2 - 0.2), Vector3.new(0.15, 3.2, 0.15), hex("#E4E6E8"), M.Metal).Name =
+	Kit.detail(
+		m,
+		fridgeC * CFrame.new(-1.1, 4.8, -depth / 2 - 0.2),
+		Vector3.new(0.15, 3.2, 0.15),
+		hex("#E4E6E8"),
+		M.Metal
+	).Name =
 		"FridgeHandle"
 	return m
 end
@@ -243,7 +279,13 @@ function Furniture.desk(parent: Instance, cf: CFrame, width: number, depth: numb
 	Kit.block(m, cf * CFrame.new(0, h - 0.15, 0), Vector3.new(width, 0.3, depth), color, opts.material or M.Wood).Name =
 		"DeskTop"
 	for _, s in { -1, 1 } do
-		Kit.block(m, cf * CFrame.new(s * (width / 2 - 0.2), (h - 0.3) / 2, 0), Vector3.new(0.3, h - 0.3, depth - 0.3), opts.legs or DARK_METAL, M.Metal).Name =
+		Kit.block(
+			m,
+			cf * CFrame.new(s * (width / 2 - 0.2), (h - 0.3) / 2, 0),
+			Vector3.new(0.3, h - 0.3, depth - 0.3),
+			opts.legs or DARK_METAL,
+			M.Metal
+		).Name =
 			"DeskLeg"
 	end
 	return m
@@ -253,9 +295,16 @@ function Furniture.monitor(parent: Instance, cf: CFrame, w: number, rng: Deps.Rn
 	local h = w * 0.58
 	Kit.detail(parent, cf * CFrame.new(0, 0.55, 0.15), Vector3.new(0.3, 1.1, 0.3), DARK_METAL, M.Metal).Name =
 		"MonitorStand"
-	local screen = Kit.block(parent, cf * CFrame.new(0, 1.05 + h / 2, 0), Vector3.new(w, h, 0.2), hex("#101215"), M.SmoothPlastic, {
-		CanCollide = false,
-	})
+	local screen = Kit.block(
+		parent,
+		cf * CFrame.new(0, 1.05 + h / 2, 0),
+		Vector3.new(w, h, 0.2),
+		hex("#101215"),
+		M.SmoothPlastic,
+		{
+			CanCollide = false,
+		}
+	)
 	screen.Name = "Monitor"
 	Gui.Screens.screen(screen, kind or "chart", rng)
 	return screen
@@ -311,7 +360,13 @@ function Furniture.bench(parent: Instance, cf: CFrame, length: number, color: Co
 	Kit.block(m, cf * CFrame.new(0, 1.55, 0), Vector3.new(length, 0.4, d), color, opts.material or M.Wood).Name =
 		"BenchSeat"
 	for _, s in { -1, 1 } do
-		Kit.detail(m, cf * CFrame.new(s * (length / 2 - 0.8), 0.68, 0), Vector3.new(0.4, 1.35, d - 0.2), opts.legs or DARK_METAL, M.Metal).Name =
+		Kit.detail(
+			m,
+			cf * CFrame.new(s * (length / 2 - 0.8), 0.68, 0),
+			Vector3.new(0.4, 1.35, d - 0.2),
+			opts.legs or DARK_METAL,
+			M.Metal
+		).Name =
 			"BenchLeg"
 	end
 	return m

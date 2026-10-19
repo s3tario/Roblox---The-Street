@@ -109,8 +109,8 @@ local function shell(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 			frameMaterial = M.Wood,
 			transom = true,
 			glass = true,
-		}).Name =
-			"WindowView" .. i
+		}).Name = "WindowView"
+			.. i
 		Shell.window(m, F.cf(X1, 7.6, z, Shell.W), 12, 8.4, rng, {
 			view = "street",
 			mood = "day",
@@ -140,7 +140,12 @@ local function entrance(m: Instance, mk: Instance, F: Shell.Frame)
 	end
 	-- the reception counter, the counselor behind it, a welcome sign on its front
 	local r = Kit.model(m, "Reception")
-	Props.build("reception_desk", r, F.cf(0, 0, 11, Shell.S), { text = Text.get("cs_reception"), seed = "cs-reception" })
+	Props.build(
+		"reception_desk",
+		r,
+		F.cf(0, 0, 11, Shell.S),
+		{ text = Text.get("cs_reception"), seed = "cs-reception" }
+	)
 	Markers.npc(mk, "npc_career_counselor", F.cf(0, 3, 7.6, Shell.S))
 	-- the motto wall behind reception: oak slats with brass lettering, screening the booths
 	local w = Kit.model(m, "MottoWall")
@@ -150,7 +155,16 @@ local function entrance(m: Instance, mk: Instance, F: Shell.Frame)
 	for x = 0, WW, 18 do
 		Core.px(wg, x, 0, 3, WH, OAK_DARK, 0.35)
 	end
-	Core.label(wg, Text.get("cs_name"), 0.1, 0.18, 0.8, 0.2, BRASS, { font = Enum.Font.Bodoni, align = Enum.TextXAlignment.Center })
+	Core.label(
+		wg,
+		Text.get("cs_name"),
+		0.1,
+		0.18,
+		0.8,
+		0.2,
+		BRASS,
+		{ font = Enum.Font.Bodoni, align = Enum.TextXAlignment.Center }
+	)
 	Core.label(wg, Text.get("cs_motto"), 0.15, 0.42, 0.7, 0.1, hex("#F2E6C4"), {
 		font = Enum.Font.Garamond,
 		italic = true,
@@ -222,15 +236,27 @@ local function booths(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		Props.build("book_stack", b, deskCf * CFrame.new(-3.3, 3.1, 0.6), { seed = "cs-books" .. i })
 		Kit.detail(b, deskCf * CFrame.new(0, 3.6, 0.6), Vector3.new(0.25, 1, 0.25), hex("#2B2B2D"), M.Metal).Name =
 			"ScreenArm"
-		local screen = Kit.block(b, deskCf * CFrame.new(0, 4.75, 0.6) * CFrame.Angles(math.rad(-8), 0, 0), Vector3.new(2.6, 1.6, 0.18), hex("#101215"), M.SmoothPlastic, {
-			CanCollide = false,
-		})
+		local screen = Kit.block(
+			b,
+			deskCf * CFrame.new(0, 4.75, 0.6) * CFrame.Angles(math.rad(-8), 0, 0),
+			Vector3.new(2.6, 1.6, 0.18),
+			hex("#101215"),
+			M.SmoothPlastic,
+			{
+				CanCollide = false,
+			}
+		)
 		screen.Name = "ConsultationScreen"
 		consultScreen(screen, i)
 		-- the screen faces the guests (south): its Front face points along the desk's LookVector
 		Markers.interact(screen, "career_services", { DeskIndex = i })
 		for _, sx in { -1, 1 } do
-			Props.build("chair_visitor", b, F.cf(cx + sx * 2.4, 0, Z0 + 12.4, Shell.N), { seed = "cs-guest" .. i .. sx })
+			Props.build(
+				"chair_visitor",
+				b,
+				F.cf(cx + sx * 2.4, 0, Z0 + 12.4, Shell.N),
+				{ seed = "cs-guest" .. i .. sx }
+			)
 		end
 		Furniture.plant(b, F.cf(cx - 9.5, 0, Z0 + 2.4), 0.9, rng)
 	end
@@ -264,9 +290,11 @@ local function waiting(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 		font = Enum.Font.Bodoni,
 		pps = 40,
 	})
-	local board = Kit.detail(w, F.cf(X0 + 0.3, 7.7, 22.5, Shell.E), Vector3.new(7, 3.4, 0.3), hex("#0E1116"), M.SmoothPlastic)
+	local board =
+		Kit.detail(w, F.cf(X0 + 0.3, 7.7, 22.5, Shell.E), Vector3.new(7, 3.4, 0.3), hex("#0E1116"), M.SmoothPlastic)
 	board.Name = "NowServing"
-	local bgui = Core.surface(board, Enum.NormalId.Front, { pps = 40, glow = true, brightness = 1.2, maxDistance = 160 })
+	local bgui =
+		Core.surface(board, Enum.NormalId.Front, { pps = 40, glow = true, brightness = 1.2, maxDistance = 160 })
 	Core.bg(bgui, hex("#0E1116"))
 	Core.label(bgui, Text.get("cs_now_serving"), 0.06, 0.08, 0.88, 0.3, hex("#B9C8D8"), {
 		font = Enum.Font.GothamBold,
@@ -287,9 +315,21 @@ local function waiting(m: Instance, F: Shell.Frame, rng: Deps.RngT)
 	rack.Name = "MagazineRack"
 	local rg, RW, RH = Paint.surface(rack, Enum.NormalId.Right, 20, { maxDistance = 90 })
 	for i = 0, 2 do
-		Core.px(rg, RW * 0.08, RH * (0.1 + i * 0.3), RW * 0.84, RH * 0.22, ({ hex("#C8553D"), hex("#22577A"), hex("#D9A441") })[i + 1])
+		Core.px(
+			rg,
+			RW * 0.08,
+			RH * (0.1 + i * 0.3),
+			RW * 0.84,
+			RH * 0.22,
+			({ hex("#C8553D"), hex("#22577A"), hex("#D9A441") })[i + 1]
+		)
 	end
-	Props.build("wall_art", w, F.cf(X0, 5.5, -7, Shell.E), { variant = rng:int(1, 8), width = 7, height = 4.5, seed = "cs-art-w" })
+	Props.build(
+		"wall_art",
+		w,
+		F.cf(X0, 5.5, -7, Shell.E),
+		{ variant = rng:int(1, 8), width = 7, height = 4.5, seed = "cs-art-w" }
+	)
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -309,14 +349,25 @@ local function library(m: Instance, F: Shell.Frame)
 	-- the reading table with its chairs and the career guides on it
 	local tableCf = F.cf(28, 0, 4)
 	Furniture.table(l, tableCf, Vector3.new(12, 3, 4.4), OAK, OAK_DARK)
+	-- chairs face the table: a chair's front is its LookVector, so the north pair turns round to face south
 	for _, x in { -3.5, 3.5 } do
-		Furniture.chair(l, tableCf * CFrame.new(x, 0, -3.4), NAVY, { back = NAVY })
-		Furniture.chair(l, tableCf * CFrame.new(x, 0, 3.4) * CFrame.Angles(0, math.pi, 0), NAVY, { back = NAVY })
+		Furniture.chair(l, tableCf * CFrame.new(x, 0, -3.4) * CFrame.Angles(0, math.pi, 0), NAVY, { back = NAVY })
+		Furniture.chair(l, tableCf * CFrame.new(x, 0, 3.4), NAVY, { back = NAVY })
 	end
 	for i, key in { "cs_guide_1", "cs_guide_2", "cs_guide_3" } do
-		local book = Kit.detail(l, tableCf * CFrame.new(-4 + i * 2.4, 3.1, 0) * CFrame.Angles(0, math.rad(i * 17), 0), Vector3.new(1.4, 0.2, 1.9), ({ NAVY, hex("#7A1F24"), hex("#1F4D3A") })[i], M.SmoothPlastic)
+		local book = Kit.detail(
+			l,
+			tableCf * CFrame.new(-4 + i * 2.4, 3.1, 0) * CFrame.Angles(0, math.rad(i * 17), 0),
+			Vector3.new(1.4, 0.2, 1.9),
+			({ NAVY, hex("#7A1F24"), hex("#1F4D3A") })[i],
+			M.SmoothPlastic
+		)
 		book.Name = "Guide"
-		Kit.sign(book, Text.get(key), { face = Enum.NormalId.Top, font = Enum.Font.Garamond, color = BRASS, pixelsPerStud = 60 })
+		Kit.sign(
+			book,
+			Text.get(key),
+			{ face = Enum.NormalId.Top, font = Enum.Font.Garamond, color = BRASS, pixelsPerStud = 60 }
+		)
 	end
 	Furniture.pendant(l, F.cf(28, H, 4), 4.5, hex("#FFE7BF"), { range = 20, brightness = 0.7 })
 	-- the open-roles board on the east wall and two program posters on the south wall
@@ -325,8 +376,26 @@ local function library(m: Instance, F: Shell.Frame)
 	local bg = Core.surface(board, Enum.NormalId.Front, { pps = 40, maxDistance = 140 })
 	Core.bg(bg, hex("#C9A77A"))
 	Core.frame(bg, 0.05, 0.05, 0.9, 0.9, hex("#F4F1EA"))
-	Core.label(bg, Text.get("cs_board_title"), 0.08, 0.08, 0.84, 0.14, NAVY, { font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center })
-	Core.label(bg, Text.get("cs_board_lines"), 0.1, 0.25, 0.8, 0.64, hex("#2A2622"), { font = Enum.Font.Garamond, align = Enum.TextXAlignment.Left })
+	Core.label(
+		bg,
+		Text.get("cs_board_title"),
+		0.08,
+		0.08,
+		0.84,
+		0.14,
+		NAVY,
+		{ font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center }
+	)
+	Core.label(
+		bg,
+		Text.get("cs_board_lines"),
+		0.1,
+		0.25,
+		0.8,
+		0.64,
+		hex("#2A2622"),
+		{ font = Enum.Font.Garamond, align = Enum.TextXAlignment.Left }
+	)
 	for i, keys in { { "cs_poster_title", "cs_poster_body" }, { "cs_poster2_title", "cs_poster2_body" } } do
 		local x = 18 + (i - 1) * 6.4
 		local p = Kit.detail(l, F.cf(x, 7, Z1 - 0.2, Shell.N), Vector3.new(5, 6.4, 0.2), NAVY, M.SmoothPlastic)
@@ -335,24 +404,52 @@ local function library(m: Instance, F: Shell.Frame)
 		local pb = Core.bg(pg, NAVY)
 		Core.gradient(pb, hex("#24385A"), hex("#121C2C"), 90)
 		Core.frame(pg, 0.08, 0.08, 0.84, 0.006, BRASS)
-		Core.label(pg, Text.get(keys[1]), 0.08, 0.14, 0.84, 0.16, BRASS, { font = Enum.Font.Bodoni, align = Enum.TextXAlignment.Center })
-		Core.label(pg, Text.get(keys[2]), 0.1, 0.4, 0.8, 0.4, hex("#E9DFC6"), { font = Enum.Font.GothamMedium, align = Enum.TextXAlignment.Center })
+		Core.label(
+			pg,
+			Text.get(keys[1]),
+			0.08,
+			0.14,
+			0.84,
+			0.16,
+			BRASS,
+			{ font = Enum.Font.Bodoni, align = Enum.TextXAlignment.Center }
+		)
+		Core.label(
+			pg,
+			Text.get(keys[2]),
+			0.1,
+			0.4,
+			0.8,
+			0.4,
+			hex("#E9DFC6"),
+			{ font = Enum.Font.GothamMedium, align = Enum.TextXAlignment.Center }
+		)
 	end
 	Props.build("plant_floor", l, F.cf(41.5, 0, -28.5, Shell.W), { seed = "cs-plant-ne" })
 
 	-- the discreet Street Store kiosk in the south-east corner
 	local k = Kit.model(m, "StoreKiosk")
-	local kc = F.cf(39.5, 0, 27.5, 225)
+	local kc = F.cf(39.5, 0, 27.5, 45) -- in the corner, its screen turned north-west toward the room
 	Kit.block(k, kc * CFrame.new(0, 0.2, 0), Vector3.new(3.2, 0.4, 2.4), hex("#1C1E22"), M.Metal).Name = "KioskBase"
 	Kit.block(k, kc * CFrame.new(0, 3.2, 0.3), Vector3.new(2.6, 5.6, 1.2), hex("#24262A"), M.Metal).Name = "KioskBody"
-	local screen = Kit.block(k, kc * CFrame.new(0, 4.1, -0.32), Vector3.new(2.2, 3, 0.1), hex("#0E1116"), M.SmoothPlastic, {
-		CanCollide = false,
-	})
+	local screen =
+		Kit.block(k, kc * CFrame.new(0, 4.1, -0.32), Vector3.new(2.2, 3, 0.1), hex("#0E1116"), M.SmoothPlastic, {
+			CanCollide = false,
+		})
 	screen.Name = "KioskScreen"
 	local sg = Core.surface(screen, Enum.NormalId.Front, { pps = 50, glow = true, brightness = 1.1, maxDistance = 100 })
 	local sb = Core.bg(sg, hex("#0E1116"))
 	Core.gradient(sb, hex("#1D2A3E"), hex("#0B0F16"), 90)
-	Core.label(sg, Text.get("cs_kiosk"), 0.1, 0.36, 0.8, 0.22, BRASS, { font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center })
+	Core.label(
+		sg,
+		Text.get("cs_kiosk"),
+		0.1,
+		0.36,
+		0.8,
+		0.22,
+		BRASS,
+		{ font = Enum.Font.GothamBold, align = Enum.TextXAlignment.Center }
+	)
 	Markers.interact(screen, "store_kiosk")
 	Shell.glow(k, kc * CFrame.new(0, 6.1, -0.32), Vector3.new(2.2, 0.12, 0.1), BRASS)
 end
