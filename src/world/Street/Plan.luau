@@ -68,7 +68,8 @@ function Plan.road(id: string): Road
 end
 
 -- Intervals between the roads of the other axis: the block columns (for "x") or rows (for "z").
-local function intervals(crossAxis: string): { { number } }
+local function intervals(crossAxis: string, limit: number?): { { number } }
+	local edge = limit or Plan.EDGE
 	local cuts: { { number } } = {}
 	for _, r in Plan.roads do
 		if r.axis == crossAxis then
@@ -79,18 +80,21 @@ local function intervals(crossAxis: string): { { number } }
 		return a[1] < b[1]
 	end)
 	local out: { { number } } = {}
-	local cursor = -Plan.EDGE
+	local cursor = -edge
 	for _, c in cuts do
 		table.insert(out, { cursor, c[1] })
 		cursor = c[2]
 	end
-	table.insert(out, { cursor, Plan.EDGE })
+	table.insert(out, { cursor, edge })
 	return out
 end
 
 -- Block columns along X (between the north-south roads) and rows along Z (between the east-west roads).
 Plan.cols = intervals("z") -- N-S roads cut X
 Plan.rows = intervals("x") -- E-W roads cut Z
+-- The same cut out to the region edge: the ground slabs run under the backdrop ring.
+Plan.groundCols = intervals("z", Plan.HALF)
+Plan.groundRows = intervals("x", Plan.HALF)
 
 Plan.COL_IDS = { "W", "C", "E" }
 Plan.ROW_IDS = { "N", "M", "S" }
@@ -135,8 +139,10 @@ local FACE_DIR: { [string]: Vector3 } = {
 Plan.FACE_DIR = FACE_DIR
 
 function Plan.frame(face: string, line: number, at: number, y: number?): CFrame
-	local dir = FACE_DIR[face]
-	assert(dir ~= nil, "Street.Plan: bad face " .. tostring(face))
+	local dir: Vector3? = FACE_DIR[face]
+	if not dir then
+		error("Street.Plan: bad face " .. tostring(face))
+	end
 	local yy = y or Plan.FLOOR
 	local pos = if face == "N" or face == "S" then Vector3.new(at, yy, line) else Vector3.new(line, yy, at)
 	return CFrame.lookAt(pos, pos + dir)
@@ -165,8 +171,8 @@ end
 ---------------------------------------------------------------------------------------------------
 Plan.towerLots = {
 	mg_freeman = { face = "S", line = -174, at = 0, w = 100, d = 96, h = 620, variant = 1 },
-	goldfield_saxe = { face = "S", line = -174, at = -122, w = 96, d = 90, h = 540, variant = 2 },
-	morrow_stanton = { face = "S", line = -174, at = 122, w = 96, d = 90, h = 570, variant = 3 },
+	goldfield_saxe = { face = "S", line = -174, at = -122.5, w = 97, d = 90, h = 540, variant = 2 },
+	morrow_stanton = { face = "S", line = -174, at = 122.5, w = 97, d = 90, h = 570, variant = 3 },
 	merriweather_lynch = { face = "S", line = -174, at = -277, w = 96, d = 90, h = 500, variant = 4 },
 	funds_tower = { face = "S", line = -174, at = 274, w = 90, d = 86, h = 440, variant = 1 },
 	evermoor = { face = "N", line = -106, at = -350, w = 70, d = 70, h = 270, variant = 1 },
@@ -174,8 +180,8 @@ Plan.towerLots = {
 	centerline = { face = "N", line = -106, at = 350, w = 70, d = 70, h = 290, variant = 3 },
 	sterling_vance = { face = "S", line = 116, at = -259, w = 60, d = 66, h = 170, variant = 1 },
 	middle_market = { face = "S", line = 116, at = -345, w = 80, d = 66, h = 330, variant = 1 },
-	anaeio = { face = "N", line = 184, at = -136, w = 66, d = 70, h = 410, variant = 1 },
-	applewood = { face = "N", line = 184, at = 136, w = 66, d = 70, h = 340, variant = 1 },
+	anaeio = { face = "N", line = 184, at = -137, w = 68, d = 70, h = 410, variant = 1 },
+	applewood = { face = "N", line = 184, at = 137, w = 68, d = 70, h = 340, variant = 1 },
 	wealth_house = { face = "N", line = 184, at = -252, w = 46, d = 50, h = 72, variant = 1 },
 	venture_row = { face = "N", line = 184, at = -322, w = 60, d = 56, h = 86, variant = 1 },
 	property_exchange = { face = "E", line = -229, at = 300, w = 60, d = 60, h = 150, variant = 1 },
@@ -185,20 +191,30 @@ Plan.towerLots = {
 -- Spare lots: built as filler towers unless a tower that has no lot above claims them (in order).
 Plan.spareLots = {
 	{ face = "N", line = 184, at = 358, w = 92, d = 80, h = 320, variant = 2, shops = { "shop_bistro" } },
-	{ face = "S", line = -174, at = -364.5, w = 79, d = 80, h = 380, variant = 2, shops = { "shop_bank", "shop_cafe" } },
+	{
+		face = "S",
+		line = -174,
+		at = -364.5,
+		w = 79,
+		d = 80,
+		h = 380,
+		variant = 2,
+		shops = { "shop_bank", "shop_cafe" },
+	},
 	{ face = "S", line = -174, at = 361.5, w = 85, d = 80, h = 360, variant = 3, shops = { "shop_deli", "shop_wine" } },
 } :: { Lot }
 
 -- The lot for a tower, or nil. Unknown towers take spare lots in World.towers order.
-function Plan.assignLots(towers: { { id: string } }): ({ [string]: Lot }, { Lot })
+function Plan.assignLots(towers: { any }): ({ [string]: Lot }, { Lot })
 	local out: { [string]: Lot } = {}
 	local spare = table.clone(Plan.spareLots)
 	for _, t in towers do
-		local lot = Plan.towerLots[t.id]
+		local id = t.id :: string
+		local lot = Plan.towerLots[id]
 		if lot then
-			out[t.id] = lot
+			out[id] = lot
 		elseif #spare > 0 then
-			out[t.id] = table.remove(spare, 1) :: Lot
+			out[id] = table.remove(spare, 1) :: Lot
 		end
 	end
 	return out, spare
@@ -329,7 +345,9 @@ Plan.boards = {
 -- Street life placements (world space; y = 0 means "on the floor")
 ---------------------------------------------------------------------------------------------------
 Plan.subway = { pos = Vector3.new(-100, 0, 94), face = "N" } -- the stair opening faces north onto the plaza
-Plan.station = Vector3.new(-100, 0, 78) -- street_station_platform + Spawn_street (facing north)
+-- street_station_platform + Spawn_street (facing north), far enough from the stair-top door trigger that the
+-- "Subway" prompt is not already showing when a player arrives.
+Plan.station = Vector3.new(-100, 0, 72)
 Plan.newsstand = { pos = Vector3.new(-62, 0, 104), face = "N" }
 Plan.storeKiosk = { pos = Vector3.new(-80, 0, 64), face = "E" }
 Plan.directories = {
@@ -343,18 +361,21 @@ Plan.foodCarts = {
 }
 Plan.bikeDock = { pos = Vector3.new(-178, 0, 86), face = "E" }
 Plan.phoneBooth = { pos = Vector3.new(-150, 0, 123), face = "N" }
-Plan.scaffold = { pos = Vector3.new(-226.5, 0, 4), face = "E" } -- against the Ledger St infill (x = -229)
+Plan.busStop = { pos = Vector3.new(-318, 0, 122.5), face = "S" } -- glass shelter facing Exchange Ave, by the bus
+-- A sidewalk shed against the Ledger St infill (x = -229), north of its shop row (no awnings under it).
+Plan.scaffold = { pos = Vector3.new(-226.5, 0, 42.6), face = "E" }
 Plan.streetClock = Vector3.new(-112, 0, -113)
 Plan.atms = {
 	{ pos = Vector3.new(-372, 0, -167), face = "S" },
 	{ pos = Vector3.new(-262, 0, 123), face = "N" },
 }
+-- Striped steam stacks standing in a traffic lane (lane centres, clear of the parked and waiting cars).
 Plan.steamVents = {
-	Vector3.new(-62, 0, -140),
-	Vector3.new(92, 0, 150),
-	Vector3.new(-200, 0, -42),
-	Vector3.new(200, 0, 38),
-	Vector3.new(300, 0, -132),
+	Vector3.new(-62, 0, -145),
+	Vector3.new(92, 0, 135),
+	Vector3.new(-192.5, 0, -42),
+	Vector3.new(207.5, 0, 38),
+	Vector3.new(300, 0, -125),
 }
 Plan.manholes = {
 	Vector3.new(160, 0, -146),
@@ -362,9 +383,10 @@ Plan.manholes = {
 	Vector3.new(-200, 0, 250),
 	Vector3.new(200, 0, -300),
 }
+-- Rooftop billboards stand on the cornice slab of their building (roof height + 1.4).
 Plan.billboards = {
-	{ pos = Vector3.new(-280, 110, 7), face = "E", brand = "billboard_brand", slogan = "billboard_slogan" },
-	{ pos = Vector3.new(269, 120, 2), face = "W", brand = "billboard_brand2", slogan = "billboard_slogan2" },
+	{ pos = Vector3.new(-280, 111.4, 7), face = "E", brand = "billboard_brand", slogan = "billboard_slogan" },
+	{ pos = Vector3.new(269, 121.4, 2), face = "W", brand = "billboard_brand2", slogan = "billboard_slogan2" },
 }
 
 -- Vehicles: lane centres. Right-hand traffic: eastbound uses the south lanes of an E-W road, northbound the east
@@ -388,9 +410,61 @@ Plan.vehicles = {
 -- Golden Briefcase hiding spots (events) and other street event spots.
 Plan.briefcases = {
 	briefcase_s1 = Vector3.new(-62, 0, 111), -- behind the newsstand
-	briefcase_s2 = Vector3.new(-226.5, 0, -1), -- under the sidewalk shed on Ledger St
+	briefcase_s2 = Vector3.new(-225.5, 0, 40), -- under the sidewalk shed on Ledger St
 	briefcase_s3 = Vector3.new(-62, 0, -232), -- the alley between Goldfield Saxe and MG Freeman
 	briefcase_s4 = Vector3.new(-96.5, 0, 204), -- beside the Exchange steps
-}
+} :: { [string]: Vector3 }
+
+---------------------------------------------------------------------------------------------------
+-- Coverage: every building footprint on the plan (lots, venues, the Exchange and the infill), used to decide
+-- which facades face open ground (and get windows) and to keep street furniture off buildings.
+---------------------------------------------------------------------------------------------------
+export type Rect = { x0: number, z0: number, x1: number, z1: number, h: number, id: string }
+
+function Plan.rects(towers: { any }): { Rect }
+	local out: { Rect } = {}
+	local function addLot(id: string, lot: Lot)
+		local x0, z0, x1, z1 = Plan.lotRect(lot)
+		table.insert(out, { x0 = x0, z0 = z0, x1 = x1, z1 = z1, h = lot.h, id = id })
+	end
+	local assigned, spare = Plan.assignLots(towers)
+	for id, lot in assigned do
+		addLot("tower:" .. id, lot)
+	end
+	for i, lot in spare do
+		addLot("spare:" .. i, lot)
+	end
+	for id, lot in Plan.venueLots do
+		addLot("venue:" .. id, lot)
+	end
+	addLot("exchange", Plan.exchange)
+	for _, f in Plan.fillers do
+		table.insert(out, { x0 = f.x0, z0 = f.z0, x1 = f.x1, z1 = f.z1, h = f.h, id = "filler:" .. f.seed })
+	end
+	return out
+end
+
+-- The tallest building covering (x, z), or 0 for open ground. `ignore` skips one rect id (a building testing
+-- its own faces).
+function Plan.heightAt(rects: { Rect }, x: number, z: number, ignore: string?): number
+	local best = 0
+	for _, r in rects do
+		if r.id ~= ignore and x > r.x0 and x < r.x1 and z > r.z0 and z < r.z1 then
+			best = math.max(best, r.h)
+		end
+	end
+	return best
+end
+
+function Plan.inRoad(x: number, z: number, margin: number?): boolean
+	local m = margin or 0
+	for _, r in Plan.roads do
+		local v = if r.axis == "x" then z else x
+		if math.abs(v - r.c) <= r.w / 2 + m then
+			return true
+		end
+	end
+	return false
+end
 
 return Plan

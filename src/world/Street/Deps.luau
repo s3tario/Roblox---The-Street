@@ -21,6 +21,9 @@ local function optional(container: Instance, name: string): any?
 	return nil
 end
 
+local RngModule = require(Shared.Util.Rng)
+export type RngT = RngModule.Rng
+
 local Assets = Shared.Assets
 local Config = Shared.Config
 local NpcFolder = Assets:FindFirstChild("Npc")
@@ -28,7 +31,7 @@ local NpcFolder = Assets:FindFirstChild("Npc")
 return {
 	Kit = require(Shared.Build.Kit),
 	Palette = require(Shared.Build.Palette),
-	Rng = require(Shared.Util.Rng),
+	Rng = RngModule,
 	Hash = require(Shared.Util.Hash),
 	World = require(Config.World),
 	Props = require(Assets.Props),

@@ -109,9 +109,18 @@ export type WindowSpec = {
 	ac: number?, -- chance of a window AC box under the pane
 	margin: number?, -- studs kept clear at each end of the facade
 	style: string?, -- "punched" (default) | "arched" (stone keystone lintel)
+	-- facade x ranges kept clear of windows on storeys s0..s1 (entrances, pavilions)
+	skip: { { x0: number, x1: number, s0: number, s1: number } }?,
 }
 
 export type PaintedSpec = { face: string, cols: number, rows: number?, lit: number?, ghost: { string }?, ac: number? }
+export type FaceOpts = { lit: number?, ghost: { string }?, ac: number? }
+
+-- A painted secondary facade (face = "front" | "back" | "left" | "right"; rows default to the upper storeys).
+function Buildings.face(face: string, cols: number, rows: number?, o: FaceOpts?): PaintedSpec
+	local opts: FaceOpts = o or {}
+	return { face = face, cols = cols, rows = rows, lit = opts.lit, ghost = opts.ghost, ac = opts.ac }
+end
 
 export type BlockOpts = {
 	name: string,
@@ -211,6 +220,18 @@ function Buildings.block(parent: Instance, o: BlockOpts): (Model, Frame)
 			local yc = y0 + sh * 0.52
 			for c = 0, win.cols - 1 do
 				local x = -w / 2 + margin + bay * (c + 0.5)
+				local skipped = false
+				local skips = win.skip
+				if skips then
+					for _, k in skips do
+						if s >= k.s0 and s <= k.s1 and x + ww / 2 > k.x0 and x - ww / 2 < k.x1 then
+							skipped = true
+						end
+					end
+				end
+				if skipped then
+					continue
+				end
 				local lit = rng:chance(win.lit or 0.12)
 				local pane = Kit.detail(
 					m,
@@ -339,6 +360,8 @@ export type StoreOpts = {
 	frame: Color3?,
 	bulkhead: Color3?,
 	seed: any?,
+	-- a walk-up service window: an open bay in the glass (x centre, width, counter-ledge height)
+	hatch: { x: number, w: number, sill: number }?,
 }
 
 -- frontCf: on the building's front plane at ground level, centred, LookVector out to the street.
@@ -355,6 +378,30 @@ function Buildings.storefront(parent: Instance, frontCf: CFrame, width: number, 
 	local doorTop = 9
 	-- bulkhead and glass either side of the door
 	local segments = { { -width / 2 + 0.6, dx - dw / 2 }, { dx + dw / 2, width / 2 - 0.6 } }
+	local hatch = o.hatch
+	if hatch then
+		-- cut the hatch bay out of whichever glass run holds it
+		local ha, hb = hatch.x - hatch.w / 2, hatch.x + hatch.w / 2
+		local split = {}
+		for _, seg in segments do
+			if hb <= seg[1] or ha >= seg[2] then
+				table.insert(split, seg)
+			else
+				table.insert(split, { seg[1], math.max(seg[1], ha) })
+				table.insert(split, { math.min(seg[2], hb), seg[2] })
+			end
+		end
+		segments = split
+		-- the bay itself: a raised bulkhead, a worn counter ledge and frame posts, open above
+		local sill = hatch.sill
+		Kit.block(m, L(frontCf, hatch.x, sill / 2, -0.4), Vector3.new(hatch.w, sill, 0.8), bulk, M.Concrete).Name =
+			"HatchBulkhead"
+		Kit.block(m, L(frontCf, hatch.x, sill + 0.15, -0.9), Vector3.new(hatch.w + 0.4, 0.3, 1.8), Geo.vary(hex("#6B4E35"), rng, 0.1), M.Wood).Name =
+			"HatchLedge"
+		for _, sx in { -1, 1 } do
+			Kit.detail(m, L(frontCf, hatch.x + sx * (hatch.w / 2), sill + (glassTop - sill) / 2, -0.45), Vector3.new(0.4, glassTop - sill, 0.5), frameC, M.Metal)
+		end
+	end
 	for _, seg in segments do
 		local a, b = seg[1], seg[2]
 		local len = b - a

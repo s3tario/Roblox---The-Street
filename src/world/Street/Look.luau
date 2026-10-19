@@ -12,6 +12,7 @@ local hex = Kit.hex
 local Look = {}
 
 Look.M = Enum.Material
+Look.hex = hex
 
 -- stone
 Look.limestone = S.limestone
@@ -25,6 +26,7 @@ Look.graniteLight = S.graniteLight
 Look.graniteDark = hex("#2E3034")
 Look.blackGranite = hex("#17191C")
 Look.basalt = hex("#3A3C40")
+Look.brownstone = hex("#5E4536")
 Look.brick = hex("#8A4B36")
 Look.brickDark = hex("#6B3727")
 Look.brickRed = hex("#9A4A35")

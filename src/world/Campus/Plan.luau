@@ -162,13 +162,13 @@ Plan.anchors = {
 	campus_lecture_front = Plan.cf(-158, W + 3, -105, Plan.E),
 	campus_dorm_front = Plan.cf(-12, W + 3, -105, Plan.W),
 	campus_quad = Plan.cf(-85, W + 3, -82, Plan.N),
-}
+} :: { [string]: CFrame }
 
 Plan.npcs = {
 	npc_bus_driver = Plan.facing(-200, Plan.depot.island.top + 3, 63, Plan.depot.spawn.x, Plan.depot.spawn.z),
 	npc_barista = Plan.cf(-29, W + 3, 31.5, Plan.N),
 	npc_alum = Plan.facing(-66, W + 3, -92, -85, -82),
-}
+} :: { [string]: CFrame }
 
 Plan.events = {
 	recruiting_booths = { cf = Plan.cf(-85, W + 0.5, -166), size = Vector3.new(60, 1, 10) },
@@ -176,6 +176,6 @@ Plan.events = {
 	pigeon_area_campus = { cf = Plan.cf(-85, W + 0.5, -70), size = Vector3.new(12, 1, 40) },
 	briefcase_c1 = { cf = Plan.cf(-50.5, W + 0.5, 95.5), size = Vector3.new(2, 1, 2) },
 	briefcase_c2 = { cf = Plan.cf(-36, W + 0.5, 152), size = Vector3.new(2, 1, 2) },
-}
+} :: { [string]: { cf: CFrame, size: Vector3 } }
 
 return Plan

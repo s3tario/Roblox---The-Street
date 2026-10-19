@@ -48,6 +48,7 @@ Text.strings = {
 	subway_line = "^ Line 1: Eastbridge",
 	subway_line2 = "Trains every few minutes",
 	subway_line3 = "Exit: Exchange Plaza",
+	bus_stop = "BUS  M7  EXCHANGE AVE",
 
 	-- kiosks
 	newsstand_name = "BENEDETTO'S",
@@ -58,9 +59,12 @@ Text.strings = {
 	directory_hint = "Tap to open",
 	phone_booth_note = "LOCAL CALLS 25c",
 
-	-- tower directory boards (multi-tenant towers)
+	-- tower directory boards (multi-tenant towers) and addresses
 	tenants_title = "TENANTS",
 	tenant_floor = "Lobby  >",
+	address = "{n} {street}",
+	ghost_sign = "VENTURE ROW\nLOFTS & STUDIOS",
+	sv_roof = "STERLING & VANCE",
 
 	-- venues
 	galleria_name = "THE GALLERIA",
@@ -91,6 +95,9 @@ Text.strings = {
 	shop_wine = "VINTAGE CELLARS",
 	shop_watch = "TIMEPIECE REPAIR",
 	shop_bistro = "BISTRO 1892",
+
+	-- district edge
+	street_closed = "STREET CLOSED  |  DETOUR",
 
 	-- construction
 	scaffold_notice = "SIDEWALK SHED\nPermit 22-0419",

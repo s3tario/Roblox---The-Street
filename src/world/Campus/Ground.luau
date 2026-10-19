@@ -127,8 +127,11 @@ function Ground.build(parent: Instance)
 	local rng = Deps.Rng.new("campus-ground")
 
 	-- the wider world beyond the boundary (under the backdrops)
-	local outer = lbox(m, -400, -6, -400, 236, 0.3, 400, hex("#45443F"), M.Concrete)
+	-- (its top stays below the road surface at y = 0 so it never buries the streets)
+	local outer = lbox(m, -400, -6, -400, 232, -0.2, 400, hex("#45443F"), M.Concrete)
 	outer.Name = "OuterGround"
+	-- the riverbed under the water, so the river reads as deep and dark instead of bottomless
+	lbox(m, Plan.river.x0, -18, -400, 400, -15, 400, hex("#1E2622"), M.Mud).Name = "Riverbed"
 
 	-- lots
 	for _, lot in Plan.lots do

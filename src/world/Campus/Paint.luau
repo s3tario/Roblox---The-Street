@@ -29,9 +29,21 @@ local label = Core.label
 
 export type SurfOpts = { glow: boolean?, brightness: number?, pps: number?, maxDistance: number?, name: string? }
 
+-- Small surfaces (flyers, signs, trim) stop drawing beyond CULL studs unless opts.maxDistance says otherwise; big
+-- facades and backdrops always draw.
+local CULL = 240
+
 function Paint.surface(part: BasePart, face: Enum.NormalId, pps: number?, opts: SurfOpts?): (SurfaceGui, number, number)
 	local o: SurfOpts = if opts then table.clone(opts) else {}
 	o.pps = pps or o.pps or 8
+	if o.maxDistance == nil then
+		local s = part.Size
+		local area = if face == Enum.NormalId.Front or face == Enum.NormalId.Back
+			then s.X * s.Y
+			elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then s.Z * s.Y
+			else s.X * s.Z
+		o.maxDistance = if area < 600 then CULL else 0
+	end
 	return Core.surface(part, face, o)
 end
 
