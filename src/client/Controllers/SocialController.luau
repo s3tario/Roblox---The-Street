@@ -27,6 +27,7 @@ local CARD_SCREEN = "ProfileCard"
 local TAP_TIME = 0.35
 local TAP_MOVE = 14
 local RAY_LENGTH = 400
+local RAY_SKIPS = 6
 local TAG_MAX_DISTANCE = 70
 local TAG_ATTRS = { "FullName", "TagTitle", "TagCompany", "TagPrimary", "TagAccent", "TagLevel" }
 
@@ -60,7 +61,7 @@ function SocialController:Exchange(userId: number): (boolean, string?, { [string
 		return false, "generic", nil
 	end
 	if a == nil and type(b) == "string" then
-		return false, if b == "rate_limited" then "today" else "generic", nil
+		return false, "generic", nil -- rate limited, timed out or errored: "try again"
 	end
 	return a == true, if type(b) == "string" then b else nil, if type(c) == "table" then c else nil
 end
@@ -150,7 +151,14 @@ local function adorn(player: Player, tag: Tag, character: Model?)
 	end
 end
 
-local function label(parent: Instance, name: string, y: number, height: number, size: number, font: Enum.Font): TextLabel
+local function label(
+	parent: Instance,
+	name: string,
+	y: number,
+	height: number,
+	size: number,
+	font: Enum.Font
+): TextLabel
 	local l = Instance.new("TextLabel")
 	l.Name = name
 	l.BackgroundTransparency = 1
@@ -236,21 +244,31 @@ local function playerAt(screen: Vector2): Player?
 	local ray = camera:ViewportPointToRay(screen.X, screen.Y)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = if localPlayer.Character then { localPlayer.Character } else {}
+	local exclude: { Instance } = if localPlayer.Character then { localPlayer.Character } else {}
 	params.IgnoreWater = true
-	local hit = workspace:Raycast(ray.Origin, ray.Direction * RAY_LENGTH, params)
-	if not hit then
-		return nil
-	end
-	local node: Instance? = hit.Instance
-	while node and node ~= workspace do
-		if node:IsA("Model") then
-			local p = Players:GetPlayerFromCharacter(node)
-			if p then
-				return p
-			end
+	-- invisible queryable parts (interaction markers, trigger volumes) don't block the tap: skip past a few
+	for _ = 1, RAY_SKIPS do
+		params.FilterDescendantsInstances = exclude
+		local hit = workspace:Raycast(ray.Origin, ray.Direction * RAY_LENGTH, params)
+		if not hit then
+			return nil
 		end
-		node = node.Parent
+		local node: Instance? = hit.Instance
+		while node and node ~= workspace do
+			if node:IsA("Model") then
+				local p = Players:GetPlayerFromCharacter(node)
+				if p then
+					return p
+				end
+			end
+			node = node.Parent
+		end
+		local part = hit.Instance
+		if part:IsA("BasePart") and (part.Transparency >= 0.95 or not part.CanCollide) then
+			table.insert(exclude, part)
+		else
+			return nil
+		end
 	end
 	return nil
 end

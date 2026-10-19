@@ -122,7 +122,9 @@ return {
 						id = "budget",
 						text = "Rent, food, savings, then fun.",
 						to = "hub",
-						actions = { { kind = "statXp", stats = { "discipline" }, quality = 55, key = "concierge_budget" } },
+						actions = {
+							{ kind = "statXp", stats = { "discipline" }, quality = 55, key = "concierge_budget" },
+						},
 					},
 				} :: { any },
 			},

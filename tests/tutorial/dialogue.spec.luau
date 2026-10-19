@@ -32,7 +32,9 @@ local function sampleTree()
 			charm = { text = "Charmed.", options = { { id = "back", text = "Back", to = "hub" } } },
 			done = {
 				text = "Done.",
-				options = { { id = "go", text = "Go", exit = true, actions = { { kind = "complete", step = "advisor" } } } },
+				options = {
+					{ id = "go", text = "Go", exit = true, actions = { { kind = "complete", step = "advisor" } } },
+				},
 			},
 			fired = { text = "Sorry.", options = { { id = "bye", text = "Thanks", exit = true } } },
 		},
@@ -184,7 +186,8 @@ return function(t)
 			t.expect(bye.next).toBeNil()
 		end)
 		t.it("evaluates any / all / not, numbers and strings", function()
-			t.expect(Dialogue.check({ any = { { fired = true }, { employed = true } } }, { employed = true })).toBe(true)
+			t.expect(Dialogue.check({ any = { { fired = true }, { employed = true } } }, { employed = true }))
+				.toBe(true)
 			t.expect(Dialogue.check({ all = { { built = true }, { student = true } } }, { built = true })).toBe(false)
 			t.expect(Dialogue.check({ ["not"] = { visitor = true } }, { visitor = false })).toBe(true)
 			t.expect(Dialogue.check({ rankAtLeast = 2 }, { rank = 3 })).toBe(true)
@@ -212,7 +215,8 @@ return function(t)
 			allCond.nodes.fired.options = { { id = "x", text = "Bye", exit = true, cond = { built = true } } }
 			t.expect(#Dialogue.validate(allCond) > 0).toBe(true)
 			local orphan = sampleTree()
-			orphan.nodes.lonely = { text = "Nobody comes here.", options = { { id = "bye", text = "Bye", exit = true } } }
+			orphan.nodes.lonely =
+				{ text = "Nobody comes here.", options = { { id = "bye", text = "Bye", exit = true } } }
 			t.expect(#Dialogue.validate(orphan) > 0).toBe(true)
 			local badAction = sampleTree()
 			badAction.nodes.fired.options[1].actions = { { kind = "teleportToMoon" } }
@@ -270,11 +274,23 @@ return function(t)
 					for _, list in lists do
 						for _, a in list do
 							if a.kind == "complete" then
-								assert(Quests.stepById[a.step], ("%s.%s completes unknown step %s"):format(id, nodeId, a.step))
+								assert(
+									Quests.stepById[a.step],
+									("%s.%s completes unknown step %s"):format(id, nodeId, a.step)
+								)
 							elseif a.kind == "statXp" then
 								for _, s in a.stats do
 									assert(
-										table.find({ "knowledge", "skill", "speed", "charisma", "network", "discipline", "risk", "luck" }, s),
+										table.find({
+											"knowledge",
+											"skill",
+											"speed",
+											"charisma",
+											"network",
+											"discipline",
+											"risk",
+											"luck",
+										}, s),
 										id .. " trains unknown stat " .. s
 									)
 								end

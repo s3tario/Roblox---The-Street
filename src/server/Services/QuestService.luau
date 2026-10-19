@@ -311,6 +311,9 @@ function QuestService:Start()
 		QuestService:Progress(player, { kind = "task", taskId = taskId, quality = q })
 	end)
 	Deps.connect("PortfolioService", "Traded", function(player: Player, trade: any)
+		if not QuestLine.Awards.isPlayerTrade(trade) then
+			return
+		end
 		local pnl = if type(trade) == "table" then Deps.num(trade.pnl, 0) else 0
 		QuestService:Progress(player, { kind = "trade", pnl = pnl })
 	end)

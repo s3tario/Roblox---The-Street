@@ -16,7 +16,8 @@
 --     enter = { offerTask = taskId }?   what happens when the step starts (TutorialService)
 --     waypoint = Waypoint?  where the gold arrow points (TutorialService resolves it to a position)
 --     skip = { teleport = anchorId } | { enter = "lobby" | "track" }?   moves the player when the step is skipped
---     milestone = true?     celebrate the step with a banner
+--     milestone = true?     celebrate the step with a banner: banner = { title, subtitle } ({placeholders} from
+--                           QuestLine.vars plus {name}); without one the step's title is used
 --     holdWhile = Cond?, back = stepId?   when holdWhile stops holding, the chain steps back to `back` (declined
 --                           every offer: back to recruiting; a fresh start after a firing: back to recruiting)
 --   }
@@ -45,6 +46,7 @@ export type StepDef = {
 	waypoint: Waypoint?,
 	skip: { teleport: string?, enter: string? }?,
 	milestone: boolean?,
+	banner: { title: string, subtitle: string }?,
 	holdWhile: Cond?,
 	back: string?,
 }
@@ -99,6 +101,10 @@ Quests.steps = {
 		doneWhen = { built = true },
 		waypoint = { kind = "interact", id = "profile_builder", zone = "career_center" },
 		milestone = true,
+		banner = {
+			title = "This is your life, {name}",
+			subtitle = "Locked in. Now go meet Dana Whitfield, your career advisor.",
+		},
 	},
 	{
 		id = "advisor",
@@ -173,6 +179,10 @@ Quests.steps = {
 		doneWhen = { any = { { hasOffer = true }, { hired = true } } :: { any } },
 		waypoint = { kind = "interact", id = "bulletin" },
 		milestone = true,
+		banner = {
+			title = "You got an offer!",
+			subtitle = "Open Career, then Offers. Compare them and accept the one you want.",
+		},
 	},
 	{
 		id = "offers",
@@ -194,10 +204,16 @@ Quests.steps = {
 		title = "Ride downtown",
 		objective = "Ride the subway from Eastbridge Station to Wall Street.",
 		hint = "The station is at the edge of campus. Your offer is your ticket.",
-		doneWhen = { any = { { zone = "street" }, { inOffice = true }, { onboarded = true }, { reviews = 1 } } :: { any } },
+		doneWhen = {
+			any = { { zone = "street" }, { inOffice = true }, { onboarded = true }, { reviews = 1 } } :: { any },
+		},
 		waypoint = { kind = "door", id = "door_campus_subway" },
 		skip = { teleport = "street_station_platform" },
 		milestone = true,
+		banner = {
+			title = "Welcome to Wall Street",
+			subtitle = "Marble, glass and a lot of people walking fast. Find {company}'s tower on Bank Row.",
+		},
 	},
 	{
 		id = "tower",
@@ -245,6 +261,10 @@ Quests.steps = {
 		doneWhen = { any = { { mark = "boss" }, { reviews = 1 } } :: { any } },
 		waypoint = { kind = "boss" },
 		milestone = true,
+		banner = {
+			title = "First day on the desk",
+			subtitle = "{boss} is expecting great things. Your first task is waiting.",
+		},
 	},
 	{
 		id = "first_task",
@@ -277,7 +297,6 @@ Quests.steps = {
 		objective = "Your first weekly review is Friday. Read how it works.",
 		hint = "Open the Quests app and tap How reviews work.",
 		doneWhen = { any = { { mark = "review_intro" }, { reviews = 1 } } :: { any } },
-		milestone = true,
 	},
 } :: { StepDef }
 
@@ -428,13 +447,15 @@ function Quests.fill(text: string, vars: { [string]: any }?): string
 	if not vars then
 		return text
 	end
-	return (string.gsub(text, "{([%w_]+)}", function(k: string): string
-		local v = vars[k]
-		if v == nil then
-			return "{" .. k .. "}"
-		end
-		return tostring(v)
-	end))
+	return (
+		string.gsub(text, "{([%w_]+)}", function(k: string): string
+			local v = vars[k]
+			if v == nil then
+				return "{" .. k .. "}"
+			end
+			return tostring(v)
+		end)
+	)
 end
 
 function Quests.text(key: string, vars: { [string]: any }?): string

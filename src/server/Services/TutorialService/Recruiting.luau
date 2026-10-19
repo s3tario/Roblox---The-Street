@@ -372,7 +372,11 @@ function Recruiting.decide(player: Player, companyId: string): (boolean, string?
 		Deps.notify(player, text("recruit_offer", { company = company.name }), "good")
 	else
 		Recruit.settle(app, "rejected")
-		Deps.notify(player, text("recruit_rejected", { company = company.name, chance = math.floor(chance * 100 + 0.5) .. "%" }), "bad")
+		Deps.notify(
+			player,
+			text("recruit_rejected", { company = company.name, chance = math.floor(chance * 100 + 0.5) .. "%" }),
+			"bad"
+		)
 	end
 	Deps.audit(player, "recruiting_decision", { companyId = company.id, chance = chance, outcome = outcome })
 	changed(player)

@@ -115,10 +115,24 @@ local function standPoint(spot: BasePart): CFrame
 			table.insert(exclude, p.Character)
 		end
 	end
-	params.FilterDescendantsInstances = exclude
 	params.IgnoreWater = true
 	local from = spot.Position + Vector3.new(0, 2, 0)
-	local hit = workspace:Raycast(from, Vector3.new(0, -30, 0), params)
+	local hit: RaycastResult? = nil
+	-- the floor is the first solid part below: skip invisible markers and trigger volumes on the way down
+	for _ = 1, 6 do
+		params.FilterDescendantsInstances = exclude
+		local r = workspace:Raycast(from, Vector3.new(0, -30, 0), params)
+		if not r then
+			break
+		end
+		local part = r.Instance
+		if part:IsA("BasePart") and (not part.CanCollide or part.Transparency >= 0.95) then
+			table.insert(exclude, part)
+		else
+			hit = r
+			break
+		end
+	end
 	local base = if hit then hit.Position else spot.Position - Vector3.new(0, spot.Size.Y / 2, 0)
 	return CFrame.new(base) * flatRotation(spot.CFrame)
 end
@@ -240,6 +254,20 @@ local function talk(player: Player, entry: Placed, def: Npcs.NpcDef)
 	if not cooled(player) then
 		return
 	end
+	-- an NPC standing inside a company's office only talks to its employees (visitors get a polite toast)
+	local company = Interacts.companyOf(entry.spot)
+	if company and not Deps.isEmployeeOf(player, company) then
+		local c = Companies.get(company)
+		Deps.notify(
+			player,
+			Quests.text("dialogue_employees_only", {
+				name = def.name,
+				company = if c then c.name else Quests.text("your_firm"),
+			}),
+			"warn"
+		)
+		return
+	end
 	local model = entry.model
 	local origin = if model and rootOf(model) then (rootOf(model) :: BasePart).Position else entry.spot.Position
 	Deps.call("DialogueService", "Open", player, def.id, def.dialogue, {
@@ -248,6 +276,8 @@ local function talk(player: Player, entry: Placed, def: Npcs.NpcDef)
 		name = def.name,
 		title = def.title,
 		color = def.color,
+		companyId = company,
+		office = company ~= nil,
 	})
 end
 
@@ -258,6 +288,8 @@ local function wirePrompt(parent: Instance, entry: Placed, def: Npcs.NpcDef)
 		object = def.name,
 		interactId = NpcService.INTERACT_ID,
 		distance = Npcs.TALK_RANGE,
+		companyId = Interacts.companyOf(entry.spot),
+		employeesOnly = true,
 	})
 	prompt:SetAttribute("NpcId", def.id)
 	prompt:AddTag(NpcService.PROMPT_TAG)
@@ -404,14 +436,19 @@ local function wireOfficeNpc(model: Model)
 	local companyId: string? = if type(attrCompany) == "string" and attrCompany ~= ""
 		then attrCompany
 		else Interacts.companyOf(model)
-	local display = model:GetAttribute("DisplayName")
-	local name = if type(display) == "string" and display ~= "" then display else Npcs.TALK
-	local titleAttr = model:GetAttribute("Title")
-	local title = if type(titleAttr) == "string" then titleAttr else ""
+	-- OfficeService names its staff right after parenting them: read the name and title when they're needed
+	local function nameOf(): string
+		local display = model:GetAttribute("DisplayName")
+		return if type(display) == "string" and display ~= "" then display else Npcs.TALK
+	end
+	local function titleOf(): string
+		local t = model:GetAttribute("Title")
+		return if type(t) == "string" then t else ""
+	end
 	local prompt = Interacts.prompt(root, {
 		name = NpcService.PROMPT_NAME,
 		action = Npcs.TALK,
-		object = name,
+		object = nameOf(),
 		interactId = NpcService.INTERACT_ID,
 		distance = Npcs.TALK_RANGE,
 		companyId = companyId,
@@ -419,20 +456,28 @@ local function wireOfficeNpc(model: Model)
 	})
 	prompt:SetAttribute("OfficeRole", role)
 	prompt:AddTag(NpcService.PROMPT_TAG)
+	model:GetAttributeChangedSignal("DisplayName"):Connect(function()
+		prompt.ObjectText = nameOf()
+	end)
 	prompt.Triggered:Connect(function(player: Player)
 		if not cooled(player) then
 			return
 		end
 		local company = companyId or Interacts.companyOf(model)
+		local name = nameOf()
 		if def.employeesOnly and company and not Deps.isEmployeeOf(player, company) then
-			Deps.notify(player, Quests.text("dialogue_employees_only", { name = name, company = companyName(company) }), "warn")
+			Deps.notify(
+				player,
+				Quests.text("dialogue_employees_only", { name = name, company = companyName(company) }),
+				"warn"
+			)
 			return
 		end
 		Deps.call("DialogueService", "Open", player, "office_" .. tostring(role), def.dialogue, {
 			model = model,
 			origin = root.Position,
 			name = name,
-			title = title,
+			title = titleOf(),
 			companyId = company,
 			office = true,
 		})

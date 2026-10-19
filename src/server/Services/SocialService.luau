@@ -108,7 +108,8 @@ function SocialService:GetCard(viewer: Player, target: Player): { [string]: any 
 	local career = if type(data.career) == "table" then data.career else {}
 	local okPublic, public = Deps.call("ProfileService", "GetPublicProfile", target)
 	if not okPublic or type(public) ~= "table" then
-		local okView, view = pcall(LifeRoll.publicView, profile, { userId = target.UserId, displayName = target.DisplayName })
+		local okView, view =
+			pcall(LifeRoll.publicView, profile, { userId = target.UserId, displayName = target.DisplayName })
 		public = if okView then view else nil
 	end
 	local employed = CareerState.isEmployed(career)

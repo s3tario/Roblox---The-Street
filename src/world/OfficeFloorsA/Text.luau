@@ -59,6 +59,25 @@ Text.strings = {
 	lobby_directory = "Lobby ·  Reception\nDepartment floors ·  use the elevator panel",
 	lobby_street = "Wall Street",
 	lobby_hours = "Open 24 hours",
+	lobby_elevators = "Elevators",
+	lobby_elevators_sub = "All floors  ·  Badge required",
+	lobby_cafe = "The Ticker Café",
+	lobby_cafe_menu_title = "COFFEE BAR",
+	lobby_cafe_menu = "Espresso          3.50\nCortado           4.25\nFlat white        4.75\nCold brew         5.00\nMatcha latte      5.25\nAlmond croissant  4.00",
+	lobby_vitrine = "Recent Transactions",
+	lobby_tombstones = { "IPO", "M&A", "LBO", "DEBT", "SPIN", "IPO", "M&A", "BOND" },
+	lobby_storefronts = {
+		"HARTWELL TAILORS",
+		"MARLOWE DELI",
+		"PAGE & QUILL",
+		"VANTA WATCHES",
+		"BRIOCHE",
+		"STRIDER SHOES",
+		"CELLAR 12",
+		"FERN & STEM",
+		"NORTHSIDE PHARMACY",
+		"ORBIT NEWS",
+	},
 } :: { [string]: any }
 
 -- Display names of the departments whose floors are still placeholders in this milestone.

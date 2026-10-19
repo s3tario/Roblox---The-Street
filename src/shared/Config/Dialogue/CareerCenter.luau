@@ -87,10 +87,20 @@ return {
 				},
 				options = {
 					{ id = "club", text = "What's next?", to = "tip_club", cond = { step = "club" } },
-					{ id = "work", text = "What's next?", to = "tip_work", cond = { stepIn = { "academics", "pitch" } } },
+					{
+						id = "work",
+						text = "What's next?",
+						to = "tip_work",
+						cond = { stepIn = { "academics", "pitch" } },
+					},
 					{ id = "network", text = "What's next?", to = "tip_network", cond = { step = "network" } },
 					{ id = "mock", text = "What's next?", to = "tip_mock", cond = { step = "mock_interview" } },
-					{ id = "recruit", text = "How should I approach recruiting?", to = "tip_recruit", cond = { step = "recruiting" } },
+					{
+						id = "recruit",
+						text = "How should I approach recruiting?",
+						to = "tip_recruit",
+						cond = { step = "recruiting" },
+					},
 					{ id = "offer", text = "I got an offer! Now what?", to = "tip_offer", cond = { step = "offers" } },
 					{ id = "odds", text = "How do offers actually work?", to = "offers_explain" },
 					{ id = "lesson", text = "Teach me something useful.", to = "lesson" },
@@ -243,7 +253,11 @@ return {
 						text = "Revenue goes on the balance sheet and assets go on the income statement.",
 						to = "tech_wrong",
 					},
-					{ id = "dodge", text = "Honestly, I'd rather talk about my passion for finance.", to = "tech_dodge" },
+					{
+						id = "dodge",
+						text = "Honestly, I'd rather talk about my passion for finance.",
+						to = "tech_dodge",
+					},
 				} :: { any },
 			},
 			tech_right = {

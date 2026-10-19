@@ -257,13 +257,15 @@ end
 ---------------------------------------------------------------------------------------------------
 function Dialogue.fill(text: string, vars: { [string]: any }?): string
 	local v = vars or {}
-	return (string.gsub(text, "{([%w_]+)}", function(k: string): string
-		local x = v[k]
-		if x == nil then
-			return ""
-		end
-		return tostring(x)
-	end))
+	return (
+		string.gsub(text, "{([%w_]+)}", function(k: string): string
+			local x = v[k]
+			if x == nil then
+				return ""
+			end
+			return tostring(x)
+		end)
+	)
 end
 
 local function pickText(text: string | { string }, ctx: Ctx, nodeId: string): string

@@ -166,7 +166,22 @@ local function onEnter(player: Player, step: Quests.StepDef, silent: boolean)
 	end
 end
 
-local function announce(player: Player, completed: { QuestLine.Completed }, quiet: boolean)
+-- Placeholders for banners: QuestLine.vars plus the player's first name.
+local function bannerVars(player: Player, campus: { [string]: any }, facts: QuestLine.Facts?): { [string]: any }
+	local data = Deps.data(player) or {}
+	local vars = QuestLine.vars(campus, facts or Facts.gather(player, data))
+	vars.name = firstName(data, player)
+	return vars
+end
+
+local function announce(
+	player: Player,
+	completed: { QuestLine.Completed },
+	quiet: boolean,
+	campus: { [string]: any },
+	facts: QuestLine.Facts?
+)
+	local vars: { [string]: any }? = nil
 	for _, c in completed do
 		local step = Quests.stepById[c.id]
 		if step then
@@ -181,11 +196,14 @@ local function announce(player: Player, completed: { QuestLine.Completed }, quie
 					"good"
 				)
 				if step.milestone and c.how == "auto" then
+					local v = vars or bannerVars(player, campus, facts)
+					vars = v
+					local b = step.banner
 					Deps.banner(player, {
-						title = step.title,
-						subtitle = step.hint,
+						title = Quests.fill(if b then b.title else step.title, v),
+						subtitle = Quests.fill(if b then b.subtitle else step.hint, v),
 						style = "celebration",
-						duration = 4,
+						duration = 5,
 					})
 				end
 			end
@@ -222,7 +240,7 @@ local function process(player: Player)
 	local before = campus.step
 	local result = QuestLine.reconcile(campus, facts, os.time())
 	local quiet = not st.primed
-	announce(player, result.completed, quiet)
+	announce(player, result.completed, quiet, campus, facts)
 	local entered = campus.step ~= st.lastStep
 	if entered then
 		local stepNow = QuestLine.current(campus)
@@ -322,7 +340,7 @@ function TutorialService:CompleteStep(player: Player, stepId: string, how: strin
 	QuestLine.complete(campus, stepId, os.time(), how)
 	if wasCurrent then
 		local st = stateOf(player)
-		announce(player, { { id = stepId, how = how or "auto" } }, false)
+		announce(player, { { id = stepId, how = how or "auto" } }, false, campus)
 		st.skipNotified = nil
 	end
 	Deps.replicate(player, "campus")
@@ -358,7 +376,7 @@ function TutorialService:Skip(player: Player): (boolean, string?)
 	if not skipped then
 		return false, "skip_none"
 	end
-	announce(player, { { id = skipped.id, how = "skip" } }, false)
+	announce(player, { { id = skipped.id, how = "skip" } }, false, campus, facts)
 	Deps.audit(player, "tutorial_skip", { step = skipped.id })
 	Deps.replicate(player, "campus")
 	local career = if type(data.career) == "table" then data.career else {}
@@ -519,9 +537,12 @@ function TutorialService:Start()
 		end
 		refresh(player)
 	end)
-	Deps.connect("PortfolioService", "Traded", function(player: Player, _trade: any)
+	Deps.connect("PortfolioService", "Traded", function(player: Player, trade: any)
 		local campus = Deps.campus(player)
-		if campus then
+		local career = Deps.career(player)
+		-- the first-trade step wants a trade on the job, placed by the player (not a stop, a flatten or a restore)
+		local kind = if type(trade) == "table" then trade.kind else nil
+		if campus and career and CareerState.isEmployed(career) and (kind == nil or kind == "trade") then
 			campus.trades = Deps.num(campus.trades, 0) + 1
 		end
 		refresh(player)

@@ -16,9 +16,14 @@
 --   Art.keyboard(pad)                        keyboard and mouse drawn on a desk pad's top face
 --   Art.lockers(part, face)                  locker doors with pulls
 --   Art.whiteboard(part, face, rng)          marker scribbles (Props Gui whiteboard)
+--   Art.tiles(part, face, sx, sy, color, opts?)    stone joints every sx/sy studs (lobby floors, cladding)
+--   Art.veins(part, face, seed, color, opts?)      soft marble veining
+--   Art.facade(part, face, opts)             a painted street-level building front (shop band + window grid)
+--   Art.tombstone(part, face, title, seed)   a lucite deal tombstone's engraving
 
 local Deps = require(script.Parent.Deps)
 local Text = require(script.Parent.Text)
+local ArtStone = require(script.Parent.ArtStone)
 
 local Core = Deps.Gui.Core
 local GuiArt = Deps.Gui.Art
@@ -527,5 +532,13 @@ function Art.whiteboard(part: BasePart, face: Enum.NormalId, rng: Rng): SurfaceG
 	GuiArt.whiteboard(gui, W, H, rng)
 	return gui
 end
+
+---------------------------------------------------------------------------------------------------
+-- Stonework, facades and tombstones (ArtStone)
+---------------------------------------------------------------------------------------------------
+Art.tiles = ArtStone.tiles
+Art.veins = ArtStone.veins
+Art.facade = ArtStone.facade
+Art.tombstone = ArtStone.tombstone
 
 return Art

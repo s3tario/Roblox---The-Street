@@ -111,7 +111,9 @@ return {
 						id = "advice",
 						text = "What would you do in my shoes?",
 						to = "probation_advice",
-						actions = { { kind = "statXp", stats = { "discipline" }, quality = 55, key = "boss_probation" } },
+						actions = {
+							{ kind = "statXp", stats = { "discipline" }, quality = 55, key = "boss_probation" },
+						},
 					},
 					{ id = "fix", text = "I'll fix it.", exit = true },
 				} :: { any },

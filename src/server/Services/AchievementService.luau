@@ -255,7 +255,9 @@ function AchievementService:Start()
 		record(player, { kind = "task", taskId = taskId, quality = q })
 	end)
 	Deps.connect("PortfolioService", "Traded", function(player: Player, trade: any)
-		record(player, { kind = "trade", pnl = if type(trade) == "table" then Deps.num(trade.pnl, 0) else 0 })
+		if Awards.isPlayerTrade(trade) then
+			record(player, { kind = "trade", pnl = if type(trade) == "table" then Deps.num(trade.pnl, 0) else 0 })
+		end
 	end)
 	Deps.connect("CareerService", "OffersChanged", function(player: Player)
 		local st = stateOf(player)

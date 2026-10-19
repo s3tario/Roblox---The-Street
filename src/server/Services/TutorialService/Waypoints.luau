@@ -179,7 +179,8 @@ function Waypoints.resolve(player: Player, spec: any, ctx: Ctx): (Vector3?, stri
 		local company = Companies.get(career.companyId)
 		return positionOf(nearest(player, tagged("Door", "DoorId", doorId))), if company then company.name else nil
 	elseif kind == "office" then
-		local ok, anchor = Deps.call("OfficeService", "GetAnchor", career.companyId, floorFor(spec, career), spec.anchor)
+		local ok, anchor =
+			Deps.call("OfficeService", "GetAnchor", career.companyId, floorFor(spec, career), spec.anchor)
 		if ok and typeof(anchor) == "Instance" then
 			return positionOf(anchor), nil
 		end

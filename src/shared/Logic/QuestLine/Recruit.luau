@@ -273,7 +273,10 @@ end
 
 function Recruit.forTask(apps: { App }, taskId: string, companyId: string?, pendingId: string?): App?
 	local cfg = Quests.recruiting
-	local stage = if taskId == cfg.interviewTask then "first_round" elseif taskId == cfg.superdayTask then "superday" else nil
+	local stage = if taskId == cfg.interviewTask
+		then "first_round"
+		elseif taskId == cfg.superdayTask then "superday"
+		else nil
 	if not stage then
 		return nil
 	end

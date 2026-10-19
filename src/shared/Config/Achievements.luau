@@ -352,10 +352,12 @@ function Achievements.text(key: string, vars: { [string]: any }?): string
 	if not vars then
 		return s
 	end
-	return (string.gsub(s, "{([%w_]+)}", function(k: string): string
-		local v = vars[k]
-		return if v == nil then "{" .. k .. "}" else tostring(v)
-	end))
+	return (
+		string.gsub(s, "{([%w_]+)}", function(k: string): string
+			local v = vars[k]
+			return if v == nil then "{" .. k .. "}" else tostring(v)
+		end)
+	)
 end
 
 return Achievements

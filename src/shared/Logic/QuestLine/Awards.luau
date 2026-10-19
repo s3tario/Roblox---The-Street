@@ -12,6 +12,8 @@
 --   Awards.check(defs, unlocked, progress, event) -> { id }     the same without bumping (catch-up on load from
 --                                               the current state)
 --   Awards.count(unlocked) -> number
+--   Awards.isPlayerTrade(trade) -> boolean       a fill the player caused (a trade, a paper trade, their own stop or
+--                                               take-profit), not a flatten on leave, a restore, a wipe or a rebirth
 -- Event fields by kind: life_roll {rarities, schoolRarity, gpa} | task {taskId, quality} | exchange | talk {npcId}
 --   | offer {held} | hired {source, companyType, companyId} | step {step} | trade {pnl?} | promotion {rank}
 --   | review {band} | status {from, to} | lifeline | comeback | plaque | project {projectId, closed}
@@ -163,6 +165,16 @@ function Awards.process(
 ): { string }
 	Awards.bump(progress, event)
 	return Awards.check(defs, unlocked, progress, event)
+end
+
+Awards.PLAYER_TRADES = { trade = true, paper = true, stop = true, take = true } :: { [string]: boolean }
+
+function Awards.isPlayerTrade(trade: any): boolean
+	if type(trade) ~= "table" then
+		return false
+	end
+	local kind = trade.kind
+	return kind == nil or Awards.PLAYER_TRADES[kind] == true
 end
 
 function Awards.count(unlocked: { [string]: any }?): number

@@ -127,7 +127,9 @@ return {
 						id = "off",
 						text = "How do I get off probation?",
 						to = "off_probation",
-						actions = { { kind = "statXp", stats = { "discipline" }, quality = 55, key = "counselor_prob" } },
+						actions = {
+							{ kind = "statXp", stats = { "discipline" }, quality = 55, key = "counselor_prob" },
+						},
 					},
 					{ id = "bye", text = "Thanks, Ruth.", exit = true },
 				} :: { any },

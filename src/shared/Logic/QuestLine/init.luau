@@ -10,7 +10,8 @@
 --   QuestLine.check(cond, facts, campus) -> boolean  the Config/Quests condition language
 --   QuestLine.reconcile(campus, facts, now) -> Result
 --       completes every step whose facts already hold (in order), bypasses campus steps once hired, skips the
---       campus fluff after a rebirth, and steps back when a step's holdWhile stops holding.
+--       campus fluff after a rebirth, and steps back when a step's holdWhile stops holding (from a street step
+--       that also clears the old recruiting pipeline: the player is starting over).
 --       Result = { completed = { { id, how } }, entered = stepId?, finished = boolean, back = stepId? }
 --       how: "auto" | "bypass" | "veteran"
 --   QuestLine.complete(campus, stepId, now, how?) -> boolean   finishes the step if it is current (true), else
@@ -338,6 +339,12 @@ function QuestLine.reconcile(campus: { [string]: any }, facts: Facts, now: numbe
 		end
 		if cur.holdWhile and cur.back and not QuestLine.check(cur.holdWhile, facts, campus) then
 			if campus.step ~= cur.back then
+				if cur.phase == "street" then
+					-- the job is gone (a fresh start): the old recruiting pipeline goes with it
+					campus.applications = {}
+					campus.pending = {}
+					campus.offer = false
+				end
 				stepBack(campus, cur.back)
 				result.back = cur.back
 				continue
